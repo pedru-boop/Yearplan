@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Year Plan</title>
+<meta name="theme-color" content="#123F6B" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Year Plan" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#123F6B; --navy-deep:#082238; --gold:#4FAE74; --gold-soft:#9CE3B8;
+    --cream:#E7F2FB; --card:#FFFFFF; --ink:#1B2430; --muted:#6B7280;
+    --good:#2F7A4F; --warn:#B8862E; --bad:#B4453B;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:'Sarabun','Noto Sans Thai',sans-serif;}
+  h1,h2,h3{font-family:'Fraunces',serif; margin:0;}
+  .mono{font-family:'Space Grotesk',sans-serif;}
+  header.top{background:linear-gradient(135deg, var(--navy-deep) 0%, var(--navy) 62%, var(--navy) 100%); position:relative; overflow:hidden;}
+  header.top .grid-bg{position:absolute; inset:0; background-image:linear-gradient(#4FAE740A 1px, transparent 1px), linear-gradient(90deg, #4FAE740A 1px, transparent 1px); background-size:26px 26px; pointer-events:none;}
+  header.top .glow{position:absolute; right:-60px; top:-60px; width:220px; height:220px; border-radius:50%; background:radial-gradient(circle, #4FAE7433 0%, transparent 70%);}
+  header.top .glow2{position:absolute; left:-40px; bottom:-80px; width:200px; height:200px; border-radius:50%; background:radial-gradient(circle, #4FAE7422 0%, transparent 70%);}
+  header.top .inner{max-width:1080px; margin:0 auto; padding:28px 20px 24px; position:relative;}
+  .brand{display:flex; align-items:center; gap:16px; margin-bottom:10px;}
+  .brand .logo{width:96px; height:96px; border-radius:18px; background:linear-gradient(135deg, var(--gold-soft), var(--gold)); display:flex; align-items:center; justify-content:center; font-size:16px; box-shadow:0 2px 14px #4FAE7466; flex-shrink:0;}
+  .brand .label{color:var(--gold-soft); font-size:19.5px; letter-spacing:2px; font-weight:600; text-transform:uppercase; font-family:'Space Grotesk',sans-serif; display:block; margin-bottom:4px;}
+  .brand .titles h1{margin:0;}
+  header.top h1{color:#fff; font-size:45px; font-weight:600;}
+  header.top p{color:#C9D3E0; font-size:21px; margin-top:6px;}
+  nav.tabs{background:var(--navy); border-bottom:3px solid var(--gold);}
+  nav.tabs .inner{max-width:1080px; margin:0 auto; display:flex; overflow-x:auto;}
+  nav.tabs button{display:flex; align-items:center; gap:8px; white-space:nowrap; padding:12px 18px; background:transparent; color:#D7DEEA; border:none; cursor:pointer; font-family:'Sarabun',sans-serif; font-size:21px; font-weight:500;}
+  nav.tabs button.active{background:var(--cream); color:var(--navy-deep); font-weight:600; border-radius:10px 10px 0 0;}
+  main{max-width:1080px; margin:0 auto; padding:20px 20px 64px;}
+  .year-picker{display:flex; align-items:center; gap:10px; margin:22px 0 8px;}
+  .agent-picker{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:16px;}
+  .agent-picker span.lbl{font-size:19.5px; color:var(--muted); font-weight:600;}
+  .agent-picker select{padding:6px 12px; color:var(--navy-deep); background:var(--card); font-weight:600;}
+  .add-agent-form{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  .year-picker span{font-size:19.5px; color:var(--muted); font-weight:600;}
+  select, input[type=text], input[type=number]{
+    border:1.5px solid #123F6B22; border-radius:8px; padding:8px 10px; font-size:21px;
+    font-family:'Sarabun',sans-serif; color:var(--ink); background:#fff; outline:none;
+  }
+  .year-picker select{padding:6px 12px; color:var(--navy-deep); background:var(--card); font-weight:600;}
+  .card{background:var(--card); border-radius:14px; padding:20px; box-shadow:0 1px 3px rgba(18,63,107,0.08), 0 1px 2px rgba(18,63,107,0.06); border:1px solid #123F6B0F; margin-bottom:16px; position:relative; overflow:hidden;}
+  .card.dark{background:linear-gradient(135deg, var(--navy-deep) 0%, var(--navy) 100%); border:none; color:#fff;}
+  .card.dark .grid-bg{position:absolute; inset:0; background-image:linear-gradient(#4FAE740D 1px, transparent 1px), linear-gradient(90deg, #4FAE740D 1px, transparent 1px); background-size:24px 24px; pointer-events:none;}
+  .card h3{font-size:27px; color:var(--navy-deep); font-weight:600; margin-bottom:4px;}
+  .card.dark h3{color:#fff;}
+  .card .sub{font-size:18.75px; color:var(--muted); margin-top:-4px; margin-bottom:14px;}
+  .card.dark .sub{color:#B9C4D6;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field span{font-size:18.75px; color:var(--muted); font-weight:600;}
+  .field.dark span{color:#B9C4D6;}
+  .field input, .field select{width:100%;}
+  form.entry-form{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .full{grid-column:1 / -1;}
+  .btn-primary{display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, var(--gold), var(--gold-soft)); color:var(--navy-deep); border:none; border-radius:9px; padding:10px 18px; font-size:21px; font-weight:700; cursor:pointer; font-family:'Sarabun',sans-serif;}
+  .btn-ghost{background:transparent; border:1.5px solid #123F6B30; color:var(--navy-deep); border-radius:8px; padding:7px 12px; font-size:18.75px; font-weight:600; cursor:pointer; font-family:'Sarabun',sans-serif;}
+  table{width:100%; border-collapse:collapse; font-size:20.25px;}
+  thead tr{text-align:left; color:var(--muted); border-bottom:2px solid #123F6B14;}
+  th{padding:8px 10px; font-weight:600; font-size:18px;}
+  td{padding:9px 10px; border-bottom:1px solid #123F6B0D;}
+  .num{text-align:right; font-weight:600; color:var(--navy-deep);}
+  .icon-btn{background:transparent; border:none; cursor:pointer; padding:4px; font-size:18px;}
+  .empty{text-align:center; padding:36px 12px; color:var(--muted); font-size:20.25px;}
+  .err-box{background:#FBEEEC; border:1px solid #B4453B55; color:var(--bad); border-radius:8px; padding:8px 12px; font-size:19.5px; margin-top:8px;}
+  .ok-badge{display:inline-flex; align-items:center; gap:5px; color:var(--good); font-size:19.5px; font-weight:600;}
+  .mini-row{display:flex; justify-content:space-between; align-items:center; padding:3px 0; font-size:18.75px; color:var(--muted);}
+  .mini-row .v{font-size:19.5px; font-weight:700; color:var(--ink);}
+  .mini-row .v.ok{color:var(--good);}
+  .tech-row{display:flex; justify-content:space-between; align-items:baseline; padding:4px 0;}
+  .tech-row .lab{font-size:18.75px; color:#B9C4D6;}
+  .tech-row .val{font-family:'Space Grotesk',sans-serif; font-size:21px; font-weight:700; color:#B9C4D6;}
+  .tech-row .val.good{color:var(--good);}
+  .tech-row .val.warn{color:#E8A15C;}
+  .tech-row .val.highlight{color:var(--gold-soft); font-size:24px;}
+  .ring-wrap{position:relative; width:108px; height:108px; flex-shrink:0;}
+  .ring-wrap .center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+  .ring-wrap .pct{font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; color:var(--gold-soft);}
+  .ring-wrap .lbl{font-size:14px; color:#B9C4D6;}
+  .goal-flex{display:flex; flex-wrap:wrap; align-items:center; gap:24px;}
+  .income-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:14px;}
+  .income-chip{background:#FFFFFF14; border:1px solid #FFFFFF26; border-radius:10px; padding:10px 12px;}
+  .income-chip .lbl{font-size:17.25px; color:#B9C4D6; margin-bottom:3px;}
+  .income-chip .val{font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:700; color:#fff;}
+  .qgrid{display:grid; grid-template-columns:repeat(2, minmax(150px,1fr)); gap:12px; margin-bottom:16px;}
+  .qcard{border-radius:12px; padding:14px; position:relative;}
+  .qcard .badge-current{position:absolute; top:-11px; left:12px; background:var(--gold); color:var(--navy-deep); font-size:15.75px; font-weight:700; padding:2px 9px; border-radius:999px;}
+  .qcard .head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-weight:700; color:var(--navy-deep); font-size:20.25px;}
+  .alert-box{margin-top:8px; background:#FBF0EF; border:1px solid #B4453B33; border-radius:8px; padding:8px 10px;}
+  .alert-box .title{display:flex; align-items:center; gap:5px; margin-bottom:3px; font-size:17.25px; font-weight:700; color:var(--bad);}
+  .alert-box .line{font-size:18px; color:var(--bad);}
+  .qtable{width:100%; border-collapse:collapse; font-size:17.25px;}
+  .qtable th{text-align:left; padding:3px 4px; color:var(--muted); font-weight:600; border-bottom:1px solid #123F6B1A;}
+  .qtable th.r{text-align:right;}
+  .qtable td{padding:3px 4px; border:none;}
+  .qtable td.r{text-align:right;}
+  .bonus-box{margin-top:10px; padding-top:10px; border-top:1.5px solid #4FAE7444;}
+  .bonus-box .title{font-size:17.25px; font-weight:700; color:var(--navy-deep); margin-bottom:4px;}
+  .bonus-box .row{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:17.25px; color:var(--muted);}
+  .bonus-box select{width:130px; padding:3px 5px; text-align:center; font-size:18px;}
+  .bonus-box .reward{display:flex; justify-content:space-between; align-items:baseline;}
+  .bonus-box .reward .amt{font-size:24px; font-weight:800;}
+  .jbgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin:16px 0;}
+  .jbcard{border-radius:12px; padding:12px;}
+  .jbcard .head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-weight:700; font-size:19.5px; color:var(--navy-deep);}
+  .annual-box{border-radius:12px; padding:16px; border:1.5px solid #4FAE74;}
+  .foot-note{font-size:17.25px; color:var(--muted); margin-top:10px;}
+  .date-btn{display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; cursor:pointer; background:#fff; text-align:left;}
+  .date-wrap{position:relative;}
+  .calendar-pop{position:absolute; top:calc(100% + 6px); left:0; z-index:50; background:#fff; border-radius:12px; border:1px solid #123F6B22; box-shadow:0 8px 28px rgba(8,27,51,0.22); padding:12px; width:280px;}
+  .calendar-pop .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .calendar-pop .cal-head button{background:transparent;border:none;cursor:pointer;padding:4px;color:var(--navy);}
+  .calendar-pop .cal-head .mid{display:flex;align-items:center;gap:6px; font-weight:700; color:var(--navy-deep); font-size:20px;}
+  .calendar-pop .cal-head select{border:none;background:transparent;color:var(--navy-deep);font-weight:700;font-size:20px;font-family:'Sarabun',sans-serif;}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px;}
+  .cal-grid .wd{text-align:center; font-size:15.75px; color:var(--muted); font-weight:600; padding:2px 0;}
+  .cal-grid button.day{height:32px; line-height:32px; padding:0; border:none; border-radius:8px; cursor:pointer; font-size:18.75px; font-family:'Sarabun',sans-serif; background:transparent; color:var(--ink);}
+  .cal-grid button.day.today{color:var(--gold); font-weight:700;}
+  .cal-grid button.day.selected{background:var(--gold); color:var(--navy-deep); font-weight:700;}
+  .cal-grid button.day.empty{color:transparent; cursor:default;}
+  .backup-row{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  footer.bottom{text-align:center; padding:18px 0 34px; color:var(--muted); font-size:17.25px;}
+  #toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--navy-deep); color:#fff; padding:10px 18px; border-radius:8px; font-size:21px; display:none; z-index:100;}
+  @media (max-width:640px){
+    form.entry-form{grid-template-columns:1fr;}
+    .qgrid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="grid-bg"></div>
+    <div class="glow"></div>
+    <div class="glow2"></div>
+    <div class="inner">
+      <div class="brand">
+        <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
+        <div class="titles">
+          <span class="label">ป้าเป็ด CFP® · Bangkok Life Assurance</span>
+          <h1>Year Plan</h1>
+        </div>
+      </div>
+      <p>แดชบอร์ดผลงานตัวแทน · บันทึกผลงานรายกรมธรรม์ ติดตามค่าคอมมิชชั่น เป้าหมาย และการแข่งขัน</p>
+    </div>
+  </header>
+  <nav class="tabs"><div class="inner" id="tab-nav"></div></nav>
+  <main>
+    <div id="agent-picker"></div>
+    <div id="year-picker" class="year-picker"></div>
+    <div id="tab-content"></div>
+  </main>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น</footer>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ================= CONSTANTS ================= */
+const STORAGE_KEY = "ped-dashboard-v1";
+
+const QUARTERLY_TIERS = [
+  { min: 12500, max: 49999, pct: 4 },
+  { min: 50000, max: 69999, pct: 10 },
+  { min: 70000, max: 99999, pct: 17 },
+  { min: 100000, max: 199999, pct: 22 },
+  { min: 200000, max: 299999, pct: 24 },
+  { min: 300000, max: 499999, pct: 27 },
+  { min: 500000, max: 749999, pct: 30 },
+  { min: 750000, max: 999999, pct: 33 },
+  { min: 1000000, max: Infinity, pct: 38 },
+];
+const ANNUAL_TIER_RANGES = [
+  { min: 50000, max: 69999 }, { min: 70000, max: 99999 }, { min: 100000, max: 199999 },
+  { min: 200000, max: 299999 }, { min: 300000, max: 499999 }, { min: 500000, max: 749999 },
+  { min: 750000, max: 999999 }, { min: 1000000, max: Infinity },
+];
+const ANNUAL_BANDS = {
+  low:  { label: "75 – 84.99%", pct: [10,17,22,24,27,30,33,38] },
+  mid:  { label: "85 – 89.99%", pct: [13,20,25,27,30,33,37,42] },
+  high: { label: "90% ขึ้นไป",  pct: [15,22,27,29,32,35,40,45] },
+};
+const QUALIFY_MIN_CASES = 6;
+const QUALIFY_MIN_FYC = 40000;
+const QUALIFY_MIN_ACTIVE_MONTHS = 2;
+const ANNUAL_GATE_CASES = 24;
+const ANNUAL_GATE_FYC = 160000;
+const STREAK_REWARDS = { 4: 32000, 3: 16000, 2: 8000, 1: 0 };
+
+const JOINING_MONTHLY_MIN_CASES = 2;
+const JOINING_MONTHLY_MIN_FYC = 6500;
+const JOINING_MONTHLY_BONUS = 2200;
+const JOINING_CUM_TABLE = [
+  { cases: 2, fyc: 6500, bonus: 2200 },
+  { cases: 4, fyc: 13000, bonus: 4400 },
+  { cases: 6, fyc: 19500, bonus: 6600 },
+  { cases: 8, fyc: 26000, bonus: 8800 },
+];
+const JOINING_BONUS_CAP = 8800;
+
+const PERSISTENCY_BAND_OPTIONS = [
+  { value: 60, label: "ต่ำกว่า 75%" },
+  { value: 80, label: "75 – 84.99%" },
+  { value: 87, label: "85 – 89.99%" },
+  { value: 95, label: "90% ขึ้นไป" },
+];
+
+const NAVY_TINTS = ["#123F6B0C", "#123F6B18", "#123F6B24", "#123F6B30"];
+const GOLD_TINTS = ["#4FAE7412", "#4FAE741E", "#4FAE742C", "#4FAE743A"];
+
+const BILLING_MODES = [
+  { value: "annual", label: "รายปี (งวดเดียว)", installments: 1, intervalMonths: 12 },
+  { value: "semiannual", label: "ราย 6 เดือน (2 งวด)", installments: 2, intervalMonths: 6 },
+  { value: "quarterly", label: "ราย 3 เดือน (4 งวด)", installments: 4, intervalMonths: 3 },
+  { value: "monthly", label: "รายเดือน (เก็บล่วงหน้า 2 เดือน เว้น 1 เดือน แล้วเก็บรายเดือน)", installments: 11, intervalMonths: 1 },
+];
+
+const THAI_MONTH_NAMES = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+const THAI_MONTH_SHORT = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+const THAI_WEEKDAY_NAMES = ["อา","จ","อ","พ","พฤ","ศ","ส"];
+
+/* ================= HELPERS ================= */
+const THB = n => (Math.round((n||0)*100)/100).toLocaleString("th-TH",{maximumFractionDigits:2});
+const toBE = y => y + 543;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function isOrigin(e){ return (e.installmentIndex ?? 0) === 0; }
+
+function addMonthsToDate(dateStr, n){
+  const d = new Date(dateStr + "T00:00:00");
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth()+n);
+  const lastDay = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  d.setDate(Math.min(day, lastDay));
+  return d.toISOString().slice(0,10);
+}
+
+function buildInstallmentSchedule(modeValue, perInstallmentFyc){
+  if (modeValue === "monthly"){
+    const list = [{offset:0, amount:perInstallmentFyc}];
+    for (let m=2; m<=11; m++) list.push({offset:m, amount: Math.round((perInstallmentFyc/2)*100)/100});
+    return list;
+  }
+  const mode = BILLING_MODES.find(m=>m.value===modeValue) || BILLING_MODES[0];
+  const list = [];
+  for (let i=0;i<mode.installments;i++) list.push({offset:i*mode.intervalMonths, amount:perInstallmentFyc});
+  return list;
+}
+
+function getQuarter(dateStr){
+  const d = new Date(dateStr);
+  return { year: d.getFullYear(), quarter: Math.floor(d.getMonth()/3)+1 };
+}
+function monthKey(dateStr){ const d=new Date(dateStr); return `${d.getFullYear()}-${d.getMonth()}`; }
+function monthsOfQuarter(year,q){ const startM=(q-1)*3; return [0,1,2].map(i=>`${year}-${startM+i}`); }
+
+function quarterlyPct(fyc){ const t=QUARTERLY_TIERS.find(t=>fyc>=t.min && fyc<=t.max); return t?t.pct:0; }
+function annualPct(fyc, band){
+  const idx = ANNUAL_TIER_RANGES.findIndex(r=>fyc>=r.min && fyc<=r.max);
+  return idx===-1 ? 0 : ANNUAL_BANDS[band].pct[idx];
+}
+
+function quarterlyQualifyResults(entries, year){
+  return [1,2,3,4].map(q=>{
+    const list = entries.filter(e=>{ const {year:y,quarter}=getQuarter(e.date); return y===year && quarter===q; });
+    const count = list.filter(isOrigin).length;
+    const fyc = list.reduce((s,e)=>s+e.fyc,0);
+    const monthKeys = monthsOfQuarter(year,q);
+    const months = monthKeys.map(mk=>{
+      const [my,mm] = mk.split("-").map(Number);
+      const monthList = list.filter(e=>monthKey(e.date)===mk);
+      return { year:my, month:mm, count: monthList.filter(isOrigin).length, fyc: monthList.reduce((s,e)=>s+e.fyc,0) };
+    });
+    const activeMonths = months.filter(m=>m.count>0).length;
+    const qualifies = count>=QUALIFY_MIN_CASES && fyc>=QUALIFY_MIN_FYC && activeMonths>=QUALIFY_MIN_ACTIVE_MONTHS;
+    return { q, count, fyc, activeMonths, qualifies, months };
+  });
+}
+function longestConsecutiveStreak(qResults){
+  let best=0, cur=0;
+  qResults.forEach(r=>{ if(r.qualifies){cur+=1; best=Math.max(best,cur);} else cur=0; });
+  return best;
+}
+
+function computeMonthlyPacing(entries, year, goalFYC, startMonth){
+  // เป้าหมายรายเดือน = ค่าคงที่เสมอ (เป้ารวม ÷ จำนวนเดือนในแผน) ไม่เปลี่ยนแปลงตามผลงานจริง
+  // เดือนก่อนเดือนเริ่มแผน (startMonth) ไม่นับในแผนนี้ (excluded) — ถ้าเปลี่ยนเป้า/เดือนเริ่มใหม่ระหว่างปี เดือนที่ผ่านไปแล้วจะไม่ถูกแก้ย้อนหลัง
+  const sm = startMonth || 0;
+  const totalMonthsInPlan = 12 - sm;
+  const baseline = totalMonthsInPlan > 0 ? goalFYC / totalMonthsInPlan : 0;
+  const monthActual = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>{
+    const list = entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===year && d.getMonth()===m; });
+    return { actual: list.reduce((s,e)=>s+e.fyc,0), count: list.length };
+  });
+  const months = [];
+  for (let m=0; m<12; m++){
+    if (m < sm){
+      months.push({ year, month:m, target:null, excluded:true, actual: monthActual[m].actual, count: monthActual[m].count });
+    } else {
+      months.push({ year, month:m, target: baseline, actual: monthActual[m].actual, count: monthActual[m].count });
+    }
+  }
+  return months;
+}
+
+/* ================= STATE ================= */
+const DEFAULT_AGENT_DATA = {
+  entries: [],
+  persistQuarterly: {},
+  competitions: { firstSaleDate: "" },
+  goals: { targetFYC: 300000, startMonth: 0 },
+};
+const DEFAULT_STATE = {
+  agents: { "ตัวแทนคนที่ 1": JSON.parse(JSON.stringify(DEFAULT_AGENT_DATA)) },
+  currentAgent: "ตัวแทนคนที่ 1",
+};
+let state = loadState();
+let activeTab = "goals";
+let selYear = new Date().getFullYear();
+let entryForm = { date: new Date().toISOString().slice(0,10), fyc: "", note: "", billing: "annual" };
+let editingId = null;
+let editDraft = { date:"", fyc:"", note:"" };
+let goalsFycInput = formatThousands(String(agent().goals.targetFYC ?? 300000));
+let calendars = {}; // id -> {open, viewYear, viewMonth}
+let newAgentNameInput = "";
+let addAgentMode = false;
+
+function agent(){
+  if (!state.agents[state.currentAgent]){
+    const names = Object.keys(state.agents);
+    state.currentAgent = names.length ? names[0] : "ตัวแทนคนที่ 1";
+    if (!state.agents[state.currentAgent]) state.agents[state.currentAgent] = JSON.parse(JSON.stringify(DEFAULT_AGENT_DATA));
+  }
+  return state.agents[state.currentAgent];
+}
+function syncAgentFormState(){
+  // ทุกครั้งที่สลับตัวแทน ต้องรีเซ็ตค่าที่ค้างอยู่ในช่องกรอก (ซึ่งเก็บแยกจาก agent data)
+  // ไม่งั้นช่องกรอกเป้าหมาย/ฟอร์มบันทึกผลงานจะค้างค่าของตัวแทนคนก่อนหน้าไว้
+  goalsFycInput = formatThousands(String(agent().goals.targetFYC ?? 300000));
+  entryForm = { date: new Date().toISOString().slice(0,10), fyc: "", note: "", billing: "annual" };
+  editingId = null;
+  editDraft = { date:"", fyc:"", note:"" };
+  closeAllCalendars();
+}
+
+function normalizeState(parsed){
+  // ย้ายข้อมูลเก่า (แบบคนเดียว ไม่มี agents) เข้าสู่โครงสร้างหลายคนอัตโนมัติ
+  if (parsed && !parsed.agents && (parsed.entries || parsed.goals || parsed.competitions || parsed.persistQuarterly)){
+    const migrated = Object.assign(JSON.parse(JSON.stringify(DEFAULT_AGENT_DATA)), {
+      entries: parsed.entries || [],
+      persistQuarterly: parsed.persistQuarterly || {},
+      competitions: parsed.competitions || { firstSaleDate: "" },
+      goals: parsed.goals || { targetFYC: 300000, startMonth: 0 },
+    });
+    return { agents: { "ตัวแทนคนที่ 1": migrated }, currentAgent: "ตัวแทนคนที่ 1" };
+  }
+  const base = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  const merged = Object.assign(base, parsed);
+  if (!merged.agents || Object.keys(merged.agents).length === 0) merged.agents = base.agents;
+  if (!merged.agents[merged.currentAgent]) merged.currentAgent = Object.keys(merged.agents)[0];
+  return merged;
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    const parsed = JSON.parse(raw);
+    return normalizeState(parsed);
+  }catch(e){ return JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+}
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch(e){ showToast("บันทึกไม่สำเร็จ — เบราว์เซอร์อาจเต็มหรือปิดการใช้ localStorage"); }
+}
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.style.display="block";
+  clearTimeout(showToast._h);
+  showToast._h=setTimeout(()=>{t.style.display="none";},2600);
+}
+function formatThousands(raw){
+  if (raw === "") return "";
+  const neg = raw.startsWith("-") ? "-" : "";
+  let v = neg ? raw.slice(1) : raw;
+  const parts = v.split(".");
+  let intPart = parts[0].replace(/[^\d]/g,"");
+  intPart = intPart.replace(/^0+(?=\d)/,"");
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g,",");
+  if (parts.length>1){
+    const dec = parts.slice(1).join("").replace(/[^\d]/g,"").slice(0,2);
+    return `${neg}${grouped||"0"}.${dec}`;
+  }
+  return `${neg}${grouped}`;
+}
+function stripCommas(v){ return v.replace(/,/g,""); }
+
+/* ================= RENDER ROOT ================= */
+function render(){
+  renderAgentPicker();
+  renderTabNav();
+  renderYearPicker();
+  const c = document.getElementById("tab-content");
+  if (activeTab==="goals") c.innerHTML = renderGoalsTab();
+  else if (activeTab==="entry") c.innerHTML = renderEntryTab();
+  else if (activeTab==="competitions") c.innerHTML = renderCompetitionsTab();
+  bindEvents();
+}
+function renderAgentPicker(){
+  const names = Object.keys(state.agents);
+  const options = names.map(n=>`<option value="${esc(n)}" ${n===state.currentAgent?"selected":""}>${esc(n)}</option>`).join("");
+  let html = `<div class="agent-picker">
+    <span class="lbl">👤 ตัวแทน:</span>
+    <select id="agent-select">${options}</select>
+    <button class="icon-btn" id="btn-rename-agent" title="เปลี่ยนชื่อ">✏️</button>
+    ${names.length>1?`<button class="icon-btn" id="btn-delete-agent" title="ลบตัวแทนนี้">🗑</button>`:''}
+    <button class="btn-ghost" id="btn-toggle-add-agent">+ เพิ่มตัวแทน</button>
+  </div>`;
+  if (addAgentMode){
+    html += `<div class="add-agent-form">
+      <input type="text" id="new-agent-name" placeholder="ชื่อตัวแทนใหม่" value="${esc(newAgentNameInput)}" style="max-width:220px;">
+      <button class="btn-primary" id="btn-confirm-add-agent">เพิ่ม</button>
+      <button class="btn-ghost" id="btn-cancel-add-agent">ยกเลิก</button>
+    </div>`;
+  }
+  document.getElementById("agent-picker").innerHTML = html;
+}
+function renderTabNav(){
+  const items = [["goals","🎯 เป้าหมาย"],["entry","📋 บันทึกผลงาน"],["competitions","🏆 ผลงาน"]];
+  document.getElementById("tab-nav").innerHTML = items.map(([id,label])=>
+    `<button data-tab="${id}" class="${activeTab===id?'active':''}">${label}</button>`).join("");
+}
+function getYears(){
+  const s = new Set(agent().entries.map(e=>new Date(e.date).getFullYear()));
+  s.add(new Date().getFullYear());
+  return Array.from(s).sort((a,b)=>b-a);
+}
+function renderYearPicker(){
+  const years = getYears();
+  document.getElementById("year-picker").innerHTML =
+    `<span>ปีที่ดู:</span><select id="year-select">${years.map(y=>
+      `<option value="${y}" ${y===selYear?"selected":""}>พ.ศ. ${toBE(y)}</option>`).join("")}</select>`;
+}
+function getYearEntries(){ return agent().entries.filter(e=>new Date(e.date).getFullYear()===selYear); }
+function getQuarterBuckets(){
+  const b={1:[],2:[],3:[],4:[]};
+  agent().entries.forEach(e=>{ const {year,quarter}=getQuarter(e.date); if(year===selYear) b[quarter].push(e); });
+  return b;
+}
+
+/* ================= CALENDAR WIDGET ================= */
+function calState(id){
+  if (!calendars[id]) calendars[id] = { open:false, viewYear:new Date().getFullYear(), viewMonth:new Date().getMonth() };
+  return calendars[id];
+}
+function renderDateInput(id, isoValue, compact){
+  const selected = isoValue ? new Date(isoValue+"T00:00:00") : new Date();
+  const label = selected.toLocaleDateString("th-TH", {day:"numeric", month:"long", year:"numeric"});
+  const cs = calState(id);
+  const padStyle = compact ? "padding:5px 7px;font-size:18.75px;" : "padding:8px 10px;font-size:21px;";
+  let popHtml = "";
+  if (cs.open){
+    const vy = cs.viewYear, vm = cs.viewMonth;
+    const firstWeekday = new Date(vy, vm, 1).getDay();
+    const daysInMonth = new Date(vy, vm+1, 0).getDate();
+    const t = new Date();
+    let cells = "";
+    for (let i=0;i<firstWeekday;i++) cells += `<button type="button" class="day empty" disabled>·</button>`;
+    for (let d=1; d<=daysInMonth; d++){
+      const isSel = vy===selected.getFullYear() && vm===selected.getMonth() && d===selected.getDate();
+      const isToday = vy===t.getFullYear() && vm===t.getMonth() && d===t.getDate();
+      cells += `<button type="button" class="day${isSel?' selected':''}${isToday&&!isSel?' today':''}" data-pick-day="${id}|${d}">${d}</button>`;
+    }
+    const yearOptions = Array.from({length:9},(_,i)=>new Date().getFullYear()-6+i)
+      .map(y=>`<option value="${y}" ${y===vy?"selected":""}>${toBE(y)}</option>`).join("");
+    popHtml = `
+      <div class="calendar-pop" data-cal-pop="${id}">
+        <div class="cal-head">
+          <button type="button" data-shift-month="${id}|-1">‹</button>
+          <div class="mid">
+            <span>${THAI_MONTH_NAMES[vm]}</span>
+            <select data-year-select-cal="${id}">${yearOptions}</select>
+          </div>
+          <button type="button" data-shift-month="${id}|1">›</button>
+        </div>
+        <div class="cal-grid" style="margin-bottom:4px;">
+          ${THAI_WEEKDAY_NAMES.map(w=>`<div class="wd">${w}</div>`).join("")}
+        </div>
+        <div class="cal-grid">${cells}</div>
+      </div>`;
+  }
+  return `<div class="date-wrap" data-date-input="${id}">
+    <button type="button" class="date-btn" style="${padStyle}border:1.5px solid #123F6B22;border-radius:8px;font-family:'Sarabun',sans-serif;color:var(--ink);" data-toggle-cal="${id}">
+      <span>${label}</span><span>📅</span>
+    </button>
+    ${popHtml}
+  </div>`;
+}
+
+/* ================= GOALS TAB ================= */
+function renderGoalsTab(){
+  const goalFYC = agent().goals.targetFYC ?? 0;
+  const startMonth = agent().goals.startMonth ?? 0;
+  const now = new Date();
+  const isCurrentYear = selYear === now.getFullYear();
+  const currentMonthIdx = now.getMonth();
+  const pacing = goalFYC>0 ? computeMonthlyPacing(agent().entries, selYear, goalFYC, startMonth) : null;
+  const yearEntries = getYearEntries().filter(e => new Date(e.date).getMonth() >= startMonth);
+  const achieved = yearEntries.reduce((s,e)=>s+e.fyc,0);
+  const remaining = Math.max(0, goalFYC-achieved);
+  const progressPct = goalFYC>0 ? Math.max(0,Math.min(100,(achieved/goalFYC)*100)) : 0;
+  // "จากนี้" อ้างอิงปฏิทินจริงเสมอ: ถ้าดูปีปัจจุบัน ใช้เดือนปัจจุบันจริง, ปีอื่นไม่มี "จากนี้" ที่มีความหมาย
+  const effectiveMonthIdx = isCurrentYear ? Math.max(currentMonthIdx, startMonth) : null;
+  const monthsLeftFromNow = effectiveMonthIdx!==null ? (12 - effectiveMonthIdx) : 0;
+  const avgMonthlyTargetNow = monthsLeftFromNow>0 ? remaining/monthsLeftFromNow : 0;
+
+  const ringR = 44, ringC = 2*Math.PI*ringR;
+  const ringOffset = ringC - (progressPct/100)*ringC;
+
+  let monthRows = "";
+  if (pacing){
+    pacing.forEach((m,i)=>{
+      if (m.excluded){
+        monthRows += `<tr>
+          <td style="color:var(--muted);">${THAI_MONTH_SHORT[m.month]}</td>
+          <td class="num" style="color:var(--muted);font-weight:400;">—</td>
+          <td class="num" style="color:var(--muted);">${THB(m.actual)}</td>
+          <td class="num" style="color:var(--muted);">—</td>
+          <td class="num" style="color:var(--muted);">—</td>
+        </tr>`;
+        return;
+      }
+      // คอลัมน์ 3-4 โชว์เฉพาะเดือนปัจจุบัน+อนาคต (อ้างอิงปฏิทินจริง) เดือนที่ผ่านไปแล้วปล่อยว่าง
+      const isCurrentOrFuture = isCurrentYear ? (i >= effectiveMonthIdx) : false;
+      const isNow = isCurrentYear && i===currentMonthIdx;
+      monthRows += `<tr style="${isNow?'background:#4FAE7414;':''}">
+        <td style="font-weight:${isNow?700:500};color:${isNow?'var(--navy-deep)':'var(--ink)'}">${THAI_MONTH_SHORT[m.month]}${isNow?' ⚡':''}</td>
+        <td class="num" style="color:var(--muted);font-weight:400;">${THB(m.target)}</td>
+        <td class="num">${THB(m.actual)}</td>
+        <td class="num" style="${isCurrentOrFuture?'font-weight:600;':'color:var(--muted);'}">${isCurrentOrFuture ? THB(remaining) : '—'}</td>
+        <td class="num" style="${isCurrentOrFuture?'font-weight:600;color:var(--good);':'color:var(--muted);'}">${isCurrentOrFuture ? THB(avgMonthlyTargetNow) : '—'}</td>
+      </tr>`;
+    });
+  }
+  const totalTarget = goalFYC;
+  const totalActual = achieved;
+  const netDiff = totalActual - totalTarget;
+  const netHtml = netDiff >= 0
+    ? `<span style="color:var(--good);">เกินสุทธิ ${THB(netDiff)} บาท</span>`
+    : `<span style="color:var(--bad);">ขาดสุทธิ ${THB(-netDiff)} บาท</span>`;
+  const totalRow = pacing ? `<tr style="border-top:2px solid #123F6B22;font-weight:700;">
+    <td style="color:var(--navy-deep);">รวม</td>
+    <td class="num" style="color:var(--navy-deep);">${THB(totalTarget)}</td>
+    <td class="num" style="color:var(--navy-deep);">${THB(totalActual)}</td>
+    <td class="num" colspan="2">${netHtml}</td>
+  </tr>` : "";
+
+  const monthOptions = THAI_MONTH_NAMES.map((name,i)=>
+    `<option value="${i}" ${i===startMonth?"selected":""}>${name}</option>`).join("");
+
+  return `
+    <div class="card dark">
+      <div class="grid-bg"></div>
+      <div style="position:relative;">
+        <h3>🎯 ตั้งเป้าหมายรายได้ประจำปี</h3>
+        <p class="sub">ระบุเป้าหมาย FYC ที่ต้องการและเดือนที่เริ่มนับ เป้าหมายรายเดือนจะคงที่เท่ากันทุกเดือนจากยอดนี้ — ถ้าเปลี่ยนเป้า/เดือนเริ่มใหม่ระหว่างปี เดือนที่ผ่านไปแล้วจะไม่ถูกแก้ย้อนหลัง</p>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+          <label class="field dark" style="max-width:320px;flex:1;min-width:200px;"><span>เป้าหมาย FYC (บาท)</span>
+            <input type="text" inputmode="decimal" id="goal-fyc-input" value="${esc(goalsFycInput)}"
+              style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;">
+          </label>
+          <label class="field dark" style="max-width:220px;flex:1;min-width:160px;"><span>เริ่มนับเป้าหมายตั้งแต่เดือน</span>
+            <select id="goal-start-month" style="background:#123F6B99;color:#fff;border-color:#ffffff33;">${monthOptions}</select>
+          </label>
+        </div>
+        <div class="goal-flex">
+          <div class="ring-wrap">
+            <svg width="108" height="108" style="transform:rotate(-90deg)">
+              <circle cx="54" cy="54" r="${ringR}" stroke="#ffffff22" stroke-width="10" fill="none"/>
+              <circle cx="54" cy="54" r="${ringR}" stroke="url(#gg)" stroke-width="10" fill="none"
+                stroke-dasharray="${ringC}" stroke-dashoffset="${ringOffset}" stroke-linecap="round"/>
+              <defs><linearGradient id="gg" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#9CE3B8"/><stop offset="100%" stop-color="#4FAE74"/>
+              </linearGradient></defs>
+            </svg>
+            <div class="center"><span class="pct">${Math.round(progressPct)}%</span><span class="lbl">ของเป้า</span></div>
+          </div>
+          <div style="flex:1;min-width:220px;">
+            <div class="tech-row"><span class="lab">เป้าหมาย FYC (ตั้งแต่ ${THAI_MONTH_NAMES[startMonth]})</span><span class="val">${THB(goalFYC)} บาท</span></div>
+            <div class="tech-row"><span class="lab">ทำได้แล้ว</span><span class="val good">${THB(achieved)} บาท</span></div>
+            <div class="tech-row"><span class="lab">ยังขาดอีก</span><span class="val ${remaining>0?'warn':''}">${THB(remaining)} บาท</span></div>
+            <div class="tech-row"><span class="lab">เฉลี่ยต่อเดือนที่ต้องทำ (นับจากนี้)</span><span class="val highlight">${THB(avgMonthlyTargetNow)} บาท/เดือน</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>เป้าหมายรายเดือน</h3>
+      <p class="sub">"เป้าหมาย" คงที่เท่ากันทุกเดือน (เป้ารวม ÷ จำนวนเดือนในแผน) · "คงเหลือถึงเป้า" และ "เฉลี่ย/เดือนจากนี้" อ้างอิงเดือนปัจจุบันตามปฏิทินจริงเท่านั้น (โชว์เฉพาะเดือนปัจจุบันเป็นต้นไป เดือนที่ผ่านไปแล้วเว้นว่างไว้)</p>
+      ${pacing ? `<div style="overflow-x:auto"><table>
+        <thead><tr><th>เดือน</th><th style="text-align:right">เป้าหมาย (บาท)</th><th style="text-align:right">ทำได้จริง (บาท)</th><th style="text-align:right">คงเหลือถึงเป้า</th><th style="text-align:right">เฉลี่ย/เดือนจากนี้</th></tr></thead>
+        <tbody>${monthRows}${totalRow}</tbody>
+      </table></div>` : `<div class="empty">กรอกเป้าหมาย FYC ด้านบนก่อน เพื่อดูตารางเป้าหมายรายเดือน</div>`}
+    </div>
+    <div class="foot-note">* เป้าหมายคำนวณจากตารางเงินรางวัลตัวแทนรายปีเท่านั้น เป็นเพียงตัวช่วยวางแผน ไม่ใช่ยอดจ่ายจริงจากบริษัท</div>
+  `;
+}
+
+/* ================= ENTRY TAB ================= */
+function renderBillingPreviewHtml(){
+  const mode = BILLING_MODES.find(m=>m.value===entryForm.billing) || BILLING_MODES[0];
+  const rawFyc = Number(stripCommas(entryForm.fyc))||0;
+  if (entryForm.billing==="annual" || rawFyc<=0) return "";
+  const schedule = buildInstallmentSchedule(entryForm.billing, rawFyc);
+  const total = schedule.reduce((s,x)=>s+x.amount,0);
+  if (entryForm.billing==="monthly"){
+    return `<div style="font-size:17.25px;color:var(--muted);margin-top:5px;line-height:1.6;">
+      เก็บล่วงหน้าเดือนแรก ${THB(rawFyc)} บาท (2 เดือน) เว้น 1 เดือน จากนั้นเก็บทุกเดือนๆ ละ ${THB(rawFyc/2)} บาท รวม ${schedule.length} งวด ตลอดปี ${THB(total)} บาท
+    </div>`;
+  }
+  return `<div style="font-size:17.25px;color:var(--muted);margin-top:5px;">
+    บันทึก ${mode.installments} งวด งวดละ ${THB(rawFyc)} บาท ทุก ${mode.intervalMonths} เดือน รวมทั้งหมด ${THB(total)} บาท
+  </div>`;
+}
+function renderEntryTab(){
+  const entries = getYearEntries();
+  const sorted = [...entries].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const totalFYC = entries.reduce((s,e)=>s+e.fyc,0);
+  const originCount = entries.filter(isOrigin).length;
+
+  const mode = BILLING_MODES.find(m=>m.value===entryForm.billing) || BILLING_MODES[0];
+  const previewHtml = renderBillingPreviewHtml();
+
+  let rows = "";
+  if (sorted.length===0){
+    rows = `<div class="empty">ยังไม่มีรายการในปีนี้ — เริ่มบันทึกผลงานรายแรกด้านบนได้เลย</div>`;
+  } else {
+    rows = `<div style="overflow-x:auto"><table>
+      <thead><tr><th>วันที่</th><th>หมายเหตุ</th><th style="text-align:right">FYC (บาท)</th><th></th></tr></thead>
+      <tbody>${sorted.map(e=>{
+        if (editingId===e.id){
+          return `<tr style="background:#4FAE7414;">
+            <td>${renderDateInput('edit', editDraft.date, true)}</td>
+            <td><input type="text" data-edit-field="note" value="${esc(editDraft.note)}" style="padding:5px 7px;font-size:18.75px;width:100%;"></td>
+            <td style="text-align:right"><input type="text" inputmode="decimal" data-edit-field="fyc" value="${esc(editDraft.fyc)}" style="padding:5px 7px;font-size:18.75px;text-align:right;width:110px;"></td>
+            <td style="text-align:right;white-space:nowrap;">
+              <button class="icon-btn" data-save-edit="${e.id}" title="บันทึก">✔</button>
+              <button class="icon-btn" data-cancel-edit="1" title="ยกเลิก">✕</button>
+            </td>
+          </tr>`;
+        }
+        return `<tr>
+          <td>${new Date(e.date).toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})}</td>
+          <td style="color:var(--muted)">${esc(e.note)||"—"}</td>
+          <td class="num">${THB(e.fyc)}</td>
+          <td style="text-align:right;white-space:nowrap;">
+            <button class="icon-btn" data-start-edit="${e.id}" title="แก้ไข">✏️</button>
+            <button class="icon-btn" data-remove="${e.id}" title="ลบ">🗑</button>
+          </td>
+        </tr>`;
+      }).join("")}</tbody>
+    </table></div>`;
+  }
+
+  return `
+    <div class="card">
+      <h3>เพิ่มรายการผลงาน</h3>
+      <form id="entry-form" class="entry-form" onsubmit="return false;">
+        <label class="field full"><span>วันที่ทำสัญญา</span>${renderDateInput('main', entryForm.date, false)}</label>
+        <label class="field"><span>${entryForm.billing==="annual"?"ค่าคอมมิชชั่นปีแรก (FYC) บาท":"ค่าคอมมิชชั่นต่องวด (บาท)"}</span>
+          <input type="text" inputmode="decimal" id="f-fyc" value="${esc(entryForm.fyc)}" placeholder="0.00">
+        </label>
+        <label class="field full"><span>ลักษณะการเก็บเบี้ย</span>
+          <select id="f-billing">${BILLING_MODES.map(m=>`<option value="${m.value}" ${m.value===entryForm.billing?"selected":""}>${m.label}</option>`).join("")}</select>
+          <div id="billing-preview">${previewHtml}</div>
+        </label>
+        <label class="field full"><span>หมายเหตุ (ไม่บังคับ)</span>
+          <input type="text" id="f-note" value="${esc(entryForm.note)}" placeholder="ชื่อลูกค้า / เลขกรมธรรม์">
+        </label>
+        <div id="form-error"></div>
+        <div class="full" style="display:flex;align-items:center;gap:12px;">
+          <button type="button" class="btn-primary" id="btn-submit-entry">＋ บันทึกรายการ</button>
+          <span id="just-added" style="display:none;" class="ok-badge">✔ บันทึกแล้ว</span>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
+        <h3>รายการผลงาน พ.ศ. ${toBE(selYear)}</h3>
+        <span style="font-size:18.75px;color:var(--muted);">${originCount} ราย · FYC รวม <b style="color:var(--navy-deep)">${THB(totalFYC)}</b> บาท</span>
+      </div>
+      ${rows}
+      <div class="backup-row">
+        <button class="btn-ghost" id="btn-export">⭳ ส่งออกข้อมูล (.json)</button>
+        <button class="btn-ghost" id="btn-import">⭱ นำเข้าข้อมูล</button>
+        <input type="file" id="file-import" accept="application/json" style="display:none">
+      </div>
+    </div>
+  `;
+}
+
+/* ================= COMPETITIONS TAB ================= */
+function renderCompetitionsTab(){
+  const entries = agent().entries;
+  const yearEntries = getYearEntries();
+  const qResults = quarterlyQualifyResults(entries, selYear);
+  const streak = longestConsecutiveStreak(qResults);
+  const annualCases = yearEntries.filter(isOrigin).length;
+  const annualFYC = yearEntries.reduce((s,e)=>s+e.fyc,0);
+  const annualGate = annualCases>=ANNUAL_GATE_CASES && annualFYC>=ANNUAL_GATE_FYC;
+  const achievedLevel = annualGate ? Math.min(streak,4) : 0;
+  const reward = achievedLevel>0 ? STREAK_REWARDS[achievedLevel] : 0;
+  const hasTrophy = achievedLevel>0;
+
+  const now = new Date();
+  const currentActual = getQuarter(now.toISOString().slice(0,10));
+  const isCurrentYear = selYear===currentActual.year;
+  const currentMonthIdx = now.getMonth();
+
+  const goalFYC = agent().goals.targetFYC ?? 0;
+  const goalStartMonth = agent().goals.startMonth ?? 0;
+  const pacing = goalFYC>0 ? computeMonthlyPacing(entries, selYear, goalFYC, goalStartMonth) : null;
+
+  // Joining bonus
+  const startDate = agent().competitions.firstSaleDate;
+  let joiningMonths = [], joiningTotalPaid=0, joiningCumCases=0, joiningCumFYC=0, joiningTier=null;
+  if (startDate){
+    const start = new Date(startDate+"T00:00:00");
+    const startY = start.getFullYear(), startM = start.getMonth();
+    joiningMonths = [0,1,2,3].map(i=>{
+      const y = startY + Math.floor((startM+i)/12);
+      const m = (startM+i)%12;
+      const list = entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===y && d.getMonth()===m; });
+      const count = list.filter(isOrigin).length;
+      const fyc = list.reduce((s,e)=>s+e.fyc,0);
+      const qualifies = count>=JOINING_MONTHLY_MIN_CASES && fyc>=JOINING_MONTHLY_MIN_FYC;
+      return { y, m, count, fyc, qualifies, paid: qualifies?JOINING_MONTHLY_BONUS:0 };
+    });
+    joiningTotalPaid = joiningMonths.reduce((s,m)=>s+m.paid,0);
+    joiningCumCases = joiningMonths.reduce((s,m)=>s+m.count,0);
+    joiningCumFYC = joiningMonths.reduce((s,m)=>s+m.fyc,0);
+    for (const t of JOINING_CUM_TABLE) if (joiningCumCases>=t.cases && joiningCumFYC>=t.fyc) joiningTier=t;
+  }
+  const joiningTierBonus = joiningTier ? joiningTier.bonus : 0;
+  const joiningTopUp = Math.max(0, Math.min(JOINING_BONUS_CAP, joiningTierBonus) - joiningTotalPaid);
+  const joiningGrandTotal = Math.min(JOINING_BONUS_CAP, joiningTotalPaid + joiningTopUp);
+
+  const totalIncome = annualFYC + reward + joiningGrandTotal;
+  const thMonth = (y,m)=> new Date(y,m,1).toLocaleDateString("th-TH",{month:"short",year:"2-digit"});
+
+  const qCardsHtml = qResults.map(r=>{
+    const isCurrentQuarter = isCurrentYear && r.q===currentActual.quarter;
+    const casesShort = Math.max(0, QUALIFY_MIN_CASES - r.count);
+    const fycShort = Math.max(0, QUALIFY_MIN_FYC - r.fyc);
+    const monthsShort = Math.max(0, QUALIFY_MIN_ACTIVE_MONTHS - r.activeMonths);
+
+    const bKey = `${selYear}-Q${r.q}`;
+    const bPersist = agent().persistQuarterly[bKey] ?? 80;
+    const bCasesShort = Math.max(0, 3-r.count);
+    const bFycShort = Math.max(0, 12500-r.fyc);
+    const bPersistShort = Math.max(0, 75-bPersist);
+    const bQualifies = r.count>=3 && r.fyc>=12500 && bPersist>=75;
+    const bPct = quarterlyPct(r.fyc);
+    const bReward = bQualifies ? (r.fyc*bPct)/100 : 0;
+
+    const borderStyle = isCurrentQuarter
+      ? `border-top:2.5px solid var(--gold);border-right:2.5px solid var(--gold);border-bottom:2.5px solid var(--gold);border-left:5px solid ${r.qualifies?'var(--good)':'var(--bad)'};box-shadow:0 0 0 4px #4FAE7422;`
+      : `border-top:1.5px solid #123F6B22;border-right:1.5px solid #123F6B22;border-bottom:1.5px solid #123F6B22;border-left:5px solid ${r.qualifies?'var(--good)':'var(--bad)'};`;
+
+    let monthRowsHtml = "";
+    let qTargetSum = 0, qFycSum = r.fyc, qHasTarget = false;
+    r.months.forEach((m,i)=>{
+      const monthIdx = (r.q-1)*3+i;
+      const pm = pacing ? pacing[monthIdx] : null;
+      const pmActive = pm && !pm.excluded;
+      const hit = pmActive ? m.fyc>=pm.target : null;
+      if (pmActive){ qTargetSum += pm.target; qHasTarget = true; }
+      const rowBg = (monthIdx===currentMonthIdx && isCurrentYear) ? "background:#4FAE7414;" : "";
+      monthRowsHtml += `<tr style="${rowBg}">
+        <td style="color:${m.count>0?'var(--navy-deep)':'var(--muted)'};font-weight:${m.count>0?600:400};">${THAI_MONTH_SHORT[m.month]}</td>
+        <td class="r" style="color:${m.count>0?'var(--ink)':'var(--muted)'};">${m.count}</td>
+        ${pacing?`<td class="r" style="color:var(--muted);">${pmActive?THB(pm.target):'—'}</td>`:''}
+        <td class="r" style="font-weight:600;color:${pmActive?(hit?'var(--good)':(m.count>0?'var(--warn)':'var(--muted)')):'var(--ink)'};">${THB(m.fyc)}</td>
+      </tr>`;
+    });
+    const qNetDiff = qFycSum - qTargetSum;
+    const qTotalRow = `<tr style="border-top:1.5px solid #123F6B22;font-weight:700;">
+      <td style="color:var(--navy-deep);">รวม</td>
+      <td class="r" style="color:var(--navy-deep);">${r.count}</td>
+      ${pacing?`<td class="r" style="color:var(--navy-deep);">${qHasTarget?THB(qTargetSum):'—'}</td>`:''}
+      <td class="r" style="color:var(--navy-deep);">${THB(qFycSum)}</td>
+    </tr>`;
+    const qNetLine = (pacing && qHasTarget) ? `<div style="font-size:16px;margin-top:4px;text-align:right;">
+      ${qNetDiff>=0?`<span style="color:var(--good);">เกินสุทธิ ${THB(qNetDiff)} บาท</span>`:`<span style="color:var(--bad);">ขาดสุทธิ ${THB(-qNetDiff)} บาท</span>`}
+    </div>` : '';
+
+    return `<div class="qcard" style="${borderStyle}background:${NAVY_TINTS[r.q-1]};">
+      ${isCurrentQuarter?`<div class="badge-current">ไตรมาสปัจจุบัน</div>`:''}
+      <div class="head"><span>ไตรมาส ${r.q}</span><span>${r.qualifies?'✔':'✕'}</span></div>
+      <div class="mini-row"><span>เดือนที่มีผลงาน</span><span class="v ${r.activeMonths>=QUALIFY_MIN_ACTIVE_MONTHS?'ok':''}">${r.activeMonths}/3 เดือน</span></div>
+      ${!r.qualifies?`<div class="alert-box">
+        <div class="title">⚠ ขาดอีกเพื่อผ่านคุณวุฒิไตรมาสนี้</div>
+        ${casesShort>0?`<div class="line">· ขาดอีก ${casesShort} ราย</div>`:''}
+        ${fycShort>0?`<div class="line">· ขาดอีก ${THB(fycShort)} บาท</div>`:''}
+        ${monthsShort>0?`<div class="line">· ต้องมีผลงานเพิ่มอีก ${monthsShort} เดือน</div>`:''}
+      </div>`:''}
+      <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #123F6B1A;">
+        <div style="font-size:16.5px;font-weight:700;color:var(--navy-deep);margin-bottom:6px;">ผลงานรายเดือน${pacing?' เทียบเป้าหมาย':''}</div>
+        <table class="qtable">
+          <thead><tr><th>เดือน</th><th class="r">ราย</th>${pacing?'<th class="r">เป้า (฿)</th>':''}<th class="r">${pacing?'จริง (฿)':'FYC (฿)'}</th></tr></thead>
+          <tbody>${monthRowsHtml}${qTotalRow}</tbody>
+        </table>
+        ${qNetLine}
+        ${!pacing?`<div style="font-size:16.5px;color:var(--muted);margin-top:6px;">* ตั้งเป้าหมาย FYC รายปีในแท็บ "เป้าหมาย" เพื่อดูคอลัมน์เป้าหมายรายเดือนที่นี่</div>`:''}
+      </div>
+      <div class="bonus-box">
+        <div class="title">โบนัสไตรมาสนี้ (เงินรางวัลตัวแทน)</div>
+        <div class="row">
+          <span>อัตราคงอยู่ (ตามช่วงบริษัท)</span>
+          <select data-persist-band="${bKey}">${PERSISTENCY_BAND_OPTIONS.map(p=>`<option value="${p.value}" ${p.value===bPersist?"selected":""}>${p.label}</option>`).join("")}</select>
+        </div>
+        <div class="reward"><span style="font-size:17.25px;color:var(--muted);">อัตรา ${bPct}%</span><span class="amt" style="color:${bQualifies?'var(--good)':'var(--muted)'};">${THB(bReward)} ฿</span></div>
+        ${!bQualifies?`<div class="alert-box" style="margin-top:6px;padding:7px 9px;">
+          <div class="title" style="font-size:16.5px;">⚠ ยังไม่เข้าเกณฑ์โบนัสไตรมาส</div>
+          ${bCasesShort>0?`<div class="line" style="font-size:17px;">· ขาดอีก ${bCasesShort} ราย</div>`:''}
+          ${bFycShort>0?`<div class="line" style="font-size:17px;">· ขาดอีก ${THB(bFycShort)} บาท</div>`:''}
+          ${bPersistShort>0?`<div class="line" style="font-size:17px;">· อัตราคงอยู่ขาดอีก ${bPersistShort}%</div>`:''}
+        </div>`:''}
+      </div>
+    </div>`;
+  }).join("");
+
+  const jbCardsHtml = joiningMonths.map((m,i)=>`
+    <div class="jbcard" style="border-top:1.5px solid #4FAE7433;border-right:1.5px solid #4FAE7433;border-bottom:1.5px solid #4FAE7433;border-left:5px solid ${m.qualifies?'var(--good)':'var(--bad)'};background:${GOLD_TINTS[i]};">
+      <div class="head"><span>เดือนที่ ${i+1} (${thMonth(m.y,m.m)})</span><span>${m.qualifies?'✔':'✕'}</span></div>
+      <div class="mini-row"><span>รายใหม่</span><span class="v ${m.count>=JOINING_MONTHLY_MIN_CASES?'ok':''}">${m.count} ราย</span></div>
+      <div class="mini-row"><span>FYC</span><span class="v ${m.fyc>=JOINING_MONTHLY_MIN_FYC?'ok':''}">${THB(m.fyc)} บาท</span></div>
+      <div style="margin-top:6px;font-size:17.25px;color:var(--muted);">ได้รับ: <b style="color:${m.paid?'var(--good)':'var(--muted)'};">${THB(m.paid)} บาท</b></div>
+    </div>`).join("");
+
+  return `
+    <div class="card dark">
+      <h3>รายได้รวม ประจำปี ${toBE(selYear)}</h3>
+      <p class="sub">สรุปรายได้แยกตามประเภท จากผลงานที่บันทึกไว้ทั้งหมด</p>
+      <div class="income-grid">
+        <div class="income-chip"><div class="lbl">ค่าคอมมิชชั่น (FYC)</div><div class="val">${THB(annualFYC)} ฿</div></div>
+        <div class="income-chip"><div class="lbl">เงินรางวัลคุณวุฒิไตรมาส</div><div class="val">${THB(reward)} ฿</div></div>
+        <div class="income-chip"><div class="lbl">Joining Bonus</div><div class="val">${THB(joiningGrandTotal)} ฿</div></div>
+      </div>
+      <div style="border-top:1px solid #ffffff33;padding-top:12px;display:flex;justify-content:space-between;align-items:baseline;">
+        <span style="font-size:20.25px;color:#B9C4D6;font-weight:600;">รวมรายได้ทั้งหมด</span>
+        <span class="mono" style="font-size:33px;font-weight:800;color:var(--gold-soft);">${THB(totalIncome)} บาท</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>การแข่งขันคุณวุฒิไตรมาส ประจำปี ${toBE(selYear)}</h3>
+      <p class="sub">เกณฑ์ต่อไตรมาส: ผลงาน ≥ 6 ราย · FYC ≥ 40,000 บาท · มีผลงานรายใหม่อย่างน้อย 2 ใน 3 เดือน (ประกาศที่ 3/2569)</p>
+      <div class="qgrid">${qCardsHtml}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <div class="mini-row"><span>ผลงานสะสมทั้งปี</span><span class="v ${annualCases>=ANNUAL_GATE_CASES?'ok':''}" style="font-size:22.5px;">${annualCases} ราย</span></div>
+          <div class="mini-row"><span>FYC สะสมทั้งปี</span><span class="v ${annualFYC>=ANNUAL_GATE_FYC?'ok':''}" style="font-size:22.5px;">${THB(annualFYC)} บาท</span></div>
+          <div class="mini-row"><span>ไตรมาสติดต่อกันสูงสุด</span><span class="v ${streak>=1?'ok':''}" style="font-size:22.5px;">${streak} ไตรมาส</span></div>
+          <div style="font-size:18px;color:var(--muted);margin-top:4px;">เกณฑ์ผ่านทั้งปี: ≥ ${ANNUAL_GATE_CASES} ราย และ FYC ≥ ${THB(ANNUAL_GATE_FYC)} บาท ${annualGate?"✔ ผ่านแล้ว":"— ยังไม่ผ่าน"}</div>
+        </div>
+        <div style="${hasTrophy?`background:linear-gradient(135deg, var(--navy-deep), var(--navy));`:`background:var(--cream);`}border:1.5px solid ${hasTrophy?'var(--gold)':'#123F6B1A'};border-radius:12px;padding:16px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span>🏆</span><span style="font-size:19.5px;color:${hasTrophy?'#C9D3E0':'var(--muted)'};">ระดับคุณวุฒิที่ทำได้</span></div>
+          <div style="font-size:36px;font-weight:800;color:${hasTrophy?'var(--gold-soft)':'var(--navy-deep)'};">${achievedLevel>0?`คุณวุฒิระดับ ${achievedLevel} ไตรมาส`:"ยังไม่ถึงระดับ 1"}</div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px dashed ${hasTrophy?'#ffffff33':'#123F6B22'};display:flex;justify-content:space-between;align-items:baseline;">
+            <span style="font-size:18.75px;color:${hasTrophy?'#C9D3E0':'var(--muted)'};">เงินรางวัลโดยประมาณ</span>
+            <span style="font-size:30px;font-weight:800;color:${hasTrophy?'#fff':'var(--muted)'};">${THB(reward)} ฿</span>
+          </div>
+          ${hasTrophy?`<div style="font-size:17.25px;color:#C9D3E0;margin-top:6px;">+ ถ้วยเกียรติยศ และเชิญร่วมงานรับรางวัลประจำปี</div>`:''}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Joining Bonus (ตัวแทนใหม่)</h3>
+      <p class="sub">จ่ายให้ตัวแทนใหม่ที่เข้าร่วมงานครั้งแรกเท่านั้น ภายใน 4 เดือนแรกนับจากเดือนที่มีผลงานขึ้นแรก (รบข. 4/2564)</p>
+      <label class="field full"><span>เดือนที่มีผลงานขึ้นแรก (เดือนเริ่มงาน)</span>${renderDateInput('joining', startDate, false)}</label>
+      ${!startDate ? `<div class="empty">กรอกเดือนที่เริ่มมีผลงานครั้งแรก เพื่อคำนวณ Joining Bonus</div>` : `
+        <div class="jbgrid">${jbCardsHtml}</div>
+        <div class="annual-box" style="background:#FBF6E8;">
+          <div class="mini-row"><span>ผลงานสะสม 4 เดือน</span><span class="v">${joiningCumCases} ราย · ${THB(joiningCumFYC)} บาท</span></div>
+          <div class="mini-row"><span>จ่ายไปแล้วรายเดือน</span><span class="v">${THB(joiningTotalPaid)} บาท</span></div>
+          <div class="mini-row"><span>เติมให้ครบตามตารางสะสม</span><span class="v">+ ${THB(joiningTopUp)} บาท</span></div>
+          <div style="border-top:1px dashed #4FAE7455;margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;">
+            <span style="font-weight:700;color:var(--navy-deep);font-size:20.25px;">รวม Joining Bonus (สูงสุด ${THB(JOINING_BONUS_CAP)} บาท)</span>
+            <span style="font-weight:800;font-size:27px;color:var(--good);">${THB(joiningGrandTotal)} ฿</span>
+          </div>
+        </div>
+      `}
+    </div>
+    <div class="foot-note">* ประมาณการจากข้อมูลที่บันทึกเองเท่านั้น รางวัลจริงต้องเป็นไปตามการตรวจสอบและอนุมัติของบริษัท และเป็นรายได้ที่ต้องเสียภาษีตามกฎหมาย</div>
+  `;
+}
+
+/* ================= EVENTS ================= */
+function bindEvents(){
+  document.querySelectorAll("[data-tab]").forEach(btn=>{
+    btn.onclick = ()=>{ activeTab = btn.dataset.tab; closeAllCalendars(); render(); };
+  });
+  const ys = document.getElementById("year-select");
+  if (ys) ys.onchange = ()=>{ selYear = Number(ys.value); render(); };
+
+  // Agent picker
+  const agentSelect = document.getElementById("agent-select");
+  if (agentSelect) agentSelect.onchange = ()=>{ state.currentAgent = agentSelect.value; syncAgentFormState(); saveState(); render(); };
+  const btnRenameAgent = document.getElementById("btn-rename-agent");
+  if (btnRenameAgent) btnRenameAgent.onclick = ()=>{
+    const oldName = state.currentAgent;
+    const newName = window.prompt("เปลี่ยนชื่อตัวแทน:", oldName);
+    if (!newName || !newName.trim() || newName.trim()===oldName) return;
+    const trimmed = newName.trim();
+    if (state.agents[trimmed]){ showToast("มีชื่อนี้อยู่แล้ว"); return; }
+    state.agents[trimmed] = state.agents[oldName];
+    delete state.agents[oldName];
+    state.currentAgent = trimmed;
+    saveState(); render();
+  };
+  const btnDeleteAgent = document.getElementById("btn-delete-agent");
+  if (btnDeleteAgent) btnDeleteAgent.onclick = ()=>{
+    const name = state.currentAgent;
+    if (!window.confirm(`ลบข้อมูลทั้งหมดของ "${name}" ใช่หรือไม่? การลบนี้ย้อนกลับไม่ได้`)) return;
+    delete state.agents[name];
+    const remaining = Object.keys(state.agents);
+    state.currentAgent = remaining[0];
+    syncAgentFormState();
+    saveState(); render();
+  };
+  const btnToggleAddAgent = document.getElementById("btn-toggle-add-agent");
+  if (btnToggleAddAgent) btnToggleAddAgent.onclick = ()=>{ addAgentMode = true; newAgentNameInput=""; render(); };
+  const btnCancelAddAgent = document.getElementById("btn-cancel-add-agent");
+  if (btnCancelAddAgent) btnCancelAddAgent.onclick = ()=>{ addAgentMode = false; render(); };
+  const newAgentNameEl = document.getElementById("new-agent-name");
+  if (newAgentNameEl){
+    newAgentNameEl.oninput = (e)=>{ newAgentNameInput = e.target.value; };
+    newAgentNameEl.onfocus = (e)=>e.target.select();
+    newAgentNameEl.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); confirmAddAgent(); } };
+  }
+  const btnConfirmAddAgent = document.getElementById("btn-confirm-add-agent");
+  if (btnConfirmAddAgent) btnConfirmAddAgent.onclick = confirmAddAgent;
+
+  // Goals tab
+  const goalInput = document.getElementById("goal-fyc-input");
+  if (goalInput){
+    goalInput.oninput = (e)=>{ goalsFycInput = formatThousands(stripCommas(e.target.value)); e.target.value = goalsFycInput; };
+    goalInput.onfocus = (e)=>e.target.select();
+    goalInput.onblur = ()=>{
+      const raw = Number(stripCommas(goalsFycInput));
+      if (!isNaN(raw) && raw>=0){ agent().goals.targetFYC = raw; saveState(); }
+      render();
+    };
+    goalInput.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
+  }
+  const goalStartMonth = document.getElementById("goal-start-month");
+  if (goalStartMonth){
+    goalStartMonth.onchange = (e)=>{
+      agent().goals.startMonth = Number(e.target.value);
+      saveState(); render();
+    };
+  }
+
+  // Entry form
+  const fFyc = document.getElementById("f-fyc");
+  if (fFyc){
+    fFyc.oninput = (e)=>{
+      entryForm.fyc = formatThousands(stripCommas(e.target.value));
+      e.target.value = entryForm.fyc;
+      const previewEl = document.getElementById("billing-preview");
+      if (previewEl) previewEl.innerHTML = renderBillingPreviewHtml();
+    };
+    fFyc.onfocus = (e)=>e.target.select();
+  }
+  const fNote = document.getElementById("f-note");
+  if (fNote){ fNote.oninput = (e)=>{ entryForm.note = e.target.value; }; fNote.onfocus=(e)=>e.target.select(); }
+  const fBilling = document.getElementById("f-billing");
+  if (fBilling){ fBilling.onchange = (e)=>{ entryForm.billing = e.target.value; render(); }; }
+  const submitBtn = document.getElementById("btn-submit-entry");
+  if (submitBtn) submitBtn.onclick = submitEntry;
+
+  document.querySelectorAll("[data-start-edit]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = Number(btn.dataset.startEdit);
+      const e = agent().entries.find(x=>x.id===id);
+      editingId = id;
+      editDraft = { date: e.date, fyc: formatThousands(String(e.fyc)), note: e.note||"" };
+      render();
+    };
+  });
+  document.querySelectorAll("[data-cancel-edit]").forEach(btn=>{ btn.onclick = ()=>{ editingId=null; render(); }; });
+  document.querySelectorAll("[data-save-edit]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = Number(btn.dataset.saveEdit);
+      const rawFyc = stripCommas(editDraft.fyc);
+      if (!editDraft.date || !rawFyc || isNaN(Number(rawFyc)) || Number(rawFyc)<=0) return;
+      const idx = agent().entries.findIndex(x=>x.id===id);
+      if (idx>=0) agent().entries[idx] = { ...agent().entries[idx], date: editDraft.date, fyc: Number(rawFyc), note: editDraft.note.trim() };
+      saveState(); editingId=null; render();
+    };
+  });
+  document.querySelectorAll('[data-edit-field="note"]').forEach(inp=>{ inp.oninput=(e)=>{editDraft.note=e.target.value;}; inp.onfocus=(e)=>e.target.select(); });
+  document.querySelectorAll('[data-edit-field="fyc"]').forEach(inp=>{ inp.oninput=(e)=>{editDraft.fyc=formatThousands(stripCommas(e.target.value)); e.target.value=editDraft.fyc;}; inp.onfocus=(e)=>e.target.select(); });
+  document.querySelectorAll("[data-remove]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = Number(btn.dataset.remove);
+      agent().entries = agent().entries.filter(e=>e.id!==id);
+      saveState(); render();
+    };
+  });
+
+  const exportBtn = document.getElementById("btn-export");
+  if (exportBtn) exportBtn.onclick = ()=>{
+    const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href=url; a.download=`ped-dashboard-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click(); URL.revokeObjectURL(url);
+  };
+  const importBtn = document.getElementById("btn-import");
+  const fileInput = document.getElementById("file-import");
+  if (importBtn && fileInput){
+    importBtn.onclick = ()=>fileInput.click();
+    fileInput.onchange = (e)=>{
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const imported = JSON.parse(reader.result);
+          state = normalizeState(imported);
+          syncAgentFormState();
+          saveState(); render();
+          showToast("นำเข้าข้อมูลสำเร็จ");
+        }catch(err){ showToast("ไฟล์ไม่ถูกต้อง นำเข้าไม่สำเร็จ"); }
+      };
+      reader.readAsText(file);
+      fileInput.value = "";
+    };
+  }
+
+  // Competitions tab
+  document.querySelectorAll("[data-persist-band]").forEach(sel=>{
+    sel.onchange = ()=>{
+      agent().persistQuarterly[sel.dataset.persistBand] = Number(sel.value);
+      saveState(); render();
+    };
+  });
+
+  // Date pickers (delegated)
+  document.querySelectorAll("[data-toggle-cal]").forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const id = btn.dataset.toggleCal;
+      const isoVal = getIsoForPicker(id);
+      const wasOpen = calState(id).open;
+      closeAllCalendars();
+      if (!wasOpen){
+        const cs = calState(id);
+        const d = isoVal ? new Date(isoVal+"T00:00:00") : new Date();
+        cs.viewYear = d.getFullYear(); cs.viewMonth = d.getMonth();
+        cs.open = true;
+      }
+      render();
+    };
+  });
+  document.querySelectorAll("[data-shift-month]").forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const [id,delta] = btn.dataset.shiftMonth.split("|");
+      const cs = calState(id);
+      let m = cs.viewMonth + Number(delta), y = cs.viewYear;
+      if (m<0){m=11;y-=1;} if (m>11){m=0;y+=1;}
+      cs.viewMonth=m; cs.viewYear=y;
+      render();
+    };
+  });
+  document.querySelectorAll("[data-year-select-cal]").forEach(sel=>{
+    sel.onchange = (e)=>{
+      e.stopPropagation();
+      const id = sel.dataset.yearSelectCal;
+      calState(id).viewYear = Number(sel.value);
+      render();
+    };
+  });
+  document.querySelectorAll("[data-pick-day]").forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const [id, day] = btn.dataset.pickDay.split("|");
+      const cs = calState(id);
+      const iso = `${cs.viewYear}-${String(cs.viewMonth+1).padStart(2,"0")}-${String(Number(day)).padStart(2,"0")}`;
+      cs.open = false;
+      setIsoForPicker(id, iso);
+      render();
+    };
+  });
+  // close calendars when clicking outside any date-wrap
+  document.querySelectorAll(".date-wrap").forEach(wrap=>{
+    wrap.addEventListener("click", (e)=>e.stopPropagation());
+  });
+}
+
+function closeAllCalendars(){
+  Object.keys(calendars).forEach(id=>{ calendars[id].open=false; });
+}
+function closeAllCalendarsAndRender(){
+  const anyOpen = Object.values(calendars).some(c=>c.open);
+  if (anyOpen){ closeAllCalendars(); render(); }
+}
+
+function getIsoForPicker(id){
+  if (id==="main") return entryForm.date;
+  if (id==="edit") return editDraft.date;
+  if (id==="joining") return agent().competitions.firstSaleDate;
+  return "";
+}
+function setIsoForPicker(id, iso){
+  if (id==="main") entryForm.date = iso;
+  else if (id==="edit") editDraft.date = iso;
+  else if (id==="joining"){ agent().competitions.firstSaleDate = iso; saveState(); }
+}
+
+function confirmAddAgent(){
+  const name = newAgentNameInput.trim();
+  if (!name){ showToast("กรุณากรอกชื่อตัวแทน"); return; }
+  if (state.agents[name]){ showToast("มีชื่อนี้อยู่แล้ว"); return; }
+  state.agents[name] = JSON.parse(JSON.stringify(DEFAULT_AGENT_DATA));
+  state.currentAgent = name;
+  addAgentMode = false;
+  syncAgentFormState();
+  saveState(); render();
+}
+
+function submitEntry(){
+  const errBox = document.getElementById("form-error");
+  const rawFyc = stripCommas(entryForm.fyc);
+  if (!entryForm.date){ errBox.innerHTML = `<div class="err-box">กรุณาเลือกวันที่ทำสัญญา</div>`; return; }
+  if (!rawFyc || isNaN(Number(rawFyc)) || Number(rawFyc)<=0){ errBox.innerHTML = `<div class="err-box">กรุณากรอกยอด FYC ให้ถูกต้อง (มากกว่า 0)</div>`; return; }
+  errBox.innerHTML = "";
+
+  const perInstallmentFyc = Number(rawFyc);
+  const schedule = buildInstallmentSchedule(entryForm.billing, perInstallmentFyc);
+  const n = schedule.length;
+  const baseNote = entryForm.note.trim();
+  const policyId = `p_${Date.now()}`;
+  const list = schedule.map((s,i)=>({
+    id: Date.now()+i,
+    date: addMonthsToDate(entryForm.date, s.offset),
+    fyc: s.amount,
+    note: n>1 ? `${baseNote}${baseNote?" ":""}(งวดที่ ${i+1}/${n})` : baseNote,
+    policyId, installmentIndex:i, installmentTotal:n,
+  }));
+  agent().entries.push(...list);
+  saveState();
+  entryForm = { ...entryForm, fyc:"", note:"" };
+  render();
+  const justAdded = document.getElementById("just-added");
+  if (justAdded){
+    justAdded.style.display="inline-flex";
+    setTimeout(()=>{ if(justAdded) justAdded.style.display="none"; }, 2000);
+  }
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+}
+
+/* init */
+document.addEventListener("click", closeAllCalendarsAndRender);
+render();
+</script>
+</body>
+</html>
