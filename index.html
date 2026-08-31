@@ -776,9 +776,9 @@ function renderEntryTab(){
   const billingLabel = entryForm.billing==="" ? "ค่าคอมมิชชั่น (บาท)" : (entryForm.billing==="annual" ? "ค่าคอมมิชชั่นปีแรก (FYC) บาท" : "ค่าคอมมิชชั่นต่องวด (บาท)");
   const radiosHtml = BILLING_MODES.map(m=>{
     const sel = entryForm.billing===m.value;
-    return `<label style="display:flex;align-items:center;justify-content:center;cursor:pointer;padding:10px 2px;border-radius:8px;border:1.5px solid ${sel?'var(--good)':'#123F6B22'};background:${sel?'var(--good)':'#fff'};color:${sel?'#fff':'var(--ink)'};font-weight:${sel?700:400};font-size:14px;transition:all .12s;flex:1;min-width:0;text-align:center;">
+    return `<label style="display:flex;align-items:center;justify-content:center;cursor:pointer;padding:10px 2px;border-radius:8px;border:1.5px solid ${sel?'var(--good)':'#123F6B22'};background:${sel?'var(--good)':'#fff'};font-weight:${sel?700:400};font-size:14px;transition:all .12s;flex:1;min-width:0;text-align:center;">
       <input type="radio" name="f-billing" value="${m.value}" ${sel?"checked":""} style="display:none;">
-      <span style="white-space:nowrap;">${m.label}</span>
+      <span style="white-space:nowrap;color:${sel?'#fff':'var(--ink)'} !important;">${m.label}</span>
     </label>`;
   }).join("");
 
