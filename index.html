@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Year Plan</title>
+<title>UM Year Plan</title>
 <meta name="theme-color" content="#123F6B" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Year Plan" />
+<meta name="apple-mobile-web-app-title" content="UM Year Plan" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
@@ -55,7 +55,7 @@
   .card{background:var(--card); border-radius:14px; padding:20px; box-shadow:0 1px 3px rgba(18,63,107,0.08), 0 1px 2px rgba(18,63,107,0.06); border:1px solid #123F6B0F; margin-bottom:16px; position:relative; overflow:hidden;}
   .card.dark{background:linear-gradient(135deg, var(--navy-deep) 0%, var(--navy) 100%); border:none; color:#fff;}
   .card.dark .grid-bg{position:absolute; inset:0; background-image:linear-gradient(#4FAE740D 1px, transparent 1px), linear-gradient(90deg, #4FAE740D 1px, transparent 1px); background-size:24px 24px; pointer-events:none;}
-  .card h3{font-size:27px; color:var(--navy-deep); font-weight:600; margin-bottom:4px;}
+  .card h3{font-size:27px; color:var(--navy); font-weight:600; margin-bottom:4px;}
   .card.dark h3{color:#fff;}
   .card .sub{font-size:18.75px; color:var(--muted); margin-top:-4px; margin-bottom:14px;}
   .card.dark .sub{color:#B9C4D6;}
@@ -150,7 +150,7 @@
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
         <div class="titles">
           <span class="label">ป้าเป็ด CFP® · Bangkok Life Assurance</span>
-          <h1>Year Plan</h1>
+          <h1>UM Year Plan</h1>
         </div>
       </div>
       <p>แดชบอร์ดผลงานตัวแทน · บันทึกผลงานรายกรมธรรม์ ติดตามค่าคอมมิชชั่น เป้าหมาย และการแข่งขัน</p>
@@ -280,7 +280,7 @@ const THAI_MONTH_SHORT = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ
 const THAI_WEEKDAY_NAMES = ["อา","จ","อ","พ","พฤ","ศ","ส"];
 
 /* ================= HELPERS ================= */
-const THB = n => (Math.round((n||0)*100)/100).toLocaleString("th-TH",{maximumFractionDigits:2});
+const THB = n => Math.floor(n||0).toLocaleString("th-TH");
 const toBE = y => y + 543;
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
@@ -379,7 +379,7 @@ const DEFAULT_STATE = {
 let state = loadState();
 let activeTab = "goals";
 let selYear = new Date().getFullYear();
-let entryForm = { date: new Date().toISOString().slice(0,10), fyc: "", note: "", billing: "annual" };
+let entryForm = { date: new Date().toISOString().slice(0,10), fyc: "", note: "", billing: "" };
 let editingId = null;
 let editDraft = { date:"", fyc:"", note:"" };
 let goalsFycInput = formatThousands(String(agent().goals.targetFYC ?? 300000));
@@ -399,7 +399,7 @@ function syncAgentFormState(){
   // ทุกครั้งที่สลับตัวแทน ต้องรีเซ็ตค่าที่ค้างอยู่ในช่องกรอก (ซึ่งเก็บแยกจาก agent data)
   // ไม่งั้นช่องกรอกเป้าหมาย/ฟอร์มบันทึกผลงานจะค้างค่าของตัวแทนคนก่อนหน้าไว้
   goalsFycInput = formatThousands(String(agent().goals.targetFYC ?? 300000));
-  entryForm = { date: new Date().toISOString().slice(0,10), fyc: "", note: "", billing: "annual" };
+  entryForm = { date: new Date().toISOString().slice(0,10), fyc: "", note: "", billing: "" };
   editingId = null;
   editDraft = { date:"", fyc:"", note:"" };
   closeAllCalendars();
@@ -696,9 +696,10 @@ function renderGoalsTab(){
 
 /* ================= ENTRY TAB ================= */
 function renderBillingPreviewHtml(){
+  if (!entryForm.billing || entryForm.billing==="annual") return "";
   const mode = BILLING_MODES.find(m=>m.value===entryForm.billing) || BILLING_MODES[0];
   const rawFyc = Number(stripCommas(entryForm.fyc))||0;
-  if (entryForm.billing==="annual" || rawFyc<=0) return "";
+  if (rawFyc<=0) return "";
   const schedule = buildInstallmentSchedule(entryForm.billing, rawFyc);
   const total = schedule.reduce((s,x)=>s+x.amount,0);
   if (entryForm.billing==="monthly"){
@@ -725,13 +726,23 @@ function renderEntryTab(){
   const totalFYC = entries.reduce((s,e)=>s+e.fyc,0);
   const originCount = entries.filter(isOrigin).length;
 
-  const mode = BILLING_MODES.find(m=>m.value===entryForm.billing) || BILLING_MODES[0];
   const previewHtml = renderBillingPreviewHtml();
+
+  const colTotals = { annual:0, semiannual:0, quarterly:0, monthly:0 };
+  entries.forEach(e=>{ colTotals[billingModeOf(e)] += e.fyc; });
 
   let rows = "";
   if (sorted.length===0){
     rows = `<div class="empty">ยังไม่มีรายการในปีนี้ — เริ่มบันทึกผลงานรายแรกด้านบนได้เลย</div>`;
   } else {
+    const totalRow = `<tr style="border-top:2px solid #123F6B22;font-weight:700;">
+      <td style="color:var(--navy);" colspan="2">รวม</td>
+      <td class="num" style="color:var(--navy);">${THB(colTotals.annual)}</td>
+      <td class="num" style="color:var(--navy);">${THB(colTotals.semiannual)}</td>
+      <td class="num" style="color:var(--navy);">${THB(colTotals.quarterly)}</td>
+      <td class="num" style="color:var(--navy);">${THB(colTotals.monthly)}</td>
+      <td></td>
+    </tr>`;
     rows = `<div style="overflow-x:auto"><table>
       <thead><tr><th>วันที่</th><th>หมายเหตุ</th><th style="text-align:right">รายปี</th><th style="text-align:right">ราย 6 เดือน</th><th style="text-align:right">ราย 3 เดือน</th><th style="text-align:right">รายเดือน</th><th></th></tr></thead>
       <tbody>${sorted.map(e=>{
@@ -748,8 +759,9 @@ function renderEntryTab(){
         }
         const bMode = billingModeOf(e);
         const cell = (match) => match===bMode ? `<td class="num">${THB(e.fyc)}</td>` : `<td class="num" style="color:var(--muted);">—</td>`;
+        const origin = isOrigin(e);
         return `<tr>
-          <td>${new Date(e.date).toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})}</td>
+          <td style="${origin?'color:var(--navy);font-weight:600;':''}">${new Date(e.date).toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})}</td>
           <td style="color:var(--muted)">${esc(e.note)||"—"}</td>
           ${cell("annual")}${cell("semiannual")}${cell("quarterly")}${cell("monthly")}
           <td style="text-align:right;white-space:nowrap;">
@@ -757,20 +769,29 @@ function renderEntryTab(){
             <button class="icon-btn" data-remove="${e.id}" title="ลบ">🗑</button>
           </td>
         </tr>`;
-      }).join("")}</tbody>
+      }).join("")}${totalRow}</tbody>
     </table></div>`;
   }
+
+  const billingLabel = entryForm.billing==="" ? "ค่าคอมมิชชั่น (บาท)" : (entryForm.billing==="annual" ? "ค่าคอมมิชชั่นปีแรก (FYC) บาท" : "ค่าคอมมิชชั่นต่องวด (บาท)");
+  const radiosHtml = BILLING_MODES.map(m=>{
+    const sel = entryForm.billing===m.value;
+    return `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:9px 14px;border-radius:9px;border:1.5px solid ${sel?'var(--navy)':'#123F6B22'};background:${sel?'var(--navy)':'#fff'};color:${sel?'#fff':'var(--ink)'};font-weight:${sel?700:400};transition:all .12s;">
+      <input type="radio" name="f-billing" value="${m.value}" ${sel?"checked":""} style="accent-color:${sel?'#fff':'var(--navy)'};">
+      <span>${m.label}</span>
+    </label>`;
+  }).join("");
 
   return `
     <div class="card">
       <h3>เพิ่มรายการผลงาน</h3>
       <form id="entry-form" class="entry-form" onsubmit="return false;">
         <label class="field full"><span>วันที่ทำสัญญา</span>${renderDateInput('main', entryForm.date, false)}</label>
-        <label class="field"><span>${entryForm.billing==="annual"?"ค่าคอมมิชชั่นปีแรก (FYC) บาท":"ค่าคอมมิชชั่นต่องวด (บาท)"}</span>
+        <label class="field"><span>${billingLabel}</span>
           <input type="text" inputmode="decimal" id="f-fyc" value="${esc(entryForm.fyc)}" placeholder="0.00">
         </label>
         <label class="field full"><span>ลักษณะการเก็บเบี้ย</span>
-          <select id="f-billing">${BILLING_MODES.map(m=>`<option value="${m.value}" ${m.value===entryForm.billing?"selected":""}>${m.label}</option>`).join("")}</select>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;">${radiosHtml}</div>
           <div id="billing-preview">${previewHtml}</div>
         </label>
         <label class="field full"><span>หมายเหตุ (ไม่บังคับ)</span>
@@ -786,8 +807,9 @@ function renderEntryTab(){
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
         <h3>รายการผลงาน พ.ศ. ${toBE(selYear)}</h3>
-        <span style="font-size:18.75px;color:var(--muted);">${originCount} ราย · FYC รวม <b style="color:var(--navy-deep)">${THB(totalFYC)}</b> บาท</span>
+        <span style="font-size:18.75px;color:var(--muted);">${originCount} ราย · FYC รวม <b style="color:var(--navy)">${THB(totalFYC)}</b> บาท</span>
       </div>
+      <p style="font-size:15px;color:var(--muted);margin:-4px 0 10px;">วันที่สีน้ำเงิน = วันที่ลูกค้าชำระเบี้ยจริง (งวดแรก) ส่วนงวดที่เข้าต่อเนื่องเป็นสีปกติ</p>
       ${rows}
       <div class="backup-row">
         <button class="btn-ghost" id="btn-export">⭳ ส่งออกข้อมูล (.json)</button>
@@ -845,7 +867,24 @@ function renderCompetitionsTab(){
   const joiningTopUp = Math.max(0, Math.min(JOINING_BONUS_CAP, joiningTierBonus) - joiningTotalPaid);
   const joiningGrandTotal = Math.min(JOINING_BONUS_CAP, joiningTotalPaid + joiningTopUp);
 
-  const totalIncome = annualFYC + reward + joiningGrandTotal;
+  // โบนัสไตรมาส (เงินรางวัลตัวแทน ตาราง 4) รวมทั้ง 4 ไตรมาส
+  let totalQuarterlyBonus = 0;
+  qResults.forEach(r=>{
+    const bKey = `${selYear}-Q${r.q}`;
+    const bPersist = agent().persistQuarterly[bKey] ?? 80;
+    const bQualifies = r.count>=3 && r.fyc>=12500 && bPersist>=75;
+    const bPct = quarterlyPct(r.fyc);
+    totalQuarterlyBonus += bQualifies ? (r.fyc*bPct)/100 : 0;
+  });
+  // โบนัสปี (เงินรางวัลตัวแทน ตาราง 4) สุทธิหลังหักส่วนที่จ่ายรายไตรมาสแล้ว
+  const annualPersistKey = `annual-${selYear}`;
+  const annualPersist = agent().persistQuarterly[annualPersistKey] ?? 90;
+  const annualBand = annualPersist>=90?'high':annualPersist>=85?'mid':'low';
+  const annualBonusPct = annualGate ? annualPct(annualFYC, annualBand) : 0;
+  const annualBonusGross = annualGate ? (annualFYC*annualBonusPct)/100 : 0;
+  const annualBonusNet = Math.max(0, annualBonusGross - totalQuarterlyBonus);
+
+  const totalIncome = annualFYC + reward + totalQuarterlyBonus + annualBonusNet + joiningGrandTotal;
   const thMonth = (y,m)=> new Date(y,m,1).toLocaleDateString("th-TH",{month:"short",year:"2-digit"});
 
   const qCardsHtml = qResults.map(r=>{
@@ -945,6 +984,19 @@ function renderCompetitionsTab(){
       <div class="income-grid">
         <div class="income-chip"><div class="lbl">ค่าคอมมิชชั่น (FYC)</div><div class="val">${THB(annualFYC)} ฿</div></div>
         <div class="income-chip"><div class="lbl">เงินรางวัลคุณวุฒิไตรมาส</div><div class="val">${THB(reward)} ฿</div></div>
+        <div class="income-chip"><div class="lbl">โบนัสไตรมาส (รวม 4 ไตรมาส)</div><div class="val">${THB(totalQuarterlyBonus)} ฿</div></div>
+        <div class="income-chip">
+          <div class="lbl">โบนัสปี (สุทธิ)</div>
+          <div class="val">${THB(annualBonusNet)} ฿</div>
+          <div style="margin-top:6px;">
+            <select data-annual-persist-band style="width:100%;padding:3px 5px;font-size:15px;background:#0E2F5299;color:#fff;border-color:#ffffff33;">
+              <option value="60" ${annualPersist<75?"selected":""}>คงอยู่ต่ำกว่า 75%</option>
+              <option value="80" ${annualPersist>=75&&annualPersist<85?"selected":""}>คงอยู่ 75–84.99%</option>
+              <option value="87" ${annualPersist>=85&&annualPersist<90?"selected":""}>คงอยู่ 85–89.99%</option>
+              <option value="95" ${annualPersist>=90?"selected":""}>คงอยู่ 90% ขึ้นไป</option>
+            </select>
+          </div>
+        </div>
         <div class="income-chip"><div class="lbl">Joining Bonus</div><div class="val">${THB(joiningGrandTotal)} ฿</div></div>
       </div>
       <div style="border-top:1px solid #ffffff33;padding-top:12px;display:flex;justify-content:space-between;align-items:baseline;">
@@ -1087,8 +1139,9 @@ function bindEvents(){
   }
   const fNote = document.getElementById("f-note");
   if (fNote){ fNote.oninput = (e)=>{ entryForm.note = e.target.value; }; fNote.onfocus=(e)=>e.target.select(); }
-  const fBilling = document.getElementById("f-billing");
-  if (fBilling){ fBilling.onchange = (e)=>{ entryForm.billing = e.target.value; render(); }; }
+  document.querySelectorAll('input[name="f-billing"]').forEach(r=>{
+    r.onchange = (e)=>{ entryForm.billing = e.target.value; render(); };
+  });
   const submitBtn = document.getElementById("btn-submit-entry");
   if (submitBtn) submitBtn.onclick = submitEntry;
 
@@ -1159,6 +1212,13 @@ function bindEvents(){
       saveState(); render();
     };
   });
+  const annualPersistSel = document.querySelector("[data-annual-persist-band]");
+  if (annualPersistSel){
+    annualPersistSel.onchange = ()=>{
+      agent().persistQuarterly[`annual-${selYear}`] = Number(annualPersistSel.value);
+      saveState(); render();
+    };
+  }
 
   // Date pickers (delegated)
   document.querySelectorAll("[data-toggle-cal]").forEach(btn=>{
@@ -1244,10 +1304,20 @@ function confirmAddAgent(){
   saveState(); render();
 }
 
+function installmentLabel(billingMode, i, n){
+  // รายเดือน: งวดแรกจ่ายล่วงหน้า 2 เดือน = นับเป็นงวดที่ 1 และงวดที่ 2 พร้อมกัน เดือนถัดไปที่จ่ายจริงจึงเริ่มที่งวดที่ 3
+  if (billingMode==="monthly"){
+    const totalConceptual = n+1; // 11 รายการจริง แทน 12 งวดตามแนวคิด (เพราะงวดแรกนับ 2 งวดรวด)
+    if (i===0) return `ปีที่ 1 งวดที่ 1-2/${totalConceptual}`;
+    return `ปีที่ 1 งวดที่ ${i+2}/${totalConceptual}`;
+  }
+  return `ปีที่ 1 งวดที่ ${i+1}/${n}`;
+}
 function submitEntry(){
   const errBox = document.getElementById("form-error");
   const rawFyc = stripCommas(entryForm.fyc);
   if (!entryForm.date){ errBox.innerHTML = `<div class="err-box">กรุณาเลือกวันที่ทำสัญญา</div>`; return; }
+  if (!entryForm.billing){ errBox.innerHTML = `<div class="err-box">กรุณาเลือกลักษณะการเก็บเบี้ย</div>`; return; }
   if (!rawFyc || isNaN(Number(rawFyc)) || Number(rawFyc)<=0){ errBox.innerHTML = `<div class="err-box">กรุณากรอกยอด FYC ให้ถูกต้อง (มากกว่า 0)</div>`; return; }
   errBox.innerHTML = "";
 
@@ -1260,12 +1330,12 @@ function submitEntry(){
     id: Date.now()+i,
     date: addMonthsToDate(entryForm.date, s.offset),
     fyc: s.amount,
-    note: n>1 ? `${baseNote}${baseNote?" ":""}(งวดที่ ${i+1}/${n})` : baseNote,
+    note: n>1 ? `${baseNote}${baseNote?" ":""}(${installmentLabel(entryForm.billing, i, n)})` : baseNote,
     policyId, installmentIndex:i, installmentTotal:n, billingMode: entryForm.billing,
   }));
   agent().entries.push(...list);
   saveState();
-  entryForm = { ...entryForm, fyc:"", note:"", billing:"annual" };
+  entryForm = { ...entryForm, fyc:"", note:"", billing:"" };
   render();
   const justAdded = document.getElementById("just-added");
   if (justAdded){
