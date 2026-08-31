@@ -17,7 +17,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --navy:#123F6B; --navy-deep:#082238; --gold:#4FAE74; --gold-soft:#9CE3B8;
+    --navy:#0F56B2; --navy-deep:#082238; --gold:#4FAE74; --gold-soft:#9CE3B8;
     --cream:#E7F2FB; --card:#FFFFFF; --ink:#1B2430; --muted:#6B7280;
     --good:#2F7A4F; --warn:#B8862E; --bad:#B4453B;
   }
@@ -232,6 +232,128 @@ function eventAchieved(entries, ev){
     entries.filter(x => isOrigin(x) && new Date(x.date) >= s && new Date(x.date) <= e).map(x => x.policyId)
   );
   return entries.filter(x => eligiblePolicyIds.has(x.policyId)).reduce((sum,x)=>sum+x.fyc,0);
+}
+function renderInsightsSection(entries, selYearArg, pacing){
+  const today = new Date();
+  const isCurrentYearView = selYearArg === today.getFullYear();
+  const cards = [];
+
+  // 1) สัญญาณเตือนล่วงหน้า: ผ่านครึ่งเดือนแล้วแต่ยังไม่ถึงครึ่งเป้า
+  if (isCurrentYearView && pacing){
+    const dayOfMonth = today.getDate();
+    const cm = pacing[today.getMonth()];
+    if (dayOfMonth>=15 && cm && !cm.excluded && cm.target>0){
+      const pctOfTarget = (cm.actual/cm.target)*100;
+      if (pctOfTarget<50){
+        cards.push(`<div class="alert-box" style="background:#FBEEEC;border-color:var(--bad);">
+          <div class="title" style="color:var(--bad);">⏰ สัญญาณเตือน: ผ่านครึ่งเดือนแล้ว</div>
+          <div class="line" style="color:var(--bad);">เดือนนี้ทำได้แค่ ${Math.round(pctOfTarget)}% ของเป้าเดือน (${THB(cm.actual)} จาก ${THB(cm.target)} บาท) เร่งมือหน่อยนะ!</div>
+        </div>`);
+      }
+    }
+  }
+
+  // 2) เทียบเดือนนี้กับปีที่แล้ว
+  if (isCurrentYearView){
+    const cmIdx = today.getMonth();
+    const thisMonthActual = entries.filter(e=>{const d=new Date(e.date); return d.getFullYear()===selYearArg && d.getMonth()===cmIdx;}).reduce((s,e)=>s+e.fyc,0);
+    const lastYearActual = entries.filter(e=>{const d=new Date(e.date); return d.getFullYear()===(selYearArg-1) && d.getMonth()===cmIdx;}).reduce((s,e)=>s+e.fyc,0);
+    if (lastYearActual>0 || thisMonthActual>0){
+      const diff = thisMonthActual-lastYearActual;
+      const diffPct = lastYearActual>0 ? (diff/lastYearActual*100) : null;
+      cards.push(`<div class="card" style="padding:14px 16px;margin-bottom:12px;">
+        <div style="font-size:16.5px;color:var(--muted);margin-bottom:4px;">📊 เทียบเดือนนี้กับปีที่แล้ว (${THAI_MONTH_NAMES[cmIdx]})</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;">
+          <span style="font-size:18px;">ปีนี้ ${THB(thisMonthActual)} · ปีก่อน ${THB(lastYearActual)} บาท</span>
+          <span style="font-weight:700;font-size:20px;color:${diff>=0?'var(--good)':'var(--bad)'};">${diff>=0?'▲':'▼'} ${THB(Math.abs(diff))}${diffPct!==null?` (${diffPct>=0?'+':''}${Math.round(diffPct)}%)`:''}</span>
+        </div>
+      </div>`);
+    }
+  }
+
+  // 3) เดือนที่ดีที่สุด/แย่ที่สุดในปีนี้
+  if (pacing){
+    const withData = pacing.filter(m=>!m.excluded && m.actual>0);
+    if (withData.length>=2){
+      const best = withData.reduce((a,b)=>a.actual>b.actual?a:b);
+      const worst = withData.reduce((a,b)=>a.actual<b.actual?a:b);
+      cards.push(`<div class="card" style="padding:14px 16px;margin-bottom:12px;">
+        <div style="font-size:16.5px;color:var(--muted);margin-bottom:8px;">🏅 เดือนที่ทำได้ดีที่สุด / ต้องปรับปรุง</div>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;background:#F1F8F3;border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:15px;color:var(--muted);">ดีที่สุด</div>
+            <div style="font-weight:700;color:var(--good);font-size:20px;">${THAI_MONTH_SHORT[best.month]}</div>
+            <div style="font-size:15px;color:var(--good);">${THB(best.actual)} บาท</div>
+          </div>
+          <div style="flex:1;background:#FBF0EF;border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:15px;color:var(--muted);">ต้องปรับปรุง</div>
+            <div style="font-weight:700;color:var(--bad);font-size:20px;">${THAI_MONTH_SHORT[worst.month]}</div>
+            <div style="font-size:15px;color:var(--bad);">${THB(worst.actual)} บาท</div>
+          </div>
+        </div>
+      </div>`);
+    }
+  }
+
+  // 4) งวดเบี้ยที่จะครบกำหนดใน 30 วันข้างหน้า (ใช้ข้อมูลงวดผ่อนที่มีอยู่แล้ว ไม่ต้องกรอกใหม่)
+  {
+    const in30 = new Date(today.getTime()+30*86400000);
+    const upcoming = entries.filter(e=>{ const d=new Date(e.date); return d>=today && d<=in30; }).sort((a,b)=>new Date(a.date)-new Date(b.date));
+    if (upcoming.length>0){
+      const upcomingSum = upcoming.reduce((s,e)=>s+e.fyc,0);
+      cards.push(`<div class="card" style="padding:14px 16px;margin-bottom:12px;">
+        <div style="font-size:16.5px;color:var(--muted);margin-bottom:6px;">🔔 งวดเบี้ยที่จะครบกำหนดใน 30 วันข้างหน้า</div>
+        <div style="font-size:19px;font-weight:700;color:var(--navy);margin-bottom:6px;">${upcoming.length} งวด รวม ${THB(upcomingSum)} บาท</div>
+        ${upcoming.slice(0,5).map(e=>`<div style="font-size:15px;color:var(--muted);padding:2px 0;">· ${new Date(e.date).toLocaleDateString('th-TH',{day:'numeric',month:'short'})} — ${esc(e.note)||'ไม่มีหมายเหตุ'} (${THB(e.fyc)} บาท)</div>`).join("")}
+        ${upcoming.length>5?`<div style="font-size:15px;color:var(--muted);">...และอีก ${upcoming.length-5} งวด</div>`:''}
+      </div>`);
+    }
+  }
+
+  // 5) นับถอยหลังไตรมาสนี้จะจบ + ยังขาดอะไร
+  if (isCurrentYearView){
+    const currentQ = Math.floor(today.getMonth()/3)+1;
+    const qEndDate = new Date(selYearArg, currentQ*3, 0, 23,59,59);
+    const daysLeft = Math.ceil((qEndDate-today)/86400000);
+    const qData = quarterlyQualifyResults(entries, selYearArg).find(r=>r.q===currentQ);
+    if (qData){
+      const cShort = Math.max(0, 6-qData.count);
+      const fShort = Math.max(0, 40000-qData.fyc);
+      cards.push(`<div class="card" style="padding:14px 16px;margin-bottom:12px;">
+        <div style="font-size:16.5px;color:var(--muted);margin-bottom:6px;">⏳ ไตรมาส ${currentQ} จะจบใน ${daysLeft} วัน</div>
+        ${(cShort>0||fShort>0)?`<div style="font-size:17px;color:var(--bad);">ยังขาด ${cShort>0?`${cShort} ราย `:''}${fShort>0?`${THB(fShort)} บาท`:''} ถึงจะผ่านเกณฑ์คุณวุฒิไตรมาสนี้</div>`:`<div style="font-size:17px;color:var(--good);">✔ ผ่านเกณฑ์คุณวุฒิไตรมาสนี้แล้ว</div>`}
+      </div>`);
+    }
+  }
+
+  if (cards.length===0) return "";
+  return `<h3 style="margin:4px 0 4px;">💡 สรุปและคำแนะนำ</h3>${cards.join("")}`;
+}
+function renderTeamLeaderboard(){
+  const names = Object.keys(state.agents);
+  if (names.length<2) return "";
+  const rows = names.map(name=>{
+    const ag = state.agents[name];
+    const yEntries = ag.entries.filter(e=>new Date(e.date).getFullYear()===selYear);
+    const achieved = yEntries.reduce((s,e)=>s+e.fyc,0);
+    const goalFYC = ag.goals?.targetFYC ?? 0;
+    const pct = goalFYC>0 ? (achieved/goalFYC*100) : 0;
+    return { name, achieved, goalFYC, pct };
+  }).sort((a,b)=>b.pct-a.pct);
+  const lowestPct = rows.length ? Math.min(...rows.map(r=>r.pct)) : 0;
+  return `<div class="card">
+    <h3>👥 ภาพรวมทีม (พ.ศ. ${toBE(selYear)})</h3>
+    <p class="sub">เรียงจากคนที่ใกล้เป้าหมายที่สุด ช่วยดูว่าใครต้องการความช่วยเหลือเร่งด่วน</p>
+    ${rows.map((r,i)=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #123F6B0D;">
+        <div>
+          <div style="font-weight:600;color:var(--navy);font-size:19px;">${i+1}. ${esc(r.name)} ${r.pct===lowestPct && r.pct<50 ? '🆘' : (i===0 && r.pct>0?'🥇':'')}</div>
+          <div style="font-size:15px;color:var(--muted);">${THB(r.achieved)} / ${THB(r.goalFYC)} บาท</div>
+        </div>
+        <div style="font-weight:700;font-size:22px;color:${r.pct>=100?'var(--good)':r.pct>=50?'var(--navy)':'var(--bad)'};">${Math.round(r.pct)}%</div>
+      </div>
+    `).join("")}
+  </div>`;
 }
 function renderSpecialEventsSection(entries){
   const thDate = (iso)=> new Date(iso+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
@@ -682,6 +804,9 @@ function renderGoalsTab(){
       </div>
     </div>
 
+    ${renderInsightsSection(agent().entries, selYear, pacing)}
+    ${renderTeamLeaderboard()}
+
     <div class="card">
       <h3>เป้าหมายรายเดือน</h3>
       <p class="sub">"เป้าหมาย" คงที่เท่ากันทุกเดือนในช่วงที่ตั้งไว้ (เป้ารวม ÷ จำนวนเดือนในแผน) · "คงเหลือถึงเป้า" และ "เฉลี่ย/เดือนจากนี้" อ้างอิงเดือนปัจจุบันตามปฏิทินจริงเท่านั้น (โชว์เฉพาะเดือนปัจจุบันจนถึงเดือนสิ้นสุดแผน)</p>
@@ -812,7 +937,7 @@ function renderEntryTab(){
       <p style="font-size:15px;color:var(--muted);margin:-4px 0 10px;">วันที่สีน้ำเงิน = วันที่ลูกค้าชำระเบี้ยจริง (งวดแรก) ส่วนงวดที่เข้าต่อเนื่องเป็นสีปกติ</p>
       ${rows}
       <div class="backup-row">
-        <button class="btn-ghost" id="btn-export">⭳ ส่งออกข้อมูล (.json)</button>
+        <button class="btn-ghost" id="btn-export">⭳ แบ็กอัพข้อมูล</button>
         <button class="btn-ghost" id="btn-import">⭱ นำเข้าข้อมูล</button>
         <input type="file" id="file-import" accept="application/json" style="display:none">
       </div>
