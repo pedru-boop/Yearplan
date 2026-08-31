@@ -964,6 +964,7 @@ function renderCompetitionsTab(){
           ${bCasesShort>0?`<div class="line" style="font-size:17px;">· ขาดอีก ${bCasesShort} ราย</div>`:''}
           ${bFycShort>0?`<div class="line" style="font-size:17px;">· ขาดอีก ${THB(bFycShort)} บาท</div>`:''}
           ${bPersistShort>0?`<div class="line" style="font-size:17px;">· อัตราคงอยู่ขาดอีก ${bPersistShort}%</div>`:''}
+          <div style="font-size:17px;margin-top:4px;padding-top:4px;border-top:1px dashed #B4453B33;color:var(--good);font-weight:700;">✓ ถ้าครบเกณฑ์ จะได้รับประมาณ ${THB((r.fyc*bPct)/100)} บาท (อัตรา ${bPct}% ของ FYC ปัจจุบัน)</div>
         </div>`:''}
       </div>
     </div>`;
@@ -1028,6 +1029,21 @@ function renderCompetitionsTab(){
           ${hasTrophy?`<div style="font-size:17.25px;color:#C9D3E0;margin-top:6px;">+ ถ้วยเกียรติยศ และเชิญร่วมงานรับรางวัลประจำปี</div>`:''}
         </div>
       </div>
+      ${achievedLevel<4?(()=>{
+        const nextLevel = achievedLevel+1;
+        const nextReward = STREAK_REWARDS[nextLevel];
+        const quartersNeededMore = Math.max(0, nextLevel-streak);
+        const annualCasesShort = Math.max(0, ANNUAL_GATE_CASES-annualCases);
+        const annualFycShort = Math.max(0, ANNUAL_GATE_FYC-annualFYC);
+        const hasAnnualShortfall = annualCasesShort>0 || annualFycShort>0;
+        return `<div class="alert-box" style="margin-top:14px;background:#FBF6E8;border-color:var(--gold);">
+          <div class="title" style="color:var(--navy);">🎯 ก้าวถัดไป: คุณวุฒิระดับ ${nextLevel} ไตรมาส</div>
+          ${quartersNeededMore>0?`<div class="line" style="color:var(--navy);">· ต้องทำให้ผ่านเกณฑ์ไตรมาสติดต่อกันเพิ่มอีก ${quartersNeededMore} ไตรมาส</div>`:''}
+          ${annualCasesShort>0?`<div class="line" style="color:var(--navy);">· ผลงานสะสมทั้งปี ขาดอีก ${annualCasesShort} ราย</div>`:''}
+          ${annualFycShort>0?`<div class="line" style="color:var(--navy);">· FYC สะสมทั้งปี ขาดอีก ${THB(annualFycShort)} บาท</div>`:''}
+          <div style="font-size:17px;margin-top:4px;padding-top:4px;border-top:1px dashed #C69A3B55;color:var(--good);font-weight:700;">✓ ถ้าทำได้ครบ จะได้รับเพิ่มเป็น ${THB(nextReward)} บาท (เพิ่มขึ้น ${THB(nextReward-reward)} บาท จากตอนนี้)</div>
+        </div>`;
+      })():''}
     </div>
 
     <div class="card">
