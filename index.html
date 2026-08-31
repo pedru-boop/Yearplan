@@ -776,9 +776,9 @@ function renderEntryTab(){
   const billingLabel = entryForm.billing==="" ? "ค่าคอมมิชชั่น (บาท)" : (entryForm.billing==="annual" ? "ค่าคอมมิชชั่นปีแรก (FYC) บาท" : "ค่าคอมมิชชั่นต่องวด (บาท)");
   const radiosHtml = BILLING_MODES.map(m=>{
     const sel = entryForm.billing===m.value;
-    return `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:9px 14px;border-radius:9px;border:1.5px solid ${sel?'var(--navy)':'#123F6B22'};background:${sel?'var(--navy)':'#fff'};color:${sel?'#fff':'var(--ink)'};font-weight:${sel?700:400};transition:all .12s;">
-      <input type="radio" name="f-billing" value="${m.value}" ${sel?"checked":""} style="accent-color:${sel?'#fff':'var(--navy)'};">
-      <span>${m.label}</span>
+    return `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:9px 14px;border-radius:9px;border:1.5px solid ${sel?'var(--navy)':'#123F6B22'};background:${sel?'var(--navy)':'#fff'};color:${sel?'#fff':'var(--ink)'};font-weight:${sel?700:400};transition:all .12s;flex:0 0 auto;white-space:nowrap;">
+      <input type="radio" name="f-billing" value="${m.value}" ${sel?"checked":""} style="accent-color:${sel?'#fff':'var(--navy)'};flex-shrink:0;">
+      <span style="white-space:nowrap;">${m.label}</span>
     </label>`;
   }).join("");
 
