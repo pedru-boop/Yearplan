@@ -302,7 +302,7 @@ function computeUmItemsForPosition(pos, monthlyTeamCFYC, monthsElapsed, monthlyD
     const rate6 = salesCompRate(qFyc, threshold6);
     item6 += qFyc*rate6/100;
   }
-  return { item1, item2, item3, item6, cumCFYC, quotaMonths, quota3, threshold6 };
+  return { item1, item2, item3, item6, cumCFYC, quotaMonths, quota3, threshold6, rate3, flat3 };
 }
 const TEAM_BUILDING_TIERS = [
   { level: "สตาร์", minFyc: 60000, reward: 3500 },
@@ -438,23 +438,22 @@ function renderTeamTab(){
 
   // แหล่งข้อมูลเดียวสำหรับผลประโยชน์ผู้บริหารทุกข้อ: FYC ทีมรายเดือน เคารพค่าที่ UM แก้ไขเองในกล่อง "ควบคุมผลงาน"
   const umMonthOverrides = umGoal.monthOverrides || {};
-  const monthlyTeamCFYC = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>{
+  const umDirectOverrides = umGoal.directOverrides || {};
+  // ผลงานตัวแทนตรง (แก้ไขเองได้ ค่าเริ่มต้นดึงจากข้อมูลที่คีย์ไว้) — ใช้คำนวณ DPO (ข้อ 6) เท่านั้น เพราะ DPO ได้จากผลงานตัวแทนตรงเท่านั้น
+  const monthlyDirectAgentFYC = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>{
     const auto = names.reduce((sum,name)=>{
       const ag = state.agents[name];
       return sum + ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; }).reduce((s,e)=>s+e.fyc,0);
     },0);
+    const dov = umDirectOverrides[`${selYear}-${m}`];
+    return (dov!==undefined && dov!==null) ? dov : auto;
+  });
+  const monthlyTeamCFYC = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>{
     const key = `${selYear}-${m}`;
     const ov = umMonthOverrides[key];
-    return (ov!==undefined && ov!==null) ? ov : auto;
+    return (ov!==undefined && ov!==null) ? ov : monthlyDirectAgentFYC[m];
   });
   const annualTeamCFYC = monthlyTeamCFYC.reduce((a,b)=>a+b,0);
-  // ผลงานตัวแทนตรงล้วนๆ (ไม่รวมค่าที่ UM แก้ไขเอง) — ใช้เฉพาะคำนวณ DPO (ข้อ 6) เท่านั้น เพราะ DPO ได้จากผลงานตัวแทนตรงเท่านั้น
-  const monthlyDirectAgentFYC = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>
-    names.reduce((sum,name)=>{
-      const ag = state.agents[name];
-      return sum + ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; }).reduce((s,e)=>s+e.fyc,0);
-    },0)
-  );
 
   const today = new Date();
   const rows = names.map(name=>{
@@ -728,10 +727,11 @@ function renderTeamTab(){
       }
 
       const monthOverrides = state.umGoal.monthOverrides || {};
+      const directOverrides = state.umGoal.directOverrides || {};
 
       return `
       <h3 style="margin:4px 0 4px;">🎯 ควบคุมผลงานเพื่อผลตอบแทนข้อ 6 (DPO) (${selectedPosition.label})</h3>
-      <p class="sub" style="margin-top:0;">FYC รวมทั้งทีมต่อไตรมาส เทียบกับเกณฑ์ขั้นต่ำ ${THB(salesCompThreshold)} บาท/ไตรมาส ของตำแหน่งนี้ — แก้ไขตัวเลขรายเดือนเองได้ ค่าเริ่มต้นดึงจากผลงานที่คีย์ไว้จริง</p>
+      <p class="sub" style="margin-top:0;">DPO คำนวณจากตัวแทนตรงเท่านั้น เทียบกับเกณฑ์ขั้นต่ำ ${THB(salesCompThreshold)} บาท/ไตรมาส — แก้ไขได้ทั้ง 2 คอลัมน์ ค่าเริ่มต้นดึงจากผลงานที่คีย์ไว้จริง</p>
       <div class="qgrid">
         ${[1,2,3,4].map(q=>{
           const qMonths = [ (q-1)*3, (q-1)*3+1, (q-1)*3+2 ];
@@ -740,12 +740,18 @@ function renderTeamTab(){
               const ag = state.agents[name];
               return sum + ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; }).reduce((s,e)=>s+e.fyc,0);
             },0);
-            const key = `${selYear}-${m}`;
-            const ov = monthOverrides[key];
-            return { month:m, key, auto, value: (ov!==undefined && ov!==null) ? ov : auto, isOverridden: ov!==undefined && ov!==null };
+            const directKey = `${selYear}-${m}`;
+            const dov = directOverrides[directKey];
+            const directIsOv = dov!==undefined && dov!==null;
+            const directValue = directIsOv ? dov : auto;
+            const cfycKey = `${selYear}-${m}`;
+            const cov = monthOverrides[cfycKey];
+            const cfycIsOv = cov!==undefined && cov!==null;
+            const cfycValue = cfycIsOv ? cov : directValue;
+            return { month:m, directKey, auto, directValue, directIsOv, cfycKey, cfycValue, cfycIsOv };
           });
-          const qDirectFyc = monthlyFycThisQ.reduce((s,x)=>s+x.auto,0);
-          const qCFYC = monthlyFycThisQ.reduce((s,x)=>s+x.value,0);
+          const qDirectFyc = monthlyFycThisQ.reduce((s,x)=>s+x.directValue,0);
+          const qCFYC = monthlyFycThisQ.reduce((s,x)=>s+x.cfycValue,0);
           const rate = salesCompRate(qDirectFyc, salesCompThreshold);
           const multiplier = salesCompThreshold>0 ? (qDirectFyc/salesCompThreshold) : 0;
           const reward = qDirectFyc * rate / 100;
@@ -755,11 +761,14 @@ function renderTeamTab(){
           else if (multiplier<1.75) nextTier = {mult:1.75, rate:22};
           else if (multiplier<2.5) nextTier = {mult:2.5, rate:25};
           const monthRowsHtml = monthlyFycThisQ.map(x=>`<tr>
-            <td style="color:var(--navy-deep);font-weight:600;">${THAI_MONTH_SHORT[x.month]} ${x.isOverridden?'✏️':''}</td>
-            <td class="r" style="color:var(--muted);">${THB(x.auto)}</td>
+            <td style="color:var(--navy-deep);font-weight:600;">${THAI_MONTH_SHORT[x.month]}</td>
             <td class="r">
-              <input type="text" inputmode="decimal" data-qty-override="${x.key}" value="${esc(formatThousands(String(x.value)))}" style="width:90px;padding:4px 6px;font-size:15px;text-align:right;">
-              ${x.isOverridden?`<button class="icon-btn" data-qty-reset="${x.key}" title="กลับเป็นอัตโนมัติ (${THB(x.auto)})">↺</button>`:''}
+              <input type="text" inputmode="decimal" data-direct-override="${x.directKey}" value="${esc(formatThousands(String(x.directValue)))}" style="width:82px;padding:4px 5px;font-size:14px;text-align:right;">
+              <div style="font-size:12px;color:${x.directIsOv?'var(--gold)':'var(--muted)'};">${x.directIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
+            </td>
+            <td class="r">
+              <input type="text" inputmode="decimal" data-qty-override="${x.cfycKey}" value="${esc(formatThousands(String(x.cfycValue)))}" style="width:82px;padding:4px 5px;font-size:14px;text-align:right;">
+              <div style="font-size:12px;color:${x.cfycIsOv?'var(--gold)':'var(--muted)'};">${x.cfycIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
             </td>
           </tr>`).join("");
           return `<div class="qcard" style="background:${NAVY_TINTS[q-1]};">
@@ -862,7 +871,7 @@ function renderTeamTab(){
               ${row("2. ค่าขยายงาน","item2")}
               <tr><td style="text-align:left;">3. โบนัสส่วนเกินโควต้า</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r" style="font-weight:700;color:var(--navy);">${THB(ytd.item3)}</td></tr>
               <tr><td style="text-align:left;">4. ค่าเสริมมือ</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r" style="font-weight:700;color:var(--navy);">${THB(ytd.item4)}</td></tr>
-              ${row("6. ค่าตอบแทนขายเอง/ตัวแทนตรง","item6")}
+              ${row("6. ค่าตอบแทนขายเอง/ตัวแทนตรง (DPO)","item6")}
               ${row("7. ค่าสร้างและรักษาตัวแทน","item7")}
               <tr style="border-top:2px solid #123F6B22;font-weight:700;">
                 <td style="text-align:left;color:var(--navy);">รวมประมาณการ</td>
@@ -975,7 +984,8 @@ function renderTeamTab(){
             ${diffRow("1. เงินเดือน", resA.item1, resB.item1)}
             ${diffRow("2. ค่าขยายงาน", resA.item2, resB.item2)}
             ${diffRow("3. โบนัสส่วนเกินโควตา", resA.item3, resB.item3)}
-            ${diffRow("6. ค่าตอบแทนขายเอง/ตัวแทนตรง", resA.item6, resB.item6)}
+            ${(resA.flat3>0||resB.flat3>0)?`<tr><td style="text-align:left;padding-left:16px;font-size:14px;color:var(--muted);">— รวมโบนัส 2 (บาทคงที่)</td><td class="r" style="font-size:14px;color:var(--muted);">${resA.flat3>0?THB(resA.flat3):'—'}</td><td class="r" style="font-size:14px;color:var(--muted);">${resB.flat3>0?THB(resB.flat3):'—'}</td><td class="r"></td></tr>`:''}
+            ${diffRow("6. ค่าตอบแทนขายเอง/ตัวแทนตรง (DPO)", resA.item6, resB.item6)}
             <tr><td style="text-align:left;">7. ค่าสร้างและรักษาตัวแทน</td><td class="r">${THB(item7cmp)}</td><td class="r">${THB(item7cmp)}</td><td class="r" style="color:var(--muted);">เท่ากัน</td></tr>
             <tr style="border-top:2px solid #123F6B22;font-weight:700;">
               <td style="text-align:left;color:var(--navy);">รวมประมาณการ</td>
@@ -1136,7 +1146,7 @@ const DEFAULT_AGENT_DATA = {
 const DEFAULT_STATE = {
   agents: { "ตัวแทนคนที่ 1": JSON.parse(JSON.stringify(DEFAULT_AGENT_DATA)) },
   currentAgent: "ตัวแทนคนที่ 1",
-  umGoal: { targetFYC: 0, startMonth: 0, endMonth: 11, position: "", compareA: "", compareB: "", monthOverrides: {}, newAgentPremiums: {} },
+  umGoal: { targetFYC: 0, startMonth: 0, endMonth: 11, position: "", compareA: "", compareB: "", monthOverrides: {}, directOverrides: {}, newAgentPremiums: {} },
 };
 let state = loadState();
 let activeTab = "goals";
@@ -1957,6 +1967,20 @@ function bindEvents(){
       else{
         const num = Number(raw);
         if (!isNaN(num) && num>=0){ if(!state.umGoal.monthOverrides) state.umGoal.monthOverrides={}; state.umGoal.monthOverrides[key] = num; }
+      }
+      saveState(); render();
+    };
+  });
+  document.querySelectorAll("[data-direct-override]").forEach(inp=>{
+    inp.onfocus = (e)=>e.target.select();
+    inp.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
+    inp.onblur = (e)=>{
+      const key = inp.dataset.directOverride;
+      const raw = stripCommas(e.target.value.trim());
+      if (raw===""){ delete state.umGoal.directOverrides[key]; }
+      else{
+        const num = Number(raw);
+        if (!isNaN(num) && num>=0){ if(!state.umGoal.directOverrides) state.umGoal.directOverrides={}; state.umGoal.directOverrides[key] = num; }
       }
       saveState(); render();
     };
