@@ -768,7 +768,11 @@ function renderTeamTab(){
               return sum + ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; }).reduce((s,e)=>s+e.fyc,0);
             },0)
           );
-          const qTeamFyc = monthlyFycThisQ.reduce((a,b)=>a+b,0);
+          const autoQTeamFyc = monthlyFycThisQ.reduce((a,b)=>a+b,0);
+          const overrideKey = `${selYear}-${q}`;
+          const overrideVal = state.umGoal.qtyOverrides?.[overrideKey];
+          const isOverridden = overrideVal!==undefined && overrideVal!==null;
+          const qTeamFyc = isOverridden ? overrideVal : autoQTeamFyc;
           const rate = salesCompRate(qTeamFyc, salesCompThreshold);
           const multiplier = salesCompThreshold>0 ? (qTeamFyc/salesCompThreshold) : 0;
           const reward = qTeamFyc * rate / 100;
@@ -784,7 +788,11 @@ function renderTeamTab(){
           return `<div class="qcard" style="background:${NAVY_TINTS[q-1]};">
             ${isCurrentQ?`<div class="badge-current">ไตรมาสปัจจุบัน</div>`:''}
             <div class="head"><span>ไตรมาส ${q}</span><span>${rate>0?'✔':'✕'}</span></div>
-            <div class="mini-row"><span>FYC ทีมไตรมาสนี้</span><span class="v ${rate>0?'ok':''}">${THB(qTeamFyc)} บาท</span></div>
+            <div class="mini-row"><span>FYC ทีมไตรมาสนี้ ${isOverridden?'✏️':'(อัตโนมัติ)'}</span><span class="v ${rate>0?'ok':''}">${THB(qTeamFyc)} บาท</span></div>
+            <div style="display:flex;gap:6px;align-items:center;margin:6px 0;">
+              <input type="text" inputmode="decimal" data-qty-override="${overrideKey}" placeholder="เท่ากับที่คีย์ไว้ (${THB(autoQTeamFyc)})" value="${isOverridden?esc(formatThousands(String(overrideVal))):''}" style="flex:1;padding:5px 7px;font-size:15px;">
+              ${isOverridden?`<button class="icon-btn" data-qty-reset="${overrideKey}" title="กลับเป็นอัตโนมัติ">↺</button>`:''}
+            </div>
             <div class="mini-row"><span>เทียบเกณฑ์ (${multiplier.toFixed(2)} เท่า)</span><span class="v">${rate>0?`อัตรา ${rate}%`:'ยังไม่ถึงเกณฑ์'}</span></div>
             <div class="mini-row"><span>ผลตอบแทนข้อ 6</span><span class="v ok" style="font-weight:700;">${THB(reward)} บาท</span></div>
             ${nextTier?`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);">
@@ -792,6 +800,7 @@ function renderTeamTab(){
               <div class="line" style="color:var(--good);font-weight:700;font-size:16px;">→ อัตรา ${nextTier.rate}% (เพิ่มขึ้น ${THB((nextTier.mult*salesCompThreshold*nextTier.rate/100)-reward)} บาท)</div>
             </div>`:`<div class="alert-box" style="background:#F1F8F3;border-color:var(--good);"><div class="line" style="color:var(--good);font-weight:700;font-size:16px;">🏆 อยู่ขั้นสูงสุดแล้ว</div></div>`}
             <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #123F6B1A;">
+              <div style="font-size:14px;color:var(--muted);margin-bottom:4px;">ผลงานที่คีย์ไว้จริง (อ้างอิง):</div>
               <table class="qtable">
                 <thead><tr><th>เดือน</th><th class="r">FYC ทีม (฿)</th></tr></thead>
                 <tbody>${monthRowsHtml}</tbody>
@@ -1141,7 +1150,7 @@ const DEFAULT_AGENT_DATA = {
 const DEFAULT_STATE = {
   agents: { "ตัวแทนคนที่ 1": JSON.parse(JSON.stringify(DEFAULT_AGENT_DATA)) },
   currentAgent: "ตัวแทนคนที่ 1",
-  umGoal: { targetFYC: 0, startMonth: 0, endMonth: 11, position: "", compareA: "", compareB: "" },
+  umGoal: { targetFYC: 0, startMonth: 0, endMonth: 11, position: "", compareA: "", compareB: "", qtyOverrides: {} },
 };
 let state = loadState();
 let activeTab = "goals";
@@ -1934,6 +1943,26 @@ function bindEvents(){
   if (compareASelect) compareASelect.onchange = (e)=>{ state.umGoal.compareA = e.target.value; saveState(); render(); };
   const compareBSelect = document.getElementById("compare-pos-b");
   if (compareBSelect) compareBSelect.onchange = (e)=>{ state.umGoal.compareB = e.target.value; saveState(); render(); };
+  document.querySelectorAll("[data-qty-override]").forEach(inp=>{
+    inp.onfocus = (e)=>e.target.select();
+    inp.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
+    inp.onblur = (e)=>{
+      const key = inp.dataset.qtyOverride;
+      const raw = stripCommas(e.target.value.trim());
+      if (raw===""){ delete state.umGoal.qtyOverrides[key]; }
+      else{
+        const num = Number(raw);
+        if (!isNaN(num) && num>=0){ if(!state.umGoal.qtyOverrides) state.umGoal.qtyOverrides={}; state.umGoal.qtyOverrides[key] = num; }
+      }
+      saveState(); render();
+    };
+  });
+  document.querySelectorAll("[data-qty-reset]").forEach(btn=>{
+    btn.onclick = ()=>{
+      delete state.umGoal.qtyOverrides[btn.dataset.qtyReset];
+      saveState(); render();
+    };
+  });
   const umGoalInput = document.getElementById("um-goal-fyc-input");
   if (umGoalInput){
     umGoalInput.oninput = (e)=>{ umGoalsFycInput = formatThousands(stripCommas(e.target.value)); e.target.value = umGoalsFycInput; };
