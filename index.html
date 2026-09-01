@@ -705,7 +705,60 @@ function renderTeamTab(){
         }
       }
 
-      return `<div class="card">
+      const monthOverrides = state.umGoal.monthOverrides || {};
+
+      return `
+      <h3 style="margin:4px 0 4px;">🎯 ควบคุมผลงานเพื่อผลตอบแทนข้อ 6 (${selectedPosition.label})</h3>
+      <p class="sub" style="margin-top:0;">FYC รวมทั้งทีมต่อไตรมาส เทียบกับเกณฑ์ขั้นต่ำ ${THB(salesCompThreshold)} บาท/ไตรมาส ของตำแหน่งนี้ — แก้ไขตัวเลขรายเดือนเองได้ ค่าเริ่มต้นดึงจากผลงานที่คีย์ไว้จริง</p>
+      <div class="qgrid">
+        ${[1,2,3,4].map(q=>{
+          const qMonths = [ (q-1)*3, (q-1)*3+1, (q-1)*3+2 ];
+          const monthlyFycThisQ = qMonths.map(m=>{
+            const auto = names.reduce((sum,name)=>{
+              const ag = state.agents[name];
+              return sum + ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; }).reduce((s,e)=>s+e.fyc,0);
+            },0);
+            const key = `${selYear}-${m}`;
+            const ov = monthOverrides[key];
+            return { month:m, key, auto, value: (ov!==undefined && ov!==null) ? ov : auto, isOverridden: ov!==undefined && ov!==null };
+          });
+          const qTeamFyc = monthlyFycThisQ.reduce((s,x)=>s+x.value,0);
+          const rate = salesCompRate(qTeamFyc, salesCompThreshold);
+          const multiplier = salesCompThreshold>0 ? (qTeamFyc/salesCompThreshold) : 0;
+          const reward = qTeamFyc * rate / 100;
+          const isCurrentQ = q===currentQ6;
+          let nextTier = null;
+          if (multiplier<1.0) nextTier = {mult:1.0, rate:20};
+          else if (multiplier<1.75) nextTier = {mult:1.75, rate:22};
+          else if (multiplier<2.5) nextTier = {mult:2.5, rate:25};
+          const monthRowsHtml = monthlyFycThisQ.map(x=>`<tr>
+            <td style="color:var(--navy-deep);font-weight:600;">${THAI_MONTH_SHORT[x.month]} ${x.isOverridden?'✏️':''}</td>
+            <td class="r">
+              <input type="text" inputmode="decimal" data-qty-override="${x.key}" value="${esc(formatThousands(String(x.value)))}" style="width:100px;padding:4px 6px;font-size:15px;text-align:right;">
+              ${x.isOverridden?`<button class="icon-btn" data-qty-reset="${x.key}" title="กลับเป็นอัตโนมัติ (${THB(x.auto)})">↺</button>`:''}
+            </td>
+          </tr>`).join("");
+          return `<div class="qcard" style="background:${NAVY_TINTS[q-1]};">
+            ${isCurrentQ?`<div class="badge-current">ไตรมาสปัจจุบัน</div>`:''}
+            <div class="head"><span>ไตรมาส ${q}</span><span>${rate>0?'✔':'✕'}</span></div>
+            <div class="mini-row"><span>FYC ทีมไตรมาสนี้</span><span class="v ${rate>0?'ok':''}">${THB(qTeamFyc)} บาท</span></div>
+            <div class="mini-row"><span>เทียบเกณฑ์ (${multiplier.toFixed(2)} เท่า)</span><span class="v">${rate>0?`อัตรา ${rate}%`:'ยังไม่ถึงเกณฑ์'}</span></div>
+            <div class="mini-row"><span>ผลตอบแทนข้อ 6</span><span class="v ok" style="font-weight:700;">${THB(reward)} บาท</span></div>
+            ${nextTier?`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);">
+              <div class="title" style="color:var(--navy);font-size:16px;">🎯 ขาดอีก ${THB(Math.max(0,nextTier.mult*salesCompThreshold-qTeamFyc))} บาท</div>
+              <div class="line" style="color:var(--good);font-weight:700;font-size:16px;">→ อัตรา ${nextTier.rate}% (เพิ่มขึ้น ${THB((nextTier.mult*salesCompThreshold*nextTier.rate/100)-reward)} บาท)</div>
+            </div>`:`<div class="alert-box" style="background:#F1F8F3;border-color:var(--good);"><div class="line" style="color:var(--good);font-weight:700;font-size:16px;">🏆 อยู่ขั้นสูงสุดแล้ว</div></div>`}
+            <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #123F6B1A;">
+              <table class="qtable">
+                <thead><tr><th>เดือน</th><th class="r">FYC ทีม (฿)</th></tr></thead>
+                <tbody>${monthRowsHtml}</tbody>
+              </table>
+            </div>
+          </div>`;
+        }).join("")}
+      </div>
+
+      <div class="card">
         <h3>💼 สถานะผลตอบแทน UM ตามตำแหน่ง (${selectedPosition.label})</h3>
         <div class="tech-row"><span class="lab">1. เงินเดือน</span><span class="val">${THB(selectedPosition.salary)} บาท/เดือน</span></div>
         <div class="tech-row"><span class="lab">2. ค่าขยายงาน</span><span class="val">${selectedPosition.tenurePct}%</span></div>
@@ -733,81 +786,6 @@ function renderTeamTab(){
         </div>`:`<div class="alert-box" style="background:#F1F8F3;border-color:var(--good);margin-bottom:10px;"><div class="line" style="color:var(--good);font-weight:700;">🏆 ไตรมาส ${currentQ6} (ปัจจุบัน) อยู่ขั้นสูงสุดแล้ว (250%+)</div></div>`):''}
         <div class="tech-row"><span class="lab">7. ค่าสร้างและรักษาตัวแทน</span><span class="val good">${THB(teamBuildingReward)} บาท</span></div>
         ${teamBuildingDetail.length?`<div style="font-size:15px;color:var(--muted);">${teamBuildingDetail.map(d=>`· ${esc(d.name)} ไตรมาส ${d.q}: ${d.level} (${THB(d.reward)} บาท)`).join("<br/>")}</div>`:`<div style="font-size:15px;color:var(--muted);">ยังไม่มีไตรมาสที่เข้าเกณฑ์ (ต้องมีรายใหม่ ≥2 รายต่อไตรมาส และตั้งวันที่เริ่มมีผลงานไว้ที่ Joining Bonus)</div>`}
-      </div>
-
-      <div class="card">
-        <h3>📈 คาดการณ์สิ้นปี (${selectedPosition.label})</h3>
-        <p class="sub">คำนวณจากอัตราเฉลี่ยที่ทำได้จริงต่อเดือน แล้วฉายภาพไปจนจบปีถ้าทำได้ในอัตราเดิมต่อเนื่อง</p>
-        ${(()=>{
-          if (monthsElapsed<=0) return `<div class="empty">ยังไม่มีข้อมูลพอสำหรับคาดการณ์</div>`;
-          const avgMonthly = cumulativeTeamCFYC / monthsElapsed;
-          const projectedYearEnd = avgMonthly * 12;
-          const projGap = selectedPosition.cfycYear - projectedYearEnd;
-          const willMeetQuota = projectedYearEnd >= selectedPosition.cfycYear;
-          return `
-            <div class="tech-row"><span class="lab">อัตราเฉลี่ยต่อเดือน (จากข้อมูลจริง ${monthsElapsed} เดือน)</span><span class="val">${THB(avgMonthly)} บาท/เดือน</span></div>
-            <div class="tech-row"><span class="lab">คาดการณ์ CFYC ทั้งปี</span><span class="val ${willMeetQuota?'good':'warn'}">${THB(projectedYearEnd)} บาท</span></div>
-            <div class="tech-row"><span class="lab">โควตาประจำปีของตำแหน่งนี้</span><span class="val">${THB(selectedPosition.cfycYear)} บาท</span></div>
-            <div class="alert-box" style="background:${willMeetQuota?'#F1F8F3':'#FBEEEC'};border-color:${willMeetQuota?'var(--good)':'var(--bad)'};margin-top:10px;">
-              <div class="line" style="color:${willMeetQuota?'var(--good)':'var(--bad)'};font-weight:700;">
-                ${willMeetQuota?`✔ ถ้าทำได้อัตราเดิมต่อเนื่อง จะเกินโควตาทั้งปีไปอีกประมาณ ${THB(-projGap)} บาท`:`⚠ ถ้าทำได้อัตราเดิมต่อเนื่อง จะขาดโควตาทั้งปีอยู่ประมาณ ${THB(projGap)} บาท`}
-              </div>
-              <div class="line" style="font-size:15px;color:var(--muted);margin-top:2px;">* เป็นการประมาณการอย่างง่ายจากอัตราเฉลี่ยที่ผ่านมา ไม่ได้คำนึงถึงฤดูกาลหรือปัจจัยอื่น</div>
-            </div>`;
-        })()}
-      </div>
-
-      <h3 style="margin:20px 0 4px;">🎯 ควบคุมผลงานเพื่อผลตอบแทนข้อ 6 (${selectedPosition.label})</h3>
-      <p class="sub" style="margin-top:0;">FYC รวมทั้งทีมต่อไตรมาส เทียบกับเกณฑ์ขั้นต่ำ ${THB(salesCompThreshold)} บาท/ไตรมาส ของตำแหน่งนี้</p>
-      <div class="qgrid">
-        ${[1,2,3,4].map(q=>{
-          const qMonths = [ (q-1)*3, (q-1)*3+1, (q-1)*3+2 ];
-          const monthlyFycThisQ = qMonths.map(m=>
-            names.reduce((sum,name)=>{
-              const ag = state.agents[name];
-              return sum + ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; }).reduce((s,e)=>s+e.fyc,0);
-            },0)
-          );
-          const autoQTeamFyc = monthlyFycThisQ.reduce((a,b)=>a+b,0);
-          const overrideKey = `${selYear}-${q}`;
-          const overrideVal = state.umGoal.qtyOverrides?.[overrideKey];
-          const isOverridden = overrideVal!==undefined && overrideVal!==null;
-          const qTeamFyc = isOverridden ? overrideVal : autoQTeamFyc;
-          const rate = salesCompRate(qTeamFyc, salesCompThreshold);
-          const multiplier = salesCompThreshold>0 ? (qTeamFyc/salesCompThreshold) : 0;
-          const reward = qTeamFyc * rate / 100;
-          const isCurrentQ = q===currentQ6;
-          let nextTier = null;
-          if (multiplier<1.0) nextTier = {mult:1.0, rate:20};
-          else if (multiplier<1.75) nextTier = {mult:1.75, rate:22};
-          else if (multiplier<2.5) nextTier = {mult:2.5, rate:25};
-          const monthRowsHtml = qMonths.map((m,i)=>`<tr>
-            <td style="color:${monthlyFycThisQ[i]>0?'var(--navy-deep)':'var(--muted)'};font-weight:${monthlyFycThisQ[i]>0?600:400};">${THAI_MONTH_SHORT[m]}</td>
-            <td class="r" style="color:var(--ink);font-weight:600;">${THB(monthlyFycThisQ[i])}</td>
-          </tr>`).join("");
-          return `<div class="qcard" style="background:${NAVY_TINTS[q-1]};">
-            ${isCurrentQ?`<div class="badge-current">ไตรมาสปัจจุบัน</div>`:''}
-            <div class="head"><span>ไตรมาส ${q}</span><span>${rate>0?'✔':'✕'}</span></div>
-            <div class="mini-row"><span>FYC ทีมไตรมาสนี้ ${isOverridden?'✏️':'(อัตโนมัติ)'}</span><span class="v ${rate>0?'ok':''}">${THB(qTeamFyc)} บาท</span></div>
-            <div style="display:flex;gap:6px;align-items:center;margin:6px 0;">
-              <input type="text" inputmode="decimal" data-qty-override="${overrideKey}" placeholder="เท่ากับที่คีย์ไว้ (${THB(autoQTeamFyc)})" value="${isOverridden?esc(formatThousands(String(overrideVal))):''}" style="flex:1;padding:5px 7px;font-size:15px;">
-              ${isOverridden?`<button class="icon-btn" data-qty-reset="${overrideKey}" title="กลับเป็นอัตโนมัติ">↺</button>`:''}
-            </div>
-            <div class="mini-row"><span>เทียบเกณฑ์ (${multiplier.toFixed(2)} เท่า)</span><span class="v">${rate>0?`อัตรา ${rate}%`:'ยังไม่ถึงเกณฑ์'}</span></div>
-            <div class="mini-row"><span>ผลตอบแทนข้อ 6</span><span class="v ok" style="font-weight:700;">${THB(reward)} บาท</span></div>
-            ${nextTier?`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);">
-              <div class="title" style="color:var(--navy);font-size:16px;">🎯 ขาดอีก ${THB(Math.max(0,nextTier.mult*salesCompThreshold-qTeamFyc))} บาท</div>
-              <div class="line" style="color:var(--good);font-weight:700;font-size:16px;">→ อัตรา ${nextTier.rate}% (เพิ่มขึ้น ${THB((nextTier.mult*salesCompThreshold*nextTier.rate/100)-reward)} บาท)</div>
-            </div>`:`<div class="alert-box" style="background:#F1F8F3;border-color:var(--good);"><div class="line" style="color:var(--good);font-weight:700;font-size:16px;">🏆 อยู่ขั้นสูงสุดแล้ว</div></div>`}
-            <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #123F6B1A;">
-              <div style="font-size:14px;color:var(--muted);margin-bottom:4px;">ผลงานที่คีย์ไว้จริง (อ้างอิง):</div>
-              <table class="qtable">
-                <thead><tr><th>เดือน</th><th class="r">FYC ทีม (฿)</th></tr></thead>
-                <tbody>${monthRowsHtml}</tbody>
-              </table>
-            </div>
-          </div>`;
-        }).join("")}
       </div>
 
       <div class="card">
@@ -878,6 +856,34 @@ function renderTeamTab(){
         })()}
       </div>`;
     })():''}
+
+
+
+    <div class="card">
+      <h3>🆕 ตัวแทนใหม่ พ.ศ. ${toBE(selYear)}</h3>
+      <p class="sub">นับจากวันที่มีผลงานขึ้นแรก (Joining Bonus) ที่ตกอยู่ในปีนี้</p>
+      ${(()=>{
+        const newAgentsThisYear = names.filter(name=>{
+          const sd = state.agents[name].competitions?.firstSaleDate;
+          return sd && new Date(sd+"T00:00:00").getFullYear()===selYear;
+        });
+        if (newAgentsThisYear.length===0) return `<div class="empty">ยังไม่มีตัวแทนใหม่ที่ตั้งวันที่มีผลงานขึ้นแรกไว้ในปีนี้</div>`;
+        return newAgentsThisYear.map(name=>{
+          const sd = state.agents[name].competitions.firstSaleDate;
+          const sdLabel = new Date(sd+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
+          return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #123F6B0D;">
+            <span style="font-weight:600;color:var(--navy);">${esc(name)}</span>
+            <span style="color:var(--muted);font-size:15px;">เริ่มมีผลงาน ${sdLabel}</span>
+          </div>`;
+        }).join("");
+      })()}
+    </div>
+
+    <div class="card">
+      <h3>📊 เทียบผลงานแต่ละคน</h3>
+      <p class="sub">FYC สะสมทั้งปี ${toBE(selYear)}</p>
+      ${rows.length?barsHtml:'<div class="empty">ยังไม่มีตัวแทนในระบบ</div>'}
+    </div>
 
     <div class="card">
       <h3>⚖️ เปรียบเทียบตำแหน่ง</h3>
@@ -972,39 +978,6 @@ function renderTeamTab(){
         </div>`:''}
         <p class="foot-note" style="margin-top:8px;">* ข้อ 7 ไม่ขึ้นกับตำแหน่ง (เกณฑ์เดียวกันทุกตำแหน่ง) จึงเท่ากันทั้งสองฝั่งเสมอ · ข้อ 4 (ค่าเสริมมือ) ก็ไม่ขึ้นกับตำแหน่งเช่นกัน จึงไม่ต้องเทียบ</p>`;
       })()}
-    </div>
-
-    <div class="card">
-      <h3>🆕 ตัวแทนใหม่ พ.ศ. ${toBE(selYear)}</h3>
-      <p class="sub">นับจากวันที่มีผลงานขึ้นแรก (Joining Bonus) ที่ตกอยู่ในปีนี้</p>
-      ${(()=>{
-        const newAgentsThisYear = names.filter(name=>{
-          const sd = state.agents[name].competitions?.firstSaleDate;
-          return sd && new Date(sd+"T00:00:00").getFullYear()===selYear;
-        });
-        if (newAgentsThisYear.length===0) return `<div class="empty">ยังไม่มีตัวแทนใหม่ที่ตั้งวันที่มีผลงานขึ้นแรกไว้ในปีนี้</div>`;
-        return newAgentsThisYear.map(name=>{
-          const sd = state.agents[name].competitions.firstSaleDate;
-          const sdLabel = new Date(sd+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
-          return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #123F6B0D;">
-            <span style="font-weight:600;color:var(--navy);">${esc(name)}</span>
-            <span style="color:var(--muted);font-size:15px;">เริ่มมีผลงาน ${sdLabel}</span>
-          </div>`;
-        }).join("");
-      })()}
-    </div>
-
-    <div class="card">
-      <h3>📊 เทียบผลงานแต่ละคน</h3>
-      <p class="sub">FYC สะสมทั้งปี ${toBE(selYear)}</p>
-      ${rows.length?barsHtml:'<div class="empty">ยังไม่มีตัวแทนในระบบ</div>'}
-    </div>
-
-    <div class="card">
-      <h3>👥 อันดับตัวแทน</h3>
-      <p class="sub">เรียงจากคนที่ใกล้เป้าหมายที่สุด — แตะชื่อเพื่อสลับไปดู/แก้ไขรายการผลงานของคนนั้นได้โดยตรง</p>
-      <p style="font-size:14px;color:var(--muted);margin:-6px 0 10px;">😴 = ไม่มีผลงานเข้ามาเลย ≥30 วัน (งานหาย) · 🆘 = มีผลงานต่อเนื่องแต่ยังต่ำกว่า 50% ของเป้า</p>
-      ${rows.length?leaderboardHtml:'<div class="empty">ยังไม่มีตัวแทนในระบบ</div>'}
     </div>
   `;
 }
@@ -1150,7 +1123,7 @@ const DEFAULT_AGENT_DATA = {
 const DEFAULT_STATE = {
   agents: { "ตัวแทนคนที่ 1": JSON.parse(JSON.stringify(DEFAULT_AGENT_DATA)) },
   currentAgent: "ตัวแทนคนที่ 1",
-  umGoal: { targetFYC: 0, startMonth: 0, endMonth: 11, position: "", compareA: "", compareB: "", qtyOverrides: {} },
+  umGoal: { targetFYC: 0, startMonth: 0, endMonth: 11, position: "", compareA: "", compareB: "", monthOverrides: {} },
 };
 let state = loadState();
 let activeTab = "goals";
@@ -1949,17 +1922,17 @@ function bindEvents(){
     inp.onblur = (e)=>{
       const key = inp.dataset.qtyOverride;
       const raw = stripCommas(e.target.value.trim());
-      if (raw===""){ delete state.umGoal.qtyOverrides[key]; }
+      if (raw===""){ delete state.umGoal.monthOverrides[key]; }
       else{
         const num = Number(raw);
-        if (!isNaN(num) && num>=0){ if(!state.umGoal.qtyOverrides) state.umGoal.qtyOverrides={}; state.umGoal.qtyOverrides[key] = num; }
+        if (!isNaN(num) && num>=0){ if(!state.umGoal.monthOverrides) state.umGoal.monthOverrides={}; state.umGoal.monthOverrides[key] = num; }
       }
       saveState(); render();
     };
   });
   document.querySelectorAll("[data-qty-reset]").forEach(btn=>{
     btn.onclick = ()=>{
-      delete state.umGoal.qtyOverrides[btn.dataset.qtyReset];
+      delete state.umGoal.monthOverrides[btn.dataset.qtyReset];
       saveState(); render();
     };
   });
