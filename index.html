@@ -219,6 +219,48 @@ const PERSISTENCY_BAND_OPTIONS = [
 const NAVY_TINTS = ["#123F6B0C", "#123F6B18", "#123F6B24", "#123F6B30"];
 
 // การแข่งขันพิเศษ (ตั้งเอง) — คำนวณจาก FYC ที่บันทึกในช่วงวันที่แข่งขันเท่านั้น
+// ตำแหน่งผู้บริหารตัวแทน (ผลประโยชน์ผู้บริหารตัวแทน บช.8/66) — ใช้ตั้งเป้า CFYC ของ UM อัตโนมัติตามตำแหน่ง
+const UM_POSITIONS = [
+  { value: "unit2", label: "ผู้จัดการหน่วย 2", cfycMonth: 17000, cfycYear: 204000, salary: 5000, tenurePct: 19 },
+  { value: "unit1", label: "ผู้จัดการหน่วย 1", cfycMonth: 20000, cfycYear: 240000, salary: 6100, tenurePct: 19 },
+  { value: "zone2", label: "ผู้จัดการเขตงาน ข.2", cfycMonth: 28000, cfycYear: 336000, salary: 8100, tenurePct: 20 },
+  { value: "zone1", label: "ผู้จัดการเขตงาน ข.1", cfycMonth: 36000, cfycYear: 432000, salary: 10000, tenurePct: 20 },
+  { value: "region2", label: "ผู้จัดการภาค ภ.2", cfycMonth: 50000, cfycYear: 600000, salary: 13700, tenurePct: 21 },
+  { value: "region1", label: "ผู้จัดการภาค ภ.1", cfycMonth: 60000, cfycYear: 720000, salary: 16400, tenurePct: 21 },
+  { value: "director", label: "ผู้อำนวยการภาค ผอ.ภ.", cfycMonth: 85000, cfycYear: 1020000, salary: 23500, tenurePct: 22 },
+  { value: "director-s", label: "ผู้อำนวยการภาค ผอ.ภ.ส.", cfycMonth: 120000, cfycYear: 1440000, salary: 34000, tenurePct: 22 },
+];
+// ข้อ 3: โบนัสส่วนแบ่งกำไรตัวแทนใหม่ (Pers เบี้ยตรงปี 2) — % เทียบกับ CFYC/ปี ตามตำแหน่ง
+// หมายเหตุ: อ่านจากตารางต้นฉบับได้ชัดเจนเฉพาะ "อัตรา %" ที่ไล่ระดับตามช่วง % ที่ทำได้ (แถวล่างสุดของแต่ละช่วง)
+// ส่วนตัวเลข "บาทคงที่" ต่อตำแหน่งในตารางไม่สามารถแม่นยำได้ 100% จากภาพที่ได้รับ (เซลรวมกันไม่ชัดว่าตัวเลขไหนของตำแหน่งไหน)
+// จึงคำนวณให้เฉพาะส่วน "อัตรา % x FYC ตัวแทนใหม่" — ตัวเลขบาทคงที่ยังไม่รวมให้ กรุณาตรวจสอบกับตารางต้นฉบับอีกครั้ง
+const NEW_AGENT_PROFIT_BANDS = [
+  { minPct: 200, rate: 22.0 },
+  { minPct: 151, rate: 21.0 },
+  { minPct: 101, rate: 20.0 },
+  { minPct: 81, rate: 19.0 },
+  { minPct: 61, rate: 18.0 },
+  { minPct: 41, rate: 17.0 },
+  { minPct: 21, rate: 16.0 },
+  { minPct: 1, rate: 15.0 },
+];
+function newAgentProfitRate(achievedPct){
+  const band = NEW_AGENT_PROFIT_BANDS.find(b=>achievedPct>=b.minPct);
+  return band ? band.rate : 0;
+}
+// ข้อ 7: ค่าสร้างและรักษาทีมงาน (รบข.2/2546) — ต้องมีผลงานรายใหม่ >= 2 รายต่อไตรมาส จึงจะได้ตามระดับ FYC/ไตรมาส/คน
+const TEAM_BUILDING_TIERS = [
+  { level: "สตาร์", minFyc: 60000, reward: 3500 },
+  { level: "ระดับ 1", minFyc: 36000, reward: 2000 },
+  { level: "ระดับ 2", minFyc: 29000, reward: 1500 },
+  { level: "ระดับ 3", minFyc: 22000, reward: 1050 },
+  { level: "ระดับ 4", minFyc: 15000, reward: 700 },
+];
+function addMonths(dateStr, n){
+  const d = new Date(dateStr+"T00:00:00");
+  d.setMonth(d.getMonth()+n);
+  return d;
+}
 const SPECIAL_EVENTS = [
   { key: "kickoff", name: "Kick Off", start: "2026-08-30", end: "2026-11-30", tiers: [15000, 30000, 45000] },
   { key: "regional", name: "Regional", start: "2026-08-30", end: "2026-11-30", tiers: [45000] },
@@ -329,9 +371,14 @@ function renderInsightsSection(entries, selYearArg, pacing){
   if (cards.length===0) return "";
   return `<h3 style="margin:4px 0 4px;">💡 สรุปและคำแนะนำ</h3>${cards.join("")}`;
 }
-function renderTeamLeaderboard(){
+function renderTeamTab(){
   const names = Object.keys(state.agents);
-  if (names.length<2) return "";
+  const umGoal = state.umGoal ?? { targetFYC:0, startMonth:0, endMonth:11, position:"" };
+  const umStartMonth = umGoal.startMonth ?? 0;
+  const umEndMonth = umGoal.endMonth ?? 11;
+  const umPosition = umGoal.position ?? "";
+  const selectedPosition = UM_POSITIONS.find(p=>p.value===umPosition) || null;
+
   const rows = names.map(name=>{
     const ag = state.agents[name];
     const yEntries = ag.entries.filter(e=>new Date(e.date).getFullYear()===selYear);
@@ -341,19 +388,189 @@ function renderTeamLeaderboard(){
     return { name, achieved, goalFYC, pct };
   }).sort((a,b)=>b.pct-a.pct);
   const lowestPct = rows.length ? Math.min(...rows.map(r=>r.pct)) : 0;
-  return `<div class="card">
-    <h3>👥 ภาพรวมทีม (พ.ศ. ${toBE(selYear)})</h3>
-    <p class="sub">เรียงจากคนที่ใกล้เป้าหมายที่สุด ช่วยดูว่าใครต้องการความช่วยเหลือเร่งด่วน</p>
-    ${rows.map((r,i)=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #123F6B0D;">
-        <div>
-          <div style="font-weight:600;color:var(--navy);font-size:19px;">${i+1}. ${esc(r.name)} ${r.pct===lowestPct && r.pct<50 ? '🆘' : (i===0 && r.pct>0?'🥇':'')}</div>
-          <div style="font-size:15px;color:var(--muted);">${THB(r.achieved)} / ${THB(r.goalFYC)} บาท</div>
-        </div>
-        <div style="font-weight:700;font-size:22px;color:${r.pct>=100?'var(--good)':r.pct>=50?'var(--navy)':'var(--bad)'};">${Math.round(r.pct)}%</div>
+  const maxAchieved = Math.max(1, ...rows.map(r=>r.achieved));
+
+  // ผลงานรวมทั้งทีม (นับเฉพาะเดือนในช่วงเป้าหมายของ UM)
+  const teamAchievedInUmPeriod = names.reduce((sum,name)=>{
+    const ag = state.agents[name];
+    const inPeriod = ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()>=umStartMonth && d.getMonth()<=umEndMonth; });
+    return sum + inPeriod.reduce((s,e)=>s+e.fyc,0);
+  }, 0);
+  const teamAchievedAllYear = rows.reduce((s,r)=>s+r.achieved,0);
+  const teamGoalSum = rows.reduce((s,r)=>s+r.goalFYC,0);
+
+  const umGoalFYC = umGoal.targetFYC ?? 0;
+  const umRemaining = Math.max(0, umGoalFYC-teamAchievedInUmPeriod);
+  const umProgressPct = umGoalFYC>0 ? Math.max(0,Math.min(100,(teamAchievedInUmPeriod/umGoalFYC)*100)) : 0;
+  const ringR = 44, ringC = 2*Math.PI*ringR;
+  const ringOffset = ringC - (umProgressPct/100)*ringC;
+
+  const startMonthOptions = THAI_MONTH_NAMES.map((name,i)=>`<option value="${i}" ${i===umStartMonth?"selected":""}>${name}</option>`).join("");
+  const endMonthOptions = THAI_MONTH_NAMES.map((name,i)=>`<option value="${i}" ${i===umEndMonth?"selected":""} ${i<umStartMonth?"disabled":""}>${name}</option>`).join("");
+
+  const barsHtml = rows.map(r=>{
+    const barPct = Math.max(2, (r.achieved/maxAchieved)*100);
+    return `<div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:15.5px;margin-bottom:3px;">
+        <span style="color:var(--navy);font-weight:600;">${esc(r.name)}</span>
+        <span style="color:var(--muted);">${THB(r.achieved)} บาท</span>
       </div>
-    `).join("")}
-  </div>`;
+      <div style="background:#123F6B12;border-radius:6px;height:14px;overflow:hidden;">
+        <div style="width:${barPct}%;height:100%;background:linear-gradient(90deg, var(--gold-soft), var(--gold));border-radius:6px;"></div>
+      </div>
+    </div>`;
+  }).join("");
+
+  const leaderboardHtml = rows.map((r,i)=>`
+    <div data-switch-agent="${esc(r.name)}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #123F6B0D;cursor:pointer;">
+      <div>
+        <div style="font-weight:600;color:var(--navy);font-size:19px;">${i+1}. ${esc(r.name)} ${r.pct===lowestPct && r.pct<50 ? '🆘' : (i===0 && r.pct>0?'🥇':'')} ${r.name===state.currentAgent?'<span style="font-size:14px;color:var(--gold);">(กำลังดูอยู่)</span>':''}</div>
+        <div style="font-size:15px;color:var(--muted);">${THB(r.achieved)} / ${THB(r.goalFYC)} บาท</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="font-weight:700;font-size:22px;color:${r.pct>=100?'var(--good)':r.pct>=50?'var(--navy)':'var(--bad)'};">${Math.round(r.pct)}%</div>
+        <span style="color:var(--muted);font-size:18px;">›</span>
+      </div>
+    </div>`).join("");
+
+  return `
+    <div class="card dark">
+      <div class="grid-bg"></div>
+      <div style="position:relative;">
+        <h3 style="color:#fff;">🎯 เป้าหมายของ UM (แยกจากตัวแทน)</h3>
+        <p class="sub" style="color:#B9C4D6;">เป้าหมายที่ผู้จัดการหน่วยรับผิดชอบเอง วัดจากผลงานรวมของทั้งทีมในช่วงที่กำหนด</p>
+        <div style="max-width:400px;margin-bottom:14px;">
+          <label class="field dark"><span>ตำแหน่ง (อ้างอิงผลประโยชน์ผู้บริหารตัวแทน)</span>
+            <select id="um-position-select" style="background:#123F6B99;color:#fff;border-color:#ffffff33;">
+              <option value="">— ไม่ระบุตำแหน่ง (ตั้งเป้าเอง) —</option>
+              ${UM_POSITIONS.map(p=>`<option value="${p.value}" ${p.value===umPosition?"selected":""}>${p.label} (CFYC ${THB(p.cfycYear)} บาท/ปี)</option>`).join("")}
+            </select>
+          </label>
+          ${selectedPosition?`<div style="font-size:16px;color:#B9C4D6;margin-top:6px;">เงินเดือน ${THB(selectedPosition.salary)} บาท/เดือน · ค่าอายงาน ${selectedPosition.tenurePct}% · CFYC ขั้นต่ำ ${THB(selectedPosition.cfycMonth)} บาท/เดือน</div>`:''}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+          <label class="field dark" style="max-width:320px;flex:1;min-width:200px;"><span>เป้าหมาย FYC ของ UM (บาท)</span>
+            <input type="text" inputmode="decimal" id="um-goal-fyc-input" value="${esc(umGoalsFycInput)}"
+              style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;">
+          </label>
+          <label class="field dark" style="max-width:220px;flex:1;min-width:160px;"><span>เริ่มนับตั้งแต่เดือน</span>
+            <select id="um-goal-start-month" style="background:#123F6B99;color:#fff;border-color:#ffffff33;">${startMonthOptions}</select>
+          </label>
+          <label class="field dark" style="max-width:220px;flex:1;min-width:160px;"><span>สิ้นสุดที่เดือน</span>
+            <select id="um-goal-end-month" style="background:#123F6B99;color:#fff;border-color:#ffffff33;">${endMonthOptions}</select>
+          </label>
+        </div>
+        <div class="goal-flex">
+          <div class="ring-wrap">
+            <svg width="108" height="108" style="transform:rotate(-90deg)">
+              <circle cx="54" cy="54" r="${ringR}" stroke="#ffffff22" stroke-width="10" fill="none"/>
+              <circle cx="54" cy="54" r="${ringR}" stroke="url(#gg2)" stroke-width="10" fill="none"
+                stroke-dasharray="${ringC}" stroke-dashoffset="${ringOffset}" stroke-linecap="round"/>
+              <defs><linearGradient id="gg2" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#9CE3B8"/><stop offset="100%" stop-color="#4FAE74"/>
+              </linearGradient></defs>
+            </svg>
+            <div class="center"><span class="pct">${Math.round(umProgressPct)}%</span><span class="lbl">ของเป้า</span></div>
+          </div>
+          <div style="flex:1;min-width:220px;">
+            <div class="tech-row"><span class="lab">เป้าหมาย UM (${THAI_MONTH_NAMES[umStartMonth]} – ${THAI_MONTH_NAMES[umEndMonth]})</span><span class="val">${THB(umGoalFYC)} บาท</span></div>
+            <div class="tech-row"><span class="lab">ทีมทำได้แล้ว (ช่วงนี้)</span><span class="val good">${THB(teamAchievedInUmPeriod)} บาท</span></div>
+            <div class="tech-row"><span class="lab">ยังขาดอีก</span><span class="val ${umRemaining>0?'warn':''}">${THB(umRemaining)} บาท</span></div>
+          </div>
+        </div>
+        ${umGoalFYC>0 && umProgressPct>=100?`<div style="margin-top:14px;background:#1F7A4F55;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;font-weight:700;">🎉 ถึงเป้าหมาย UM แล้ว!</div>`
+          :umGoalFYC>0 && umProgressPct>=80?`<div style="margin-top:14px;background:#C69A3B33;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;">🔥 ใกล้ถึงเป้าหมาย UM แล้ว! เหลืออีกแค่ ${THB(umRemaining)} บาท (${Math.round(umProgressPct)}%)</div>`:''}
+      </div>
+    </div>
+
+    ${selectedPosition?(()=>{
+      const now = new Date();
+      const isCurrentYearView = selYear === now.getFullYear();
+      const monthsElapsed = isCurrentYearView ? now.getMonth()+1 : 12;
+      const cumulativeTeamCFYC = names.reduce((sum,name)=>{
+        const ag = state.agents[name];
+        return sum + ag.entries.filter(e=>{const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()<monthsElapsed;}).reduce((s,e)=>s+e.fyc,0);
+      },0);
+      const cumulativeRequired = selectedPosition.cfycMonth * monthsElapsed;
+      const quotaMet = cumulativeTeamCFYC>=cumulativeRequired;
+      const quotaShort = Math.max(0, cumulativeRequired-cumulativeTeamCFYC);
+
+      // ข้อ 4: ค่าเซอร์วิส 30% ของ FYC จากผลงานตัวแทนที่สร้างใหม่ ช่วง 12 เดือนแรกนับจากวันเริ่มงาน
+      let serviceFee = 0;
+      const serviceFeeDetail = [];
+      names.forEach(name=>{
+        const ag = state.agents[name];
+        if (!ag.joinDate) return;
+        const windowEnd = addMonths(ag.joinDate, 12);
+        const eligibleFYC = ag.entries.filter(e=>{ const d=new Date(e.date); return d>=new Date(ag.joinDate+"T00:00:00") && d<=windowEnd; }).reduce((s,e)=>s+e.fyc,0);
+        if (eligibleFYC>0){ serviceFee += eligibleFYC*0.3; serviceFeeDetail.push({name, eligibleFYC}); }
+      });
+
+      // ข้อ 7: ค่าสร้างและรักษาทีมงาน — ต้องมีรายใหม่ >= 2 รายต่อไตรมาส จึงได้ตามระดับ FYC/ไตรมาส/คน
+      let teamBuildingReward = 0;
+      const teamBuildingDetail = [];
+      names.forEach(name=>{
+        const ag = state.agents[name];
+        if (!ag.joinDate) return;
+        for (let q=1; q<=4; q++){
+          const qMonths = [ (q-1)*3, (q-1)*3+1, (q-1)*3+2 ];
+          const qEntries = ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && qMonths.includes(d.getMonth()); });
+          const newCases = qEntries.filter(isOrigin).length;
+          const qFyc = qEntries.reduce((s,e)=>s+e.fyc,0);
+          if (newCases>=2){
+            const tier = TEAM_BUILDING_TIERS.find(t=>qFyc>=t.minFyc);
+            if (tier){ teamBuildingReward += tier.reward; teamBuildingDetail.push({name, q, level:tier.level, reward:tier.reward}); }
+          }
+        }
+      });
+
+      // ข้อ 3: โบนัสส่วนแบ่งกำไรตัวแทนใหม่ — % ของ FYC ตัวแทนใหม่ (12 เดือนแรก) เทียบเป็น % ของ CFYC/ปีตามตำแหน่ง
+      const newAgentFYC = serviceFeeDetail.reduce((s,d)=>s+d.eligibleFYC,0);
+      const achievedPctOfCfyc = selectedPosition.cfycYear>0 ? (newAgentFYC/selectedPosition.cfycYear)*100 : 0;
+      const profitRate = achievedPctOfCfyc>0 ? newAgentProfitRate(achievedPctOfCfyc) : 0;
+      const profitBonus = newAgentFYC * profitRate / 100;
+
+      return `<div class="card">
+        <h3>💼 สถานะผลตอบแทน UM ตามตำแหน่ง (${selectedPosition.label})</h3>
+        <div class="tech-row"><span class="lab">1. เงินเดือน</span><span class="val">${THB(selectedPosition.salary)} บาท/เดือน</span></div>
+        <div class="tech-row"><span class="lab">2. ค่าอายงาน</span><span class="val">${selectedPosition.tenurePct}%</span></div>
+        <div class="alert-box" style="margin-top:10px;background:${quotaMet?'#F1F8F3':'#FBEEEC'};border-color:${quotaMet?'var(--good)':'var(--bad)'};">
+          <div class="title" style="color:${quotaMet?'var(--good)':'var(--bad)'};">${quotaMet?'✔ CFYC สะสมทั้งปีถึงเกณฑ์แล้ว':'⚠ CFYC สะสมทั้งปียังไม่ถึงเกณฑ์'}</div>
+          <div class="line" style="color:${quotaMet?'var(--good)':'var(--bad)'};">ทีมทำได้สะสม ${THB(cumulativeTeamCFYC)} จากเกณฑ์สะสม ${THB(cumulativeRequired)} บาท (${monthsElapsed} เดือน × ${THB(selectedPosition.cfycMonth)} บาท)${quotaShort>0?` — ขาดอีก ${THB(quotaShort)} บาท`:''}</div>
+          <div class="line" style="color:${quotaMet?'var(--good)':'var(--bad)'};font-size:15px;margin-top:2px;">* เงินเดือนคิดจากยอดสะสมทั้งปี ไม่ได้ตัดแยกเป็นรายเดือน — ถ้าสะสมถึงเกณฑ์ครบทุกเดือนจึงจะได้รับเงินเดือนเต็ม</div>
+        </div>
+        <div class="tech-row" style="margin-top:10px;"><span class="lab">3. โบนัสส่วนแบ่งกำไรตัวแทนใหม่ (อัตรา ${profitRate}%)</span><span class="val good">${THB(profitBonus)} บาท</span></div>
+        <div style="font-size:15px;color:var(--muted);margin-bottom:8px;">FYC ตัวแทนใหม่ ${THB(newAgentFYC)} บาท = ${achievedPctOfCfyc.toFixed(1)}% ของ CFYC/ปีตำแหน่งนี้ (${THB(selectedPosition.cfycYear)} บาท)</div>
+        <div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);margin-bottom:10px;">
+          <div class="line" style="color:var(--navy);font-size:15px;">⚠ คำนวณเฉพาะส่วนอัตรา % เท่านั้น ตัวเลข "บาทคงที่" เพิ่มเติมต่อตำแหน่งในตารางต้นฉบับยังไม่ได้รวม เพราะอ่านจากตารางไม่ชัดเจนพอ กรุณาตรวจสอบกับตารางต้นฉบับก่อนใช้อ้างอิงจริง</div>
+        </div>
+        <div class="tech-row"><span class="lab">4. ค่าเซอร์วิส (30% จากตัวแทนใหม่ 12 เดือนแรก)</span><span class="val good">${THB(serviceFee)} บาท</span></div>
+        ${serviceFeeDetail.length?`<div style="font-size:15px;color:var(--muted);margin-bottom:8px;">${serviceFeeDetail.map(d=>`· ${esc(d.name)}: FYC ${THB(d.eligibleFYC)} บาท`).join("<br/>")}</div>`:`<div style="font-size:15px;color:var(--muted);margin-bottom:8px;">ยังไม่มีตัวแทนที่ตั้งวันที่เริ่มงานไว้ (ตั้งได้ที่ปุ่ม ✏️ ข้างชื่อตัวแทนด้านบน)</div>`}
+        <div class="tech-row"><span class="lab">7. ค่าสร้างและรักษาทีมงาน</span><span class="val good">${THB(teamBuildingReward)} บาท</span></div>
+        ${teamBuildingDetail.length?`<div style="font-size:15px;color:var(--muted);">${teamBuildingDetail.map(d=>`· ${esc(d.name)} ไตรมาส ${d.q}: ${d.level} (${THB(d.reward)} บาท)`).join("<br/>")}</div>`:`<div style="font-size:15px;color:var(--muted);">ยังไม่มีไตรมาสที่เข้าเกณฑ์ (ต้องมีรายใหม่ ≥2 รายต่อไตรมาส และตั้งวันที่เริ่มงานไว้)</div>`}
+        <p class="foot-note" style="margin-top:10px;">* ข้อ 6 (ค่าตอบแทนดูแลตัวแทน) ยังไม่ได้คำนวณให้ เพราะต้องรอรายละเอียดกลไกเพิ่มเติม</p>
+      </div>`;
+    })():''}
+
+    <div class="card">
+      <h3>📦 ผลรวมทั้งทีม พ.ศ. ${toBE(selYear)}</h3>
+      <div class="tech-row"><span class="lab">FYC รวมทั้งทีม (ทั้งปี)</span><span class="val good">${THB(teamAchievedAllYear)} บาท</span></div>
+      <div class="tech-row"><span class="lab">ผลรวมเป้าหมายของตัวแทนทุกคน (อ้างอิง)</span><span class="val">${THB(teamGoalSum)} บาท</span></div>
+      <p class="foot-note" style="margin-top:8px;">* ตัวเลขนี้เป็นผลรวมของเป้าหมายที่แต่ละตัวแทนตั้งไว้เอง แยกจากเป้าหมายของ UM ด้านบน</p>
+    </div>
+
+    <div class="card">
+      <h3>📊 เทียบผลงานแต่ละคน</h3>
+      <p class="sub">FYC สะสมทั้งปี ${toBE(selYear)}</p>
+      ${rows.length?barsHtml:'<div class="empty">ยังไม่มีตัวแทนในระบบ</div>'}
+    </div>
+
+    <div class="card">
+      <h3>👥 อันดับตัวแทน</h3>
+      <p class="sub">เรียงจากคนที่ใกล้เป้าหมายที่สุด — แตะชื่อเพื่อสลับไปดู/แก้ไขรายการผลงานของคนนั้นได้โดยตรง</p>
+      ${rows.length?leaderboardHtml:'<div class="empty">ยังไม่มีตัวแทนในระบบ</div>'}
+    </div>
+  `;
 }
 function renderSpecialEventsSection(entries){
   const thDate = (iso)=> new Date(iso+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
@@ -493,10 +710,12 @@ const DEFAULT_AGENT_DATA = {
   persistQuarterly: {},
   competitions: { firstSaleDate: "" },
   goals: { targetFYC: 300000, startMonth: 0, endMonth: 11 },
+  joinDate: "",
 };
 const DEFAULT_STATE = {
   agents: { "ตัวแทนคนที่ 1": JSON.parse(JSON.stringify(DEFAULT_AGENT_DATA)) },
   currentAgent: "ตัวแทนคนที่ 1",
+  umGoal: { targetFYC: 0, startMonth: 0, endMonth: 11, position: "" },
 };
 let state = loadState();
 let activeTab = "goals";
@@ -505,6 +724,7 @@ let entryForm = { date: new Date().toISOString().slice(0,10), fyc: "", note: "",
 let editingId = null;
 let editDraft = { date:"", fyc:"", note:"" };
 let goalsFycInput = formatThousands(String(agent().goals.targetFYC ?? 300000));
+let umGoalsFycInput = formatThousands(String(state.umGoal?.targetFYC ?? 0));
 let calendars = {}; // id -> {open, viewYear, viewMonth}
 let newAgentNameInput = "";
 let addAgentMode = false;
@@ -587,6 +807,7 @@ function render(){
   if (activeTab==="goals") c.innerHTML = renderGoalsTab();
   else if (activeTab==="entry") c.innerHTML = renderEntryTab();
   else if (activeTab==="competitions") c.innerHTML = renderCompetitionsTab();
+  else if (activeTab==="team") c.innerHTML = renderTeamTab();
   bindEvents();
   positionOpenCalendars();
 }
@@ -611,13 +832,16 @@ function positionOpenCalendars(){
 function renderAgentPicker(){
   const names = Object.keys(state.agents);
   const options = names.map(n=>`<option value="${esc(n)}" ${n===state.currentAgent?"selected":""}>${esc(n)}</option>`).join("");
+  const currentJoinDate = agent().joinDate || "";
+  const joinDateLabel = currentJoinDate ? new Date(currentJoinDate+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"}) : "ยังไม่ระบุ";
   let html = `<div class="agent-picker">
     <span class="lbl">👤 ตัวแทน:</span>
     <select id="agent-select">${options}</select>
     <button class="icon-btn" id="btn-rename-agent" title="เปลี่ยนชื่อ">✏️</button>
     ${names.length>1?`<button class="icon-btn" id="btn-delete-agent" title="ลบตัวแทนนี้">🗑</button>`:''}
     <button class="btn-ghost" id="btn-toggle-add-agent">+ เพิ่มตัวแทน</button>
-  </div>`;
+  </div>
+  <div style="font-size:15px;color:var(--muted);margin-top:4px;">📅 วันที่เริ่มงาน: ${joinDateLabel} <button class="icon-btn" id="btn-set-join-date" title="ตั้ง/แก้ไขวันที่เริ่มงาน" style="margin-left:4px;">✏️</button></div>`;
   if (addAgentMode){
     html += `<div class="add-agent-form">
       <input type="text" id="new-agent-name" placeholder="ชื่อตัวแทนใหม่" value="${esc(newAgentNameInput)}" style="max-width:220px;">
@@ -628,7 +852,7 @@ function renderAgentPicker(){
   document.getElementById("agent-picker").innerHTML = html;
 }
 function renderTabNav(){
-  const items = [["goals","🎯 เป้าหมาย"],["entry","📋 บันทึกผลงาน"],["competitions","🏆 ผลงาน"]];
+  const items = [["team","🧑‍🤝‍🧑 ทีม"],["goals","🎯 เป้าหมาย"],["entry","📋 บันทึกผลงาน"],["competitions","🏆 ผลงาน"]];
   document.getElementById("tab-nav").innerHTML = items.map(([id,label])=>
     `<button data-tab="${id}" class="${activeTab===id?'active':''}">${label}</button>`).join("");
 }
@@ -805,7 +1029,6 @@ function renderGoalsTab(){
     </div>
 
     ${renderInsightsSection(agent().entries, selYear, pacing)}
-    ${renderTeamLeaderboard()}
 
     <div class="card">
       <h3>เป้าหมายรายเดือน</h3>
@@ -1215,6 +1438,20 @@ function bindEvents(){
     state.currentAgent = trimmed;
     saveState(); render();
   };
+  const btnSetJoinDate = document.getElementById("btn-set-join-date");
+  if (btnSetJoinDate) btnSetJoinDate.onclick = ()=>{
+    const current = agent().joinDate || "";
+    const input = window.prompt("วันที่เริ่มงาน (รูปแบบ YYYY-MM-DD เช่น 2026-08-31):", current);
+    if (input===null) return;
+    const trimmed = input.trim();
+    if (trimmed==="") { agent().joinDate = ""; saveState(); render(); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed) || isNaN(new Date(trimmed).getTime())){
+      showToast("รูปแบบวันที่ไม่ถูกต้อง กรุณาใช้ YYYY-MM-DD");
+      return;
+    }
+    agent().joinDate = trimmed;
+    saveState(); render();
+  };
   const btnDeleteAgent = document.getElementById("btn-delete-agent");
   if (btnDeleteAgent) btnDeleteAgent.onclick = ()=>{
     const name = state.currentAgent;
@@ -1266,6 +1503,56 @@ function bindEvents(){
       saveState(); render();
     };
   }
+
+  // Team tab — เป้าหมายของ UM
+  const umPositionSelect = document.getElementById("um-position-select");
+  if (umPositionSelect){
+    umPositionSelect.onchange = (e)=>{
+      const posValue = e.target.value;
+      state.umGoal.position = posValue;
+      const pos = UM_POSITIONS.find(p=>p.value===posValue);
+      if (pos){
+        state.umGoal.targetFYC = pos.cfycYear;
+        umGoalsFycInput = formatThousands(String(pos.cfycYear));
+      }
+      saveState(); render();
+    };
+  }
+  const umGoalInput = document.getElementById("um-goal-fyc-input");
+  if (umGoalInput){
+    umGoalInput.oninput = (e)=>{ umGoalsFycInput = formatThousands(stripCommas(e.target.value)); e.target.value = umGoalsFycInput; };
+    umGoalInput.onfocus = (e)=>e.target.select();
+    umGoalInput.onblur = ()=>{
+      const raw = Number(stripCommas(umGoalsFycInput));
+      if (!isNaN(raw) && raw>=0){ state.umGoal.targetFYC = raw; saveState(); }
+      render();
+    };
+    umGoalInput.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
+  }
+  const umGoalStartMonth = document.getElementById("um-goal-start-month");
+  if (umGoalStartMonth){
+    umGoalStartMonth.onchange = (e)=>{
+      const newStart = Number(e.target.value);
+      state.umGoal.startMonth = newStart;
+      if ((state.umGoal.endMonth ?? 11) < newStart) state.umGoal.endMonth = newStart;
+      saveState(); render();
+    };
+  }
+  const umGoalEndMonth = document.getElementById("um-goal-end-month");
+  if (umGoalEndMonth){
+    umGoalEndMonth.onchange = (e)=>{
+      state.umGoal.endMonth = Number(e.target.value);
+      saveState(); render();
+    };
+  }
+  document.querySelectorAll("[data-switch-agent]").forEach(row=>{
+    row.onclick = ()=>{
+      state.currentAgent = row.dataset.switchAgent;
+      syncAgentFormState();
+      activeTab = "entry";
+      saveState(); render();
+    };
+  });
 
   // Entry form
   const fFyc = document.getElementById("f-fyc");
