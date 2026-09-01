@@ -63,6 +63,7 @@
   .card.dark h3{color:#fff;}
   .card .sub{font-size:18.75px; color:var(--muted); margin-top:-4px; margin-bottom:14px;}
   .card.dark .sub{color:#B9C4D6;}
+  .card.dark .tech-row .val.good{color:#7EE8A8;}
   .field{display:flex; flex-direction:column; gap:5px;}
   .field span{font-size:18.75px; color:var(--muted); font-weight:600;}
   .field.dark span{color:#B9C4D6;}
@@ -84,19 +85,23 @@
   .mini-row .v{font-size:19.5px; font-weight:700; color:var(--ink);}
   .mini-row .v.ok{color:var(--good);}
   .tech-row{display:flex; justify-content:space-between; align-items:baseline; padding:4px 0;}
-  .tech-row .lab{font-size:18.75px; color:#B9C4D6;}
-  .tech-row .val{font-family:'Space Grotesk',sans-serif; font-size:21px; font-weight:700; color:#B9C4D6;}
+  .tech-row .lab{font-size:18.75px; color:var(--muted);}
+  .card.dark .tech-row .lab{color:#B9C4D6;}
+  .tech-row .val{font-family:'Space Grotesk',sans-serif; font-size:21px; font-weight:700; color:var(--navy-deep);}
+  .card.dark .tech-row .val:not(.good):not(.warn):not(.highlight){color:#B9C4D6;}
   .tech-row .val.good{color:var(--good);}
   .tech-row .val.warn{color:#E8A15C;}
   .tech-row .val.highlight{color:var(--gold); font-size:24px;}
   .ring-wrap{position:relative; width:108px; height:108px; flex-shrink:0;}
   .ring-wrap .center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
   .ring-wrap .pct{font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; color:var(--gold);}
-  .ring-wrap .lbl{font-size:14px; color:#B9C4D6;}
+  .ring-wrap .lbl{font-size:14px; color:var(--muted);}
+  .card.dark .ring-wrap .lbl{color:#B9C4D6;}
   .goal-flex{display:flex; flex-wrap:wrap; align-items:center; gap:24px;}
   .income-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:14px;}
   .income-chip{background:#FFFFFF14; border:1px solid #FFFFFF26; border-radius:10px; padding:10px 12px;}
-  .income-chip .lbl{font-size:17.25px; color:#B9C4D6; margin-bottom:3px;}
+  .income-chip .lbl{font-size:17.25px; color:var(--muted); margin-bottom:3px;}
+  .card.dark .income-chip .lbl{color:#B9C4D6;}
   .income-chip .val{font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:700; color:#fff;}
   .qgrid{display:grid; grid-template-columns:repeat(2, minmax(150px,1fr)); gap:12px; margin-bottom:16px;}
   .qcard{border-radius:12px; padding:14px; position:relative;}
@@ -483,7 +488,8 @@ function renderTeamTab(){
   const maxAchieved = Math.max(1, ...rows.map(r=>r.achieved));
 
   // ผลงานรวมทั้งทีม (CFYC จากกล่องควบคุมผลงาน/DPO) นับเฉพาะถึงเดือนปัจจุบันจริง แม้เป้าจะตั้งถึงเดือนหลังจากนี้
-  const umEffectiveEndMonth = Math.min(umEndMonth, yearCapMonth);
+  const umViewAsOfMonth = (umGoal.viewAsOfMonth!==undefined && umGoal.viewAsOfMonth!==null) ? umGoal.viewAsOfMonth : yearCapMonth;
+  const umEffectiveEndMonth = Math.min(umEndMonth, umViewAsOfMonth);
   const teamAchievedInUmPeriod = umStartMonth<=umEffectiveEndMonth ? monthlyTeamCFYC.slice(umStartMonth, umEffectiveEndMonth+1).reduce((a,b)=>a+b,0) : 0;
   const teamAchievedAllYear = rows.reduce((s,r)=>s+r.achieved,0);
   const teamGoalSum = rows.reduce((s,r)=>s+r.goalFYC,0);
@@ -565,7 +571,7 @@ function renderTeamTab(){
           ${selectedPosition?`<div style="font-size:16px;color:#B9C4D6;margin-top:6px;">เงินเดือน ${THB(selectedPosition.salary)} บาท/เดือน · ค่าขยายงาน ${selectedPosition.tenurePct}% · CFYC ขั้นต่ำ ${THB(selectedPosition.cfycMonth)} บาท/เดือน</div>`:''}
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
-          <label class="field dark" style="max-width:320px;flex:1;min-width:200px;"><span>เป้าหมาย FYC ของ UM (บาท)</span>
+          <label class="field dark" style="max-width:320px;flex:1;min-width:200px;"><span>เป้าหมาย CFYC ของ UM (บาท)</span>
             <input type="text" inputmode="decimal" id="um-goal-fyc-input" value="${esc(umGoalsFycInput)}"
               style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;">
           </label>
@@ -590,6 +596,12 @@ function renderTeamTab(){
           </div>
           <div style="flex:1;min-width:220px;">
             <div class="tech-row"><span class="lab">เป้าหมาย UM (${THAI_MONTH_NAMES[umStartMonth]} – ${THAI_MONTH_NAMES[umEndMonth]})</span><span class="val">${THB(umGoalFYC)} บาท</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;">
+              <span style="font-size:15px;color:#B9C4D6;">ผลงานทีมที่ทำได้ ถึงเดือน</span>
+              <select id="um-view-as-of-month" style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-size:15px;padding:4px 8px;">
+                ${THAI_MONTH_NAMES.map((name,i)=>`<option value="${i}" ${i===umViewAsOfMonth?"selected":""}>${name}</option>`).join("")}
+              </select>
+            </div>
             <div class="tech-row"><span class="lab">ทีมทำได้แล้ว (ถึงเดือน${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val good">${THB(teamAchievedInUmPeriod)} บาท</span></div>
             <div class="tech-row"><span class="lab">ยังขาดอีก</span><span class="val ${umRemaining>0?'warn':''}">${THB(umRemaining)} บาท</span></div>
           </div>
@@ -650,14 +662,14 @@ function renderTeamTab(){
       const profitRate = bandIdx>=0 ? profitTable.rates[bandIdx] : 0;
       const profitFlatAmount = (bandIdx>=0 && profitTable.amounts) ? profitTable.amounts[bandIdx] : 0;
       const profitBonus = bandIdx>=0 ? (excessAmount * profitRate / 100) + profitFlatAmount : 0;
-      // ถ้า 6 เดือนแรกเกินครึ่งหนึ่งของโควตาแล้ว จ่ายโบนัสงวดแรกไปก่อน (ใช้ครึ่งโควตาเป็นฐานคำนวณ) แล้วพอสิ้นปีค่อยคำนวณยอดเต็มปีอีกที หักงวดแรกที่จ่ายไปแล้วออก
+      // ถ้า 6 เดือนแรกทำได้เกินโควตาทั้งปีแล้ว (ไม่ใช่แค่ครึ่งโควตา) คิดโบนัสส่วนเกินด้วยสูตรเดียวกับตอนสิ้นปี (เทียบกับโควตาเต็มปี) จ่ายงวดแรกไปก่อน
+      // พอสิ้นปีคำนวณยอดเต็มปีจริงอีกที (ใช้ profitBonus ด้านบนซึ่งอิงข้อมูลถึงเดือนปัจจุบัน) แล้วหักงวดแรกที่จ่ายไปแล้วออก
       let interimBonus6mo = 0, interimRate6mo = 0, hasInterim6mo = false;
       if (yearCapMonth>=5){
-        const halfQuota = quota3/2;
         const cfyc6mo = monthlyTeamCFYC.slice(0,6).reduce((a,b)=>a+b,0);
-        const excess6mo = Math.max(0, cfyc6mo-halfQuota);
+        const excess6mo = Math.max(0, cfyc6mo-quota3);
         if (excess6mo>0){
-          const excessPct6mo = halfQuota>0 ? (excess6mo/halfQuota)*100 : 0;
+          const excessPct6mo = quota3>0 ? (excess6mo/quota3)*100 : 0;
           const bandIdx6mo = newAgentProfitBandIndex(excessPct6mo);
           interimRate6mo = profitTable.rates[bandIdx6mo];
           const flat6mo = profitTable.amounts ? profitTable.amounts[bandIdx6mo] : 0;
@@ -730,7 +742,7 @@ function renderTeamTab(){
 
       return `
       <h3 style="margin:4px 0 4px;">🎯 ควบคุมผลงานเพื่อผลตอบแทนข้อ 6 (DPO) (${selectedPosition.label})</h3>
-      <p class="sub" style="margin-top:0;">DPO คำนวณจากตัวแทนตรงเท่านั้น เทียบกับเกณฑ์ขั้นต่ำ ${THB(salesCompThreshold)} บาท/ไตรมาส — แก้ไขได้ทั้ง 2 คอลัมน์ ค่าเริ่มต้นดึงจากผลงานที่คีย์ไว้จริง</p>
+      <p class="sub" style="margin-top:0;">DPO คำนวณจากตัวแทนตรงเท่านั้น เทียบกับเกณฑ์ขั้นต่ำ ${THB(salesCompThreshold)}/ไตรมาส — คอลัมน์เป้าใช้โควตา/เดือนของตำแหน่ง คอลัมน์ CFYC และตัวแทนตรงแก้ไขเองได้ ค่าเริ่มต้นดึงจากผลงานที่คีย์ไว้จริง</p>
       <div class="qgrid">
         ${[1,2,3,4].map(q=>{
           const qMonths = [ (q-1)*3, (q-1)*3+1, (q-1)*3+2 ];
@@ -761,29 +773,30 @@ function renderTeamTab(){
           else if (multiplier<2.5) nextTier = {mult:2.5, rate:25};
           const monthRowsHtml = monthlyFycThisQ.map(x=>`<tr>
             <td style="color:var(--navy-deep);font-weight:600;">${THAI_MONTH_SHORT[x.month]}</td>
-            <td class="r">
-              <input type="text" inputmode="decimal" data-direct-override="${x.directKey}" value="${esc(formatThousands(String(x.directValue)))}" style="width:82px;padding:4px 5px;font-size:14px;text-align:right;">
-              <div style="font-size:12px;color:${x.directIsOv?'var(--gold)':'var(--muted)'};">${x.directIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
-            </td>
+            <td class="r" style="color:var(--muted);">${THB(umGoalFYC/12)}</td>
             <td class="r">
               <input type="text" inputmode="decimal" data-qty-override="${x.cfycKey}" value="${esc(formatThousands(String(x.cfycValue)))}" style="width:82px;padding:4px 5px;font-size:14px;text-align:right;">
               <div style="font-size:12px;color:${x.cfycIsOv?'var(--gold)':'var(--muted)'};">${x.cfycIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
+            </td>
+            <td class="r">
+              <input type="text" inputmode="decimal" data-direct-override="${x.directKey}" value="${esc(formatThousands(String(x.directValue)))}" style="width:82px;padding:4px 5px;font-size:14px;text-align:right;">
+              <div style="font-size:12px;color:${x.directIsOv?'var(--gold)':'var(--muted)'};">${x.directIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
             </td>
           </tr>`).join("");
           return `<div class="qcard" style="background:${NAVY_TINTS[q-1]};">
             ${isCurrentQ?`<div class="badge-current">ไตรมาสปัจจุบัน</div>`:''}
             <div class="head"><span>ไตรมาส ${q}</span><span>${rate>0?'✔':'✕'}</span></div>
-            <div class="mini-row"><span>ตัวแทนตรงไตรมาสนี้ (ใช้คำนวณ DPO)</span><span class="v ${rate>0?'ok':''}">${THB(qDirectFyc)} บาท</span></div>
-            <div class="mini-row"><span>CFYC ไตรมาสนี้ (อ้างอิง)</span><span class="v">${THB(qCFYC)} บาท</span></div>
+            <div class="mini-row"><span>ตัวแทนตรงไตรมาสนี้ (ใช้คำนวณ DPO)</span><span class="v ${rate>0?'ok':''}">${THB(qDirectFyc)}</span></div>
+            <div class="mini-row"><span>CFYC ไตรมาสนี้ (อ้างอิง)</span><span class="v">${THB(qCFYC)}</span></div>
             <div class="mini-row"><span>เทียบเกณฑ์ (${multiplier.toFixed(2)} เท่า)</span><span class="v">${rate>0?`อัตรา ${rate}%`:'ยังไม่ถึงเกณฑ์'}</span></div>
-            <div class="mini-row"><span>ผลตอบแทนข้อ 6 (DPO)</span><span class="v ok" style="font-weight:700;">${THB(reward)} บาท</span></div>
+            <div class="mini-row"><span>ผลตอบแทนข้อ 6 (DPO)</span><span class="v ok" style="font-weight:700;">${THB(reward)}</span></div>
             ${nextTier?`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);">
-              <div class="title" style="color:var(--navy);font-size:16px;">🎯 ขาดอีก ${THB(Math.max(0,nextTier.mult*salesCompThreshold-qDirectFyc))} บาท</div>
-              <div class="line" style="color:var(--good);font-weight:700;font-size:16px;">→ อัตรา ${nextTier.rate}% (เพิ่มขึ้น ${THB((nextTier.mult*salesCompThreshold*nextTier.rate/100)-reward)} บาท)</div>
+              <div class="title" style="color:var(--navy);font-size:16px;">🎯 ขาดอีก ${THB(Math.max(0,nextTier.mult*salesCompThreshold-qDirectFyc))}</div>
+              <div class="line" style="color:var(--good);font-weight:700;font-size:16px;">→ อัตรา ${nextTier.rate}% (เพิ่มขึ้น ${THB((nextTier.mult*salesCompThreshold*nextTier.rate/100)-reward)})</div>
             </div>`:`<div class="alert-box" style="background:#F1F8F3;border-color:var(--good);"><div class="line" style="color:var(--good);font-weight:700;font-size:16px;">🏆 อยู่ขั้นสูงสุดแล้ว</div></div>`}
             <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #123F6B1A;">
               <table class="qtable">
-                <thead><tr><th>เดือน</th><th class="r">ตัวแทนตรง</th><th class="r">CFYC</th></tr></thead>
+                <thead><tr><th>เดือน</th><th class="r">เป้า</th><th class="r">CFYC</th><th class="r">ตัวแทนตรง</th></tr></thead>
                 <tbody>${monthRowsHtml}</tbody>
               </table>
             </div>
@@ -804,7 +817,7 @@ function renderTeamTab(){
         <div class="tech-row" style="padding-left:12px;"><span class="lab" style="font-size:15px;color:var(--muted);">— โบนัส 1 (อัตรา ${profitRate}% ของส่วนเกิน)</span><span class="val" style="font-size:15px;">${THB(excessAmount*profitRate/100)} บาท</span></div>
         ${profitFlatAmount>0?`<div class="tech-row" style="padding-left:12px;"><span class="lab" style="font-size:15px;color:var(--muted);">— โบนัส 2 (บาทคงที่ประจำขั้น)</span><span class="val" style="font-size:15px;">${THB(profitFlatAmount)} บาท</span></div>`:''}
         ${hasInterim6mo?`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);margin-bottom:10px;">
-          <div class="title" style="color:var(--navy);font-size:16px;">📌 6 เดือนแรกเกินครึ่งโควตาแล้ว — จ่ายงวดแรกไปก่อน</div>
+          <div class="title" style="color:var(--navy);font-size:16px;">📌 6 เดือนแรกเกินโควตาทั้งปีแล้ว — จ่ายงวดแรกไปก่อน</div>
           <div class="line" style="color:var(--navy);">โบนัสงวดแรก (6 เดือนแรก, อัตรา ${interimRate6mo}%): <b>${THB(interimBonus6mo)} บาท</b></div>
           <div class="line" style="color:var(--good);font-weight:700;">คงเหลือหลังหักงวดแรก (คิด ณ วันนี้ทั้งปี): ${THB(profitBonusRemaining)} บาท</div>
         </div>`:''}
@@ -1169,7 +1182,7 @@ const DEFAULT_AGENT_DATA = {
 const DEFAULT_STATE = {
   agents: { "ตัวแทนคนที่ 1": JSON.parse(JSON.stringify(DEFAULT_AGENT_DATA)) },
   currentAgent: "ตัวแทนคนที่ 1",
-  umGoal: { targetFYC: 0, startMonth: 0, endMonth: 11, position: "", compareA: "", compareB: "", monthOverrides: {}, directOverrides: {}, newAgentPremiums: {} },
+  umGoal: { targetFYC: 0, startMonth: 0, endMonth: 11, position: "", compareA: "", compareB: "", monthOverrides: {}, directOverrides: {}, newAgentPremiums: {}, viewAsOfMonth: null },
 };
 let state = loadState();
 let activeTab = "goals";
@@ -2006,6 +2019,8 @@ function bindEvents(){
   if (compareASelect) compareASelect.onchange = (e)=>{ state.umGoal.compareA = e.target.value; saveState(); render(); };
   const compareBSelect = document.getElementById("compare-pos-b");
   if (compareBSelect) compareBSelect.onchange = (e)=>{ state.umGoal.compareB = e.target.value; saveState(); render(); };
+  const umViewAsOfSelect = document.getElementById("um-view-as-of-month");
+  if (umViewAsOfSelect) umViewAsOfSelect.onchange = (e)=>{ state.umGoal.viewAsOfMonth = Number(e.target.value); saveState(); render(); };
   document.querySelectorAll("[data-qty-override]").forEach(inp=>{
     inp.onfocus = (e)=>e.target.select();
     inp.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
