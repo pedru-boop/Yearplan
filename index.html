@@ -803,6 +803,18 @@ function renderTeamTab(){
                 <tbody>${monthRowsHtml}</tbody>
               </table>
             </div>
+            ${(()=>{
+              const cumEndMonth = Math.min(q*3-1, yearCapMonth);
+              const monthsCumPassed = Math.max(0, cumEndMonth+1);
+              const cumTarget = (umGoalFYC/12) * monthsCumPassed;
+              const cumCFYC = monthlyTeamCFYC.slice(0, monthsCumPassed).reduce((a,b)=>a+b,0);
+              const diff = cumCFYC - cumTarget;
+              const isOver = diff>=0;
+              return `<div style="margin-top:10px;padding-top:8px;border-top:1px dashed #123F6B1A;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:15px;color:var(--muted);">CFYC สะสมทั้งปีถึงปัจจุบัน เทียบเป้าสะสม (${THB(cumTarget)})</span>
+                <span style="font-weight:700;font-size:19px;color:${isOver?'var(--good)':'var(--bad)'};">${isOver?'เกิน':'ขาด'}สะสม ${THB(Math.abs(diff))}</span>
+              </div>`;
+            })()}
           </div>`;
         }).join("")}
       </div>
