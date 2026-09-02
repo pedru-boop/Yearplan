@@ -474,21 +474,10 @@ function renderTeamTab(){
     const achieved = yEntries.reduce((s,e)=>s+e.fyc,0);
     const goalFYC = ag.goals?.targetFYC ?? 0;
     const pct = goalFYC>0 ? (achieved/goalFYC*100) : 0;
-    // เช็คว่า "งานหาย" ไหม: ไม่มีผลงานเลยในเดือนที่แล้ว (เทียบกับเดือนที่กำลังดูอยู่ ไม่ใช่ 30 วันย้อนหลัง)
-    const lastMonthIdx = umViewAsOfMonth - 1;
-    const hasWorkLastMonth = lastMonthIdx>=0 ? ag.entries.some(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===lastMonthIdx; }) : true;
-    const isQuiet = lastMonthIdx>=0 && !hasWorkLastMonth;
-    const allDates = ag.entries.map(e=>new Date(e.date)).filter(d=>!isNaN(d));
-    const lastEntryDate = allDates.length ? new Date(Math.max(...allDates)) : null;
-    const daysSinceLastEntry = lastEntryDate ? Math.floor((today-lastEntryDate)/86400000) : null;
-    // แนวโน้มขาลง: FYC ย้อนหลัง 3 เดือนล่าสุด (นับถึงเดือนปัจจุบันจริง) ลดลงต่อเนื่องทุกเดือน
-    const curM = today.getMonth();
-    const last3 = [curM-2, curM-1, curM].map(m=>{
-      const mm = ((m%12)+12)%12, yy = today.getFullYear() + Math.floor(m/12);
-      return ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===yy && d.getMonth()===mm; }).reduce((s,e)=>s+e.fyc,0);
-    });
-    const isDeclining = last3[0]>0 && last3[1]<last3[0] && last3[2]<last3[1];
-    return { name, achieved, goalFYC, pct, daysSinceLastEntry, isQuiet, isDeclining, last3, hasAnyEntry: allDates.length>0 };
+    // เช็คว่า "งานหาย" ไหม: ดูแค่เดือนที่กำลังดูอยู่ (umViewAsOfMonth) — มีงานเดือนนี้ = ไม่ต้องจับตา ไม่สนเดือนก่อนหน้าหรือแนวโน้ม
+    const hasWorkThisMonth = ag.entries.some(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===umViewAsOfMonth; });
+    const isQuiet = !hasWorkThisMonth;
+    return { name, achieved, goalFYC, pct, isQuiet, hasAnyEntry: yEntries.length>0 };
   }).sort((a,b)=>b.pct-a.pct);
   const lowestPct = rows.length ? Math.min(...rows.map(r=>r.pct)) : 0;
   const maxAchieved = Math.max(1, ...rows.map(r=>r.achieved));
@@ -863,8 +852,15 @@ function renderTeamTab(){
           <div class="tech-row"><span class="lab">3. โบนัสส่วนเกินโควต้า${isYearEndForItem3?'':' (จ่ายจริงเฉพาะสิ้นปี)'}</span><span class="val good">${THB(profitBonus)}</span></div>
           ${isYearEndForItem3?`<div style="font-size:14px;color:var(--muted);margin-bottom:6px;">คิดจาก: CFYC ทีมสะสมทั้งปี ${THB(teamCFYCForItem3)} − โควตา ${THB(quota3)} = ส่วนเกิน ${THB(excessAmount)} × อัตรา ${profitRate}% = ${THB(excessAmount*profitRate/100)}${profitFlatAmount>0?` + โบนัส2 ${THB(profitFlatAmount)}`:''}</div>`
             :`<div style="font-size:14px;color:var(--muted);margin-bottom:6px;">⏳ ยังไม่ถึงรอบคำนวณ — จ่ายจริงเฉพาะสิ้นเดือนธันวาคมเท่านั้น (ประมาณการถ้าคำนวณวันนี้: ${THB(previewBonusIfToday)})</div>`}
+          ${notYetQualified3?`<div class="alert-box" style="background:#FBEEEC;border-color:var(--bad);margin-bottom:10px;">
+            <div class="line" style="color:var(--bad);">⚠ ยังไม่ถึงเกณฑ์รับโบนัสข้อนี้เลย — ต้องทำ CFYC ทีมทั้งปีให้เกินโควตา ${THB(quota3)} (100%) ก่อน แล้วเกินไปอีกอย่างน้อย 1% จึงจะเริ่มได้รับ</div>
+            <div class="line" style="color:var(--muted);font-size:15px;margin-top:2px;">ขาดอีก ${THB(nextBand3Info.shortfall)} จะเริ่มได้รับที่อัตรา ${nextBand3Info.nextRate}% (ประมาณ ${THB(nextBand3Info.previewBonus)})</div>
+          </div>`:nextBand3Info?`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);margin-bottom:10px;">
+            <div class="line" style="color:var(--navy);">🎯 ถึงเกณฑ์รับโบนัสแล้ว ประมาณการจากยอดปัจจุบัน: <b>${THB(previewBonusIfToday)}</b></div>
+            <div class="line" style="color:var(--good);font-weight:700;">ขั้นถัดไป: ขาดอีก ${THB(nextBand3Info.shortfall)} จะขยับเป็นอัตรา ${nextBand3Info.nextRate}% (เพิ่มขึ้น ${THB(nextBand3Info.increase)})</div>
+          </div>`:`<div class="alert-box" style="background:#F1F8F3;border-color:var(--good);margin-bottom:10px;"><div class="line" style="color:var(--good);font-weight:700;">🏆 อยู่ขั้นสูงสุดแล้ว (เกินโควตา 200%+) ประมาณการ: ${THB(previewBonusIfToday)}</div></div>`}
           <div class="tech-row"><span class="lab">4. ค่าเสริมมือ</span><span class="val good">${THB(serviceFee)}</span></div>
-          ${serviceFeeDetail.length?`<div style="font-size:14px;color:var(--muted);margin-bottom:6px;">คิดจาก: ${serviceFeeDetail.map(d=>`${esc(d.name)} FYC ${THB(d.eligibleFYC)}×30%`).join(', ')}</div>`:''}
+          ${serviceFeeDetail.length?`<table class="qtable" style="margin-bottom:8px;"><thead><tr><th>ตัวแทน</th><th class="r">FYC</th><th class="r">ค่าเสริมมือ (30%)</th></tr></thead><tbody>${serviceFeeDetail.map(d=>`<tr><td style="color:var(--navy-deep);">${esc(d.name)}</td><td class="r">${THB(d.eligibleFYC)}</td><td class="r" style="color:var(--good);">${THB(d.eligibleFYC*0.3)}</td></tr>`).join("")}</tbody></table>`:''}
           <div class="tech-row"><span class="lab">6. ค่าตอบแทนขายเอง/ตัวแทนตรง (DPO)</span><span class="val good">${THB(salesCompReward)}</span></div>
           ${salesCompDetail.length?`<div style="font-size:14px;color:var(--muted);margin-bottom:6px;">คิดจาก: ${salesCompDetail.map(d=>`ไตรมาส${d.q} ตัวแทนตรง ${THB(d.qTeamFyc)}×${d.rate}%`).join(', ')}</div>`:''}
           <div class="tech-row"><span class="lab">7. ค่าสร้างและรักษาตัวแทน</span><span class="val good">${THB(teamBuildingReward)}</span></div>
@@ -893,15 +889,15 @@ function renderTeamTab(){
         return newAgentsThisYear.map(name=>{
           const sd = state.agents[name].competitions.firstSaleDate;
           const sdLabel = new Date(sd+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
-          const premiums = (state.umGoal.newAgentPremiums && state.umGoal.newAgentPremiums[name]) || ["","","",""];
+          const premiums = (state.umGoal.newAgentPremiums && state.umGoal.newAgentPremiums[name]) || ["","","","",""];
           const premiumSum = premiums.reduce((s,v)=>s+(Number(stripCommas(String(v||0)))||0),0);
           return `<div style="padding:10px 0;border-bottom:1px solid #123F6B0D;">
             <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
               <span style="font-weight:600;color:var(--navy);">${esc(name)}</span>
               <span style="color:var(--muted);font-size:15px;">เริ่มมีผลงาน ${sdLabel}</span>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px;">
-              ${[0,1,2,3].map(i=>`<input type="text" inputmode="decimal" data-premium-agent="${esc(name)}" data-premium-idx="${i}" value="${esc(premiums[i]||"")}" placeholder="งวด ${i+1}" style="padding:5px 6px;font-size:14px;text-align:right;">`).join("")}
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:6px;">
+              ${[0,1,2,3,4].map(i=>`<input type="text" inputmode="decimal" data-premium-agent="${esc(name)}" data-premium-idx="${i}" value="${esc(premiums[i]||"")}" placeholder="งวด ${i+1}" style="padding:5px 6px;font-size:14px;text-align:center;">`).join("")}
             </div>
             <div style="text-align:right;font-size:15px;color:var(--navy);font-weight:700;">เบี้ยประกันรวม: ${THB(premiumSum)} บาท</div>
           </div>`;
@@ -910,15 +906,15 @@ function renderTeamTab(){
     </div>
 
     ${(()=>{
-      const flagged = rows.filter(r=>r.isQuiet || r.isDeclining);
+      const flagged = rows.filter(r=>r.isQuiet);
       if (!flagged.length) return '';
       return `<div class="card">
         <h3>⚠️ ตัวแทนที่ต้องจับตา</h3>
         <p class="sub">แตะชื่อเพื่อสลับไปดู/แก้ไขรายการผลงานของคนนั้นได้โดยตรง</p>
         ${flagged.map(r=>`<div data-switch-agent="${esc(r.name)}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #123F6B0D;cursor:pointer;">
           <div>
-            <div style="font-weight:600;color:var(--navy);font-size:19px;">${r.isQuiet?'😴':'📉'} ${esc(r.name)}</div>
-            <div style="font-size:15px;color:var(--bad);">${r.isQuiet?`ไม่มีผลงานเลยเดือนที่แล้ว (${THAI_MONTH_NAMES[umViewAsOfMonth-1]})`:`ลดลงต่อเนื่อง 3 เดือน (${r.last3.map(v=>THB(v)).join(' → ')})`}</div>
+            <div style="font-weight:600;color:var(--navy);font-size:19px;">😴 ${esc(r.name)}</div>
+            <div style="font-size:15px;color:var(--bad);">ไม่มีผลงานเดือน${THAI_MONTH_NAMES[umViewAsOfMonth]}</div>
           </div>
           <span style="color:var(--muted);font-size:18px;">›</span>
         </div>`).join("")}
@@ -2039,7 +2035,7 @@ function bindEvents(){
       const agentName = inp.dataset.premiumAgent;
       const idx = Number(inp.dataset.premiumIdx);
       if (!state.umGoal.newAgentPremiums) state.umGoal.newAgentPremiums = {};
-      if (!state.umGoal.newAgentPremiums[agentName]) state.umGoal.newAgentPremiums[agentName] = ["","","",""];
+      if (!state.umGoal.newAgentPremiums[agentName]) state.umGoal.newAgentPremiums[agentName] = ["","","","",""];
       state.umGoal.newAgentPremiums[agentName][idx] = e.target.value.trim();
       saveState(); render();
     };
