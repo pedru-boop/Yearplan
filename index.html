@@ -637,12 +637,11 @@ function renderTeamTab(){
       });
 
 
-      // ข้อ 7: ค่าสร้างและรักษาตัวแทน — ต้องมีรายใหม่ >= 2 รายต่อไตรมาส จึงได้ตามระดับ FYC/ไตรมาส/คน
+      // ข้อ 7: ค่าสร้างและรักษาตัวแทน — ทั้งตัวแทนเก่าและใหม่ที่เข้าเงื่อนไข (มีรายใหม่ >= 2 รายต่อไตรมาส และ FYC ถึงระดับ)
       let teamBuildingReward = 0;
       const teamBuildingDetail = [];
       names.forEach(name=>{
         const ag = state.agents[name];
-        if (!ag.competitions?.firstSaleDate) return;
         for (let q=1; q<=4; q++){
           const qMonths = [ (q-1)*3, (q-1)*3+1, (q-1)*3+2 ];
           const qEntries = ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && qMonths.includes(d.getMonth()); });
@@ -804,15 +803,22 @@ function renderTeamTab(){
               </table>
             </div>
             ${(()=>{
-              const cumEndMonth = Math.min(q*3-1, yearCapMonth);
+              const cumEndMonth = Math.min(q*3-1, umViewAsOfMonth);
               const monthsCumPassed = Math.max(0, cumEndMonth+1);
-              const cumTarget = (umGoalFYC/12) * monthsCumPassed;
+              const paceTarget = (umGoalFYC/12) * monthsCumPassed;
               const cumCFYC = monthlyTeamCFYC.slice(0, monthsCumPassed).reduce((a,b)=>a+b,0);
-              const diff = cumCFYC - cumTarget;
-              const isOver = diff>=0;
-              return `<div style="margin-top:10px;padding-top:8px;border-top:1px dashed #123F6B1A;display:flex;justify-content:space-between;align-items:center;">
-                <span style="font-size:15px;color:var(--muted);">CFYC สะสมทั้งปีถึงปัจจุบัน เทียบเป้าสะสม (${THB(cumTarget)})</span>
-                <span style="font-weight:700;font-size:19px;color:${isOver?'var(--good)':'var(--bad)'};">${isOver?'เกิน':'ขาด'}สะสม ${THB(Math.abs(diff))}</span>
+              const annualRemaining = Math.max(0, umGoalFYC - cumCFYC);
+              const paceDiff = cumCFYC - paceTarget;
+              const aheadOfPace = paceDiff>=0;
+              return `<div style="margin-top:10px;padding-top:8px;border-top:1px dashed #123F6B1A;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span style="font-size:15px;color:var(--muted);">เป้าทั้งปียังขาดอีก (จาก ${THB(umGoalFYC)})</span>
+                  <span style="font-weight:700;font-size:19px;color:${annualRemaining>0?'var(--bad)':'var(--good)'};">${annualRemaining>0?THB(annualRemaining):'ครบเป้าแล้ว 🎉'}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+                  <span style="font-size:13px;color:var(--muted);">* เทียบจังหวะ ${monthsCumPassed} เดือนที่ผ่านมา (ไม่ใช่เป้าจบปี)</span>
+                  <span style="font-size:13px;font-weight:600;color:${aheadOfPace?'var(--good)':'var(--bad)'};">${aheadOfPace?'นำจังหวะ':'ตามหลังจังหวะ'} ${THB(Math.abs(paceDiff))}</span>
+                </div>
               </div>`;
             })()}
           </div>`;
@@ -822,13 +828,16 @@ function renderTeamTab(){
       <div class="card">
         <h3>💼 สถานะผลตอบแทน UM ตามตำแหน่ง (${selectedPosition.label})</h3>
         <div class="tech-row"><span class="lab">1. เงินเดือน</span><span class="val">${THB(selectedPosition.salary)} บาท/เดือน</span></div>
+        <div style="font-size:14px;color:var(--muted);margin:-4px 0 8px;">เงื่อนไข: CFYC สะสมเต็มโควตา 1 เดือน = รับเงินเดือน 1 เดือน</div>
         <div class="tech-row"><span class="lab">2. ค่าขยายงาน</span><span class="val">${selectedPosition.tenurePct}%</span></div>
+        <div style="font-size:14px;color:var(--muted);margin:-4px 0 8px;">เงื่อนไข: CFYC จริงแต่ละเดือน × อัตราค่าขยายงาน</div>
         <div class="alert-box" style="margin-top:10px;background:${quotaMet?'#F1F8F3':'#FBEEEC'};border-color:${quotaMet?'var(--good)':'var(--bad)'};">
           <div class="title" style="color:${quotaMet?'var(--good)':'var(--bad)'};">${quotaMet?'✔ CFYC สะสมทั้งปีถึงเกณฑ์แล้ว':'⚠ CFYC สะสมทั้งปียังไม่ถึงเกณฑ์'}</div>
           <div class="line" style="color:${quotaMet?'var(--good)':'var(--bad)'};">ทีมทำได้สะสม ${THB(cumulativeTeamCFYC)} จากเกณฑ์สะสม ${THB(cumulativeRequired)} บาท (${monthsElapsed} เดือน × ${THB(selectedPosition.cfycMonth)} บาท)${quotaShort>0?` — ขาดอีก ${THB(quotaShort)} บาท`:''}</div>
           <div class="line" style="color:${quotaMet?'var(--good)':'var(--bad)'};font-size:15px;margin-top:2px;">* เงินเดือนคิดจากยอดสะสมทั้งปี ไม่ได้ตัดแยกเป็นรายเดือน — ถ้าสะสมถึงเกณฑ์ครบทุกเดือนจึงจะได้รับเงินเดือนเต็ม</div>
         </div>
         <div class="tech-row" style="margin-top:10px;"><span class="lab">3. โบนัสส่วนเกินโควต้า (ยอดเต็มปีถ้าคิด ณ วันนี้)</span><span class="val good">${THB(profitBonus)}</span></div>
+        <div style="font-size:14px;color:var(--muted);margin:-4px 0 8px;">เงื่อนไข: คำนวณปีละ 2 ครั้ง (สิ้น มิ.ย. และสิ้น ธ.ค.) ต้องทำ CFYC เกินโควตาเต็มปีจึงจ่าย — ถ้าได้งวดมิถุนาไปแล้ว ธันวาคมคำนวณใหม่ทั้งปีตั้งแต่ ม.ค. แล้วหักงวดมิถุนาออก</div>
         <div class="tech-row" style="padding-left:12px;"><span class="lab" style="font-size:15px;color:var(--muted);">— โบนัส 1 (อัตรา ${profitRate}% ของส่วนเกิน)</span><span class="val" style="font-size:15px;">${THB(excessAmount*profitRate/100)} บาท</span></div>
         ${profitFlatAmount>0?`<div class="tech-row" style="padding-left:12px;"><span class="lab" style="font-size:15px;color:var(--muted);">— โบนัส 2 (บาทคงที่ประจำขั้น)</span><span class="val" style="font-size:15px;">${THB(profitFlatAmount)} บาท</span></div>`:''}
         ${hasInterim6mo?`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);margin-bottom:10px;">
@@ -845,7 +854,7 @@ function renderTeamTab(){
           <div class="line" style="color:var(--good);font-weight:700;">✓ ได้เพิ่มขึ้นประมาณ ${THB(nextBand3Info.increase)} บาท (รวมเป็น ${THB(profitBonus+nextBand3Info.increase)} บาท)</div>
         </div>`:`<div class="alert-box" style="background:#F1F8F3;border-color:var(--good);margin-bottom:10px;"><div class="line" style="color:var(--good);font-weight:700;">🏆 อยู่ขั้นสูงสุดแล้ว (เกินโควตา 200%+)</div></div>`}
         <div class="tech-row"><span class="lab">4. ค่าเสริมมือ (30% จากตัวแทนใหม่ 12 เดือนแรก)</span><span class="val good">${THB(serviceFee)}</span></div>
-        ${serviceFeeDetail.length?`<div style="font-size:15px;color:var(--muted);margin-bottom:8px;">${serviceFeeDetail.map(d=>`· ${esc(d.name)}: FYC ${THB(d.eligibleFYC)} บาท`).join("<br/>")}</div>`:`<div style="font-size:15px;color:var(--muted);margin-bottom:8px;">ยังไม่มีตัวแทนที่ตั้งวันที่เริ่มมีผลงานไว้ (ตั้งได้ที่แท็บผลงาน → Joining Bonus)</div>`}
+        ${serviceFeeDetail.length?`<table class="qtable" style="margin-bottom:8px;"><tbody>${serviceFeeDetail.map(d=>`<tr><td style="color:var(--navy-deep);">${esc(d.name)}</td><td class="r">${THB(d.eligibleFYC)}</td></tr>`).join("")}</tbody></table>`:`<div style="font-size:15px;color:var(--muted);margin-bottom:8px;">ยังไม่มีตัวแทนที่ตั้งวันที่เริ่มมีผลงานไว้ (ตั้งได้ที่แท็บผลงาน → Joining Bonus)</div>`}
         <div class="tech-row"><span class="lab">6. ค่าตอบแทนจากขายเองและตัวแทนตรง (DPO)</span><span class="val good">${THB(salesCompReward)}</span></div>
         ${salesCompDetail.length?`<div style="font-size:15px;color:var(--muted);margin-bottom:8px;">${salesCompDetail.map(d=>`· ไตรมาส ${d.q}: FYC ทีม ${THB(d.qTeamFyc)} บาท × ${d.rate}% = ${THB(d.reward)} บาท`).join("<br/>")}</div>`:`<div style="font-size:15px;color:var(--muted);margin-bottom:8px;">ยังไม่มีไตรมาสที่ทีมทำ FYC ถึงเกณฑ์ขั้นต่ำ ${THB(salesCompThreshold)} บาท/ไตรมาส</div>`}
         ${currentQ6?(salesCompCurrentQNextTier?`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);margin-bottom:10px;">
@@ -853,7 +862,7 @@ function renderTeamTab(){
           <div class="line" style="color:var(--good);font-weight:700;">✓ ได้เพิ่มขึ้นประมาณ ${THB(salesCompCurrentQNextTier.increase)} บาท</div>
         </div>`:`<div class="alert-box" style="background:#F1F8F3;border-color:var(--good);margin-bottom:10px;"><div class="line" style="color:var(--good);font-weight:700;">🏆 ไตรมาส ${currentQ6} (ปัจจุบัน) อยู่ขั้นสูงสุดแล้ว (250%+)</div></div>`):''}
         <div class="tech-row"><span class="lab">7. ค่าสร้างและรักษาตัวแทน</span><span class="val good">${THB(teamBuildingReward)}</span></div>
-        ${teamBuildingDetail.length?`<div style="font-size:15px;color:var(--muted);">${teamBuildingDetail.map(d=>`· ${esc(d.name)} ไตรมาส ${d.q}: ${d.level} (${THB(d.reward)} บาท)`).join("<br/>")}</div>`:`<div style="font-size:15px;color:var(--muted);">ยังไม่มีไตรมาสที่เข้าเกณฑ์ (ต้องมีรายใหม่ ≥2 รายต่อไตรมาส และตั้งวันที่เริ่มมีผลงานไว้ที่ Joining Bonus)</div>`}
+        ${teamBuildingDetail.length?`<div style="font-size:15px;color:var(--muted);">${teamBuildingDetail.map(d=>`· ${esc(d.name)} ไตรมาส ${d.q}: ${d.level} (${THB(d.reward)} บาท)`).join("<br/>")}</div>`:`<div style="font-size:15px;color:var(--muted);">ยังไม่มีไตรมาสที่เข้าเกณฑ์ (ต้องมีรายใหม่ ≥2 รายต่อไตรมาส — ใช้ได้ทั้งตัวแทนเก่าและใหม่)</div>`}
       </div>
 
       <div class="card">
@@ -995,7 +1004,6 @@ function renderTeamTab(){
         let item7cmp = 0;
         names.forEach(name=>{
           const ag = state.agents[name];
-          if (!ag.competitions?.firstSaleDate) return;
           for (let q=1;q<=4;q++){
             const qMonths=[(q-1)*3,(q-1)*3+1,(q-1)*3+2];
             const qEntries = ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && qMonths.includes(d.getMonth()); });
