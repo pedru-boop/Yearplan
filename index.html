@@ -56,6 +56,9 @@
   }
   .year-picker select{padding:6px 12px; color:var(--navy-deep); background:var(--card); font-weight:600;}
   .card{background:var(--card); border-radius:14px; padding:20px; box-shadow:0 1px 3px rgba(18,63,107,0.08), 0 1px 2px rgba(18,63,107,0.06); border:1px solid #123F6B0F; margin-bottom:16px; position:relative; overflow:hidden;}
+  #tab-content{counter-reset:card-num;}
+  .card{counter-increment:card-num;}
+  .card::after{content:counter(card-num); position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; background:var(--gold); color:#fff; font-size:14px; font-weight:700; font-family:'Space Grotesk',sans-serif; display:flex; align-items:center; justify-content:center; z-index:5; box-shadow:0 1px 3px rgba(0,0,0,0.25);}
   .card.dark{background:linear-gradient(135deg, var(--navy-deep) 0%, var(--navy) 100%); border:none; color:#fff;}
   .card.dark .grid-bg{position:absolute; inset:0; background-image:linear-gradient(#4FAE740D 1px, transparent 1px), linear-gradient(90deg, #4FAE740D 1px, transparent 1px); background-size:24px 24px; pointer-events:none;}
   .card h3{font-size:27px; color:var(--navy); font-weight:600; margin-bottom:4px;}
@@ -85,7 +88,7 @@
   .mini-row .v{font-size:19.5px; font-weight:700; color:var(--ink);}
   .mini-row .v.ok{color:var(--good);}
   .tech-row{display:flex; justify-content:space-between; align-items:baseline; padding:4px 0;}
-  .tech-row .lab{font-size:18.75px; color:var(--muted);}
+  .tech-row .lab{font-size:18.75px; color:var(--ink);}
   .card.dark .tech-row .lab{color:#B9C4D6;}
   .tech-row .val{font-family:'Space Grotesk',sans-serif; font-size:21px; font-weight:700; color:var(--navy-deep);}
   .card.dark .tech-row .val:not(.good):not(.warn):not(.highlight){color:#B9C4D6;}
@@ -113,8 +116,8 @@
   .qtable{width:100%; border-collapse:collapse; font-size:17.25px;}
   .qtable th{text-align:left; padding:3px 4px; color:var(--muted); font-weight:600; border-bottom:1px solid #123F6B1A;}
   .qtable th.r{text-align:right;}
-  .qtable td{padding:3px 4px; border:none;}
-  .qtable td.r{text-align:right;}
+  .qtable td{padding:6px 4px; border:none; vertical-align:middle;}
+  .qtable td.r{text-align:right; font-family:'Space Grotesk',sans-serif; font-size:21px; font-weight:700; color:var(--navy-deep);}
   .bonus-box{margin-top:10px; padding-top:10px; border-top:1.5px solid #4FAE7444;}
   .bonus-box .title{font-size:17.25px; font-weight:700; color:var(--navy-deep); margin-bottom:4px;}
   .bonus-box .row{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:17.25px; color:var(--muted);}
@@ -504,14 +507,14 @@ function renderTeamTab(){
   const endMonthOptions = THAI_MONTH_NAMES.map((name,i)=>`<option value="${i}" ${i===umEndMonth?"selected":""} ${i<umStartMonth?"disabled":""}>${name}</option>`).join("");
 
   const barsHtml = rows.map(r=>{
-    const barPct = Math.max(2, (r.achieved/maxAchieved)*100);
+    const barPct = r.achieved>0 ? Math.max(2, (r.achieved/maxAchieved)*100) : 0;
     return `<div style="margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;font-size:15.5px;margin-bottom:3px;">
         <span style="color:var(--navy);font-weight:600;">${esc(r.name)}</span>
         <span style="color:var(--muted);">${THB(r.achieved)} บาท</span>
       </div>
       <div style="background:#123F6B12;border-radius:6px;height:14px;overflow:hidden;">
-        <div style="width:${barPct}%;height:100%;background:linear-gradient(90deg, var(--gold-soft), var(--gold));border-radius:6px;"></div>
+        ${barPct>0?`<div style="width:${barPct}%;height:100%;background:linear-gradient(90deg, var(--gold-soft), var(--gold));border-radius:6px;"></div>`:''}
       </div>
     </div>`;
   }).join("");
@@ -772,15 +775,15 @@ function renderTeamTab(){
           else if (multiplier<1.75) nextTier = {mult:1.75, rate:22};
           else if (multiplier<2.5) nextTier = {mult:2.5, rate:25};
           const monthRowsHtml = monthlyFycThisQ.map(x=>`<tr>
-            <td style="color:var(--navy-deep);font-weight:600;">${THAI_MONTH_SHORT[x.month]}</td>
-            <td class="r" style="color:var(--muted);">${THB(umGoalFYC/12)}</td>
-            <td class="r">
-              <input type="text" inputmode="decimal" data-qty-override="${x.cfycKey}" value="${esc(formatThousands(String(x.cfycValue)))}" style="width:82px;padding:4px 5px;font-size:14px;text-align:right;">
-              <div style="font-size:12px;color:${x.cfycIsOv?'var(--gold)':'var(--muted)'};">${x.cfycIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
+            <td style="color:var(--navy-deep);font-weight:600;vertical-align:top;padding-top:8px;">${THAI_MONTH_SHORT[x.month]}</td>
+            <td class="r" style="color:var(--navy-deep);vertical-align:top;padding-top:8px;">${THB(umGoalFYC/12)}</td>
+            <td class="r" style="vertical-align:top;padding-top:0;">
+              <input type="text" inputmode="decimal" data-qty-override="${x.cfycKey}" value="${esc(formatThousands(String(x.cfycValue)))}" style="width:98px;padding:4px 5px;font-size:21px;font-weight:700;font-family:'Space Grotesk',sans-serif;text-align:center;">
+              <div style="font-size:12px;color:${x.cfycIsOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${x.cfycIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
             </td>
-            <td class="r">
-              <input type="text" inputmode="decimal" data-direct-override="${x.directKey}" value="${esc(formatThousands(String(x.directValue)))}" style="width:82px;padding:4px 5px;font-size:14px;text-align:right;">
-              <div style="font-size:12px;color:${x.directIsOv?'var(--gold)':'var(--muted)'};">${x.directIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
+            <td class="r" style="vertical-align:top;padding-top:0;">
+              <input type="text" inputmode="decimal" data-direct-override="${x.directKey}" value="${esc(formatThousands(String(x.directValue)))}" style="width:98px;padding:4px 5px;font-size:21px;font-weight:700;font-family:'Space Grotesk',sans-serif;text-align:center;">
+              <div style="font-size:12px;color:${x.directIsOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${x.directIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
             </td>
           </tr>`).join("");
           return `<div class="qcard" style="background:${NAVY_TINTS[q-1]};">
@@ -2022,6 +2025,7 @@ function bindEvents(){
   const umViewAsOfSelect = document.getElementById("um-view-as-of-month");
   if (umViewAsOfSelect) umViewAsOfSelect.onchange = (e)=>{ state.umGoal.viewAsOfMonth = Number(e.target.value); saveState(); render(); };
   document.querySelectorAll("[data-qty-override]").forEach(inp=>{
+    inp.oninput = (e)=>{ const f = formatThousands(stripCommas(e.target.value)); e.target.value = f; };
     inp.onfocus = (e)=>e.target.select();
     inp.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
     inp.onblur = (e)=>{
@@ -2036,6 +2040,7 @@ function bindEvents(){
     };
   });
   document.querySelectorAll("[data-direct-override]").forEach(inp=>{
+    inp.oninput = (e)=>{ const f = formatThousands(stripCommas(e.target.value)); e.target.value = f; };
     inp.onfocus = (e)=>e.target.select();
     inp.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
     inp.onblur = (e)=>{
