@@ -244,7 +244,7 @@ const UM_POSITIONS = [
 ];
 // ข้อ 3: โบนัสส่วนเกินโควต้า (Pers เบี้ยตรง ปี 2 ณ ต.ค. 70%) — อ่านค่าจริงจากไฟล์ Excel ต้นฉบับ (ไม่ใช่ประมาณการ)
 // % ที่ทำได้ = FYC ตัวแทนใหม่ ÷ CFYC/ปีตามตำแหน่ง — แต่ละตำแหน่งมีอัตรา % (โบนัส 1) ไล่ระดับตามช่วง
-// หน่วย 2/หน่วย 1 มีเฉพาะอัตรา % เท่านั้น (ไม่มีบาทคงที่เพิ่ม) ส่วนตำแหน่งอื่นมีอัตรา % + บาทคงที่ (โบนัส 2) ทั้งคู่
+// หน่วย 2/หน่วย 1 มีเฉพาะอัตรา % เท่านั้น (ไม่มีคงที่เพิ่ม) ส่วนตำแหน่งอื่นมีอัตรา % + คงที่ (โบนัส 2) ทั้งคู่
 // ลำดับ 8 ช่วงในทุกอาเรย์: 1-20% | 21-40% | 41-60% | 61-80% | 81-100% | 101-150% | 151-200% | 200%ขึ้นไป
 const NEW_AGENT_PROFIT_TABLE = {
   unit2:      { rates: [15,   16,   17,   18,   19,   20,   21,   22  ], amounts: null },
@@ -352,7 +352,7 @@ function renderInsightsSection(entries, selYearArg, pacing){
       if (pctOfTarget<50){
         cards.push(`<div class="alert-box" style="background:#FBEEEC;border-color:var(--bad);">
           <div class="title" style="color:var(--bad);">⏰ สัญญาณเตือน: ผ่านครึ่งเดือนแล้ว</div>
-          <div class="line" style="color:var(--bad);">เดือนนี้ทำได้แค่ ${Math.round(pctOfTarget)}% ของเป้าเดือน (${THB(cm.actual)} จาก ${THB(cm.target)} บาท) เร่งมือหน่อยนะ!</div>
+          <div class="line" style="color:var(--bad);">เดือนนี้ทำได้แค่ ${Math.round(pctOfTarget)}% ของเป้าเดือน (${THB(cm.actual)} จาก ${THB(cm.target)}) เร่งมือหน่อยนะ!</div>
         </div>`);
       }
     }
@@ -369,7 +369,7 @@ function renderInsightsSection(entries, selYearArg, pacing){
       cards.push(`<div class="card" style="padding:14px 16px;margin-bottom:12px;">
         <div style="font-size:16.5px;color:var(--muted);margin-bottom:4px;">📊 เทียบเดือนนี้กับปีที่แล้ว (${THAI_MONTH_NAMES[cmIdx]})</div>
         <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;">
-          <span style="font-size:18px;">ปีนี้ ${THB(thisMonthActual)} · ปีก่อน ${THB(lastYearActual)} บาท</span>
+          <span style="font-size:18px;">ปีนี้ ${THB(thisMonthActual)} · ปีก่อน ${THB(lastYearActual)}</span>
           <span style="font-weight:700;font-size:20px;color:${diff>=0?'var(--good)':'var(--bad)'};">${diff>=0?'▲':'▼'} ${THB(Math.abs(diff))}${diffPct!==null?` (${diffPct>=0?'+':''}${Math.round(diffPct)}%)`:''}</span>
         </div>
       </div>`);
@@ -389,12 +389,12 @@ function renderInsightsSection(entries, selYearArg, pacing){
           <div style="flex:1;background:#F1F8F3;border-radius:8px;padding:10px;text-align:center;">
             <div style="font-size:15px;color:var(--muted);">ดีที่สุด</div>
             <div style="font-weight:700;color:var(--good);font-size:20px;">${THAI_MONTH_SHORT[best.month]}</div>
-            <div style="font-size:15px;color:var(--good);">${THB(best.actual)} บาท</div>
+            <div style="font-size:15px;color:var(--good);">${THB(best.actual)}</div>
           </div>
           <div style="flex:1;background:#FBF0EF;border-radius:8px;padding:10px;text-align:center;">
             <div style="font-size:15px;color:var(--muted);">ต้องปรับปรุง</div>
             <div style="font-weight:700;color:var(--bad);font-size:20px;">${THAI_MONTH_SHORT[worst.month]}</div>
-            <div style="font-size:15px;color:var(--bad);">${THB(worst.actual)} บาท</div>
+            <div style="font-size:15px;color:var(--bad);">${THB(worst.actual)}</div>
           </div>
         </div>
       </div>`);
@@ -409,8 +409,8 @@ function renderInsightsSection(entries, selYearArg, pacing){
       const upcomingSum = upcoming.reduce((s,e)=>s+e.fyc,0);
       cards.push(`<div class="card" style="padding:14px 16px;margin-bottom:12px;">
         <div style="font-size:16.5px;color:var(--muted);margin-bottom:6px;">🔔 งวดเบี้ยที่จะครบกำหนดใน 30 วันข้างหน้า</div>
-        <div style="font-size:19px;font-weight:700;color:var(--navy);margin-bottom:6px;">${upcoming.length} งวด รวม ${THB(upcomingSum)} บาท</div>
-        ${upcoming.slice(0,5).map(e=>`<div style="font-size:15px;color:var(--muted);padding:2px 0;">· ${new Date(e.date).toLocaleDateString('th-TH',{day:'numeric',month:'short'})} — ${esc(e.note)||'ไม่มีหมายเหตุ'} (${THB(e.fyc)} บาท)</div>`).join("")}
+        <div style="font-size:19px;font-weight:700;color:var(--navy);margin-bottom:6px;">${upcoming.length} งวด รวม ${THB(upcomingSum)}</div>
+        ${upcoming.slice(0,5).map(e=>`<div style="font-size:15px;color:var(--muted);padding:2px 0;">· ${new Date(e.date).toLocaleDateString('th-TH',{day:'numeric',month:'short'})} — ${esc(e.note)||'ไม่มีหมายเหตุ'} (${THB(e.fyc)})</div>`).join("")}
         ${upcoming.length>5?`<div style="font-size:15px;color:var(--muted);">...และอีก ${upcoming.length-5} งวด</div>`:''}
       </div>`);
     }
@@ -427,7 +427,7 @@ function renderInsightsSection(entries, selYearArg, pacing){
       const fShort = Math.max(0, 40000-qData.fyc);
       cards.push(`<div class="card" style="padding:14px 16px;margin-bottom:12px;">
         <div style="font-size:16.5px;color:var(--muted);margin-bottom:6px;">⏳ ไตรมาส ${currentQ} จะจบใน ${daysLeft} วัน</div>
-        ${(cShort>0||fShort>0)?`<div style="font-size:17px;color:var(--bad);">ยังขาด ${cShort>0?`${cShort} ราย `:''}${fShort>0?`${THB(fShort)} บาท`:''} ถึงจะผ่านเกณฑ์คุณวุฒิไตรมาสนี้</div>`:`<div style="font-size:17px;color:var(--good);">✔ ผ่านเกณฑ์คุณวุฒิไตรมาสนี้แล้ว</div>`}
+        ${(cShort>0||fShort>0)?`<div style="font-size:17px;color:var(--bad);">ยังขาด ${cShort>0?`${cShort} ราย `:''}${fShort>0?`${THB(fShort)}`:''} ถึงจะผ่านเกณฑ์คุณวุฒิไตรมาสนี้</div>`:`<div style="font-size:17px;color:var(--good);">✔ ผ่านเกณฑ์คุณวุฒิไตรมาสนี้แล้ว</div>`}
       </div>`);
     }
   }
@@ -503,7 +503,7 @@ function renderTeamTab(){
     return `<div style="margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;font-size:15.5px;margin-bottom:3px;">
         <span style="color:var(--navy);font-weight:600;">${esc(r.name)}</span>
-        <span style="color:var(--muted);">${THB(r.achieved)} บาท</span>
+        <span style="color:var(--muted);">${THB(r.achieved)}</span>
       </div>
       <div style="background:#123F6B12;border-radius:6px;height:14px;overflow:hidden;">
         ${barPct>0?`<div style="width:${barPct}%;height:100%;background:linear-gradient(90deg, var(--gold-soft), var(--gold));border-radius:6px;"></div>`:''}
@@ -535,10 +535,10 @@ function renderTeamTab(){
 
       const warnings = [];
       if (daysLeftInMonth<=7 && quotaShortW>0){
-        warnings.push(`⚠ เดือนนี้เหลืออีก ${daysLeftInMonth} วัน แต่ CFYC สะสมยังขาด ${THB(quotaShortW)} บาท ถึงจะได้เงินเดือนเดือนนี้`);
+        warnings.push(`⚠ เดือนนี้เหลืออีก ${daysLeftInMonth} วัน แต่ CFYC สะสมยังขาด ${THB(quotaShortW)} ถึงจะได้เงินเดือนเดือนนี้`);
       }
       if (daysLeftInQuarter<=14 && q6ShortW>0){
-        warnings.push(`⚠ ไตรมาส ${currentQW} เหลืออีก ${daysLeftInQuarter} วัน แต่ FYC ทีมยังขาด ${THB(q6ShortW)} บาท ถึงจะเข้าเกณฑ์ผลตอบแทนข้อ 6 ขั้นแรก`);
+        warnings.push(`⚠ ไตรมาส ${currentQW} เหลืออีก ${daysLeftInQuarter} วัน แต่ FYC ทีมยังขาด ${THB(q6ShortW)} ถึงจะเข้าเกณฑ์ผลตอบแทนข้อ 6 ขั้นแรก`);
       }
       if (warnings.length){
         teamEarlyWarningHtml = `<div class="alert-box" style="background:#FBEEEC;border-color:var(--bad);margin-bottom:14px;">
@@ -560,13 +560,13 @@ function renderTeamTab(){
           <label class="field dark"><span>ตำแหน่ง (อ้างอิงผลประโยชน์ผู้บริหารตัวแทน)</span>
             <select id="um-position-select" style="background:#123F6B99;color:#fff;border-color:#ffffff33;">
               <option value="">— ไม่ระบุตำแหน่ง (ตั้งเป้าเอง) —</option>
-              ${UM_POSITIONS.map(p=>`<option value="${p.value}" ${p.value===umPosition?"selected":""}>${p.label} (CFYC ${THB(p.cfycYear)} บาท/ปี)</option>`).join("")}
+              ${UM_POSITIONS.map(p=>`<option value="${p.value}" ${p.value===umPosition?"selected":""}>${p.label} (CFYC ${THB(p.cfycYear)}/ปี)</option>`).join("")}
             </select>
           </label>
-          ${selectedPosition?`<div style="font-size:16px;color:#B9C4D6;margin-top:6px;">เงินเดือน ${THB(selectedPosition.salary)} บาท/เดือน · ค่าขยายงาน ${selectedPosition.tenurePct}% · CFYC ขั้นต่ำ ${THB(selectedPosition.cfycMonth)} บาท/เดือน</div>`:''}
+          ${selectedPosition?`<div style="font-size:16px;color:#B9C4D6;margin-top:6px;">เงินเดือน ${THB(selectedPosition.salary)}/เดือน · ค่าขยายงาน ${selectedPosition.tenurePct}% · CFYC ขั้นต่ำ ${THB(selectedPosition.cfycMonth)}/เดือน</div>`:''}
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
-          <label class="field dark" style="max-width:320px;flex:1;min-width:200px;"><span>เป้าหมาย CFYC ของ UM (บาท)</span>
+          <label class="field dark" style="max-width:320px;flex:1;min-width:200px;"><span>เป้าหมาย CFYC ของ UM</span>
             <input type="text" inputmode="decimal" id="um-goal-fyc-input" value="${esc(umGoalsFycInput)}"
               style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;">
           </label>
@@ -590,19 +590,19 @@ function renderTeamTab(){
             <div class="center"><span class="pct">${Math.round(umProgressPct)}%</span><span class="lbl">ของเป้า</span></div>
           </div>
           <div style="flex:1;min-width:220px;">
-            <div class="tech-row"><span class="lab">เป้าหมาย UM (${THAI_MONTH_NAMES[umStartMonth]} – ${THAI_MONTH_NAMES[umEndMonth]})</span><span class="val">${THB(umGoalFYC)} บาท</span></div>
+            <div class="tech-row"><span class="lab">เป้าหมาย UM (${THAI_MONTH_NAMES[umStartMonth]} – ${THAI_MONTH_NAMES[umEndMonth]})</span><span class="val">${THB(umGoalFYC)}</span></div>
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;">
               <span style="font-size:15px;color:#B9C4D6;">ผลงานทีมที่ทำได้ ถึงเดือน</span>
               <select id="um-view-as-of-month" style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-size:15px;padding:4px 8px;">
                 ${THAI_MONTH_NAMES.map((name,i)=>`<option value="${i}" ${i===umViewAsOfMonth?"selected":""}>${name}</option>`).join("")}
               </select>
             </div>
-            <div class="tech-row"><span class="lab">ทีมทำได้แล้ว (ถึงเดือน${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val good">${THB(teamAchievedInUmPeriod)} บาท</span></div>
-            <div class="tech-row"><span class="lab">ยังขาดอีก</span><span class="val ${umRemaining>0?'warn':''}">${THB(umRemaining)} บาท</span></div>
+            <div class="tech-row"><span class="lab">ทีมทำได้แล้ว (ถึงเดือน${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val good">${THB(teamAchievedInUmPeriod)}</span></div>
+            <div class="tech-row"><span class="lab">ยังขาดอีก</span><span class="val ${umRemaining>0?'warn':''}">${THB(umRemaining)}</span></div>
           </div>
         </div>
         ${umGoalFYC>0 && umProgressPct>=100?`<div style="margin-top:14px;background:#1F7A4F55;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;font-weight:700;">🎉 ถึงเป้าหมาย UM แล้ว!</div>`
-          :umGoalFYC>0 && umProgressPct>=80?`<div style="margin-top:14px;background:#C69A3B33;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;">🔥 ใกล้ถึงเป้าหมาย UM แล้ว! เหลืออีกแค่ ${THB(umRemaining)} บาท (${Math.round(umProgressPct)}%)</div>`:''}
+          :umGoalFYC>0 && umProgressPct>=80?`<div style="margin-top:14px;background:#C69A3B33;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;">🔥 ใกล้ถึงเป้าหมาย UM แล้ว! เหลืออีกแค่ ${THB(umRemaining)} (${Math.round(umProgressPct)}%)</div>`:''}
       </div>
     </div>
 
@@ -661,7 +661,7 @@ function renderTeamTab(){
       // ขั้นถัดไปของข้อ 3: อีกเท่าไหร่จะขยับอัตรา และจะได้เพิ่มเท่าไหร่ (คำนวณจาก "ส่วนเกิน" ที่จุดนั้น ไม่ใช่ยอดเต็ม)
       const nextBandIdx3 = bandIdx+1;
       const atMaxBand3 = nextBandIdx3 >= NEW_AGENT_PROFIT_BAND_MIN_PCT.length;
-      const notYetQualified3 = teamCFYCForItem3<=quota3; // ยังไม่เกินโควตา 100% เลย จึงยังไม่ได้รับโบนัสข้อนี้แม้แต่บาทเดียว
+      const notYetQualified3 = teamCFYCForItem3<=quota3; // ยังไม่เกินโควตา 100% เลย จึงยังไม่ได้รับโบนัสข้อนี้แม้แต่เดียว
       let nextBand3Info = null;
       if (notYetQualified3){
         const requiredFYC = quota3 * 1.01; // ต้องเกินโควตาอย่างน้อย 1% ถึงจะเริ่มเข้าเกณฑ์ขั้นแรก
@@ -806,16 +806,16 @@ function renderTeamTab(){
       <div class="card">
         <h3>📖 อธิบายผลประโยชน์ UM ตามตำแหน่ง (${selectedPosition.label})</h3>
         <p class="sub">อธิบายเงื่อนไขแต่ละข้อเท่านั้น ไม่มีตัวเลขคำนวณจริง (ดูผลคำนวณจริงที่การ์ดถัดไป)</p>
-        <div class="tech-row"><span class="lab">1. เงินเดือน</span><span class="val">${THB(selectedPosition.salary)} บาท/เดือน</span></div>
-        <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: CFYC สะสมเต็มโควตา (${THB(selectedPosition.cfycMonth)} บาท) ครบ 1 เดือน = รับเงินเดือน 1 เดือน</div>
+        <div class="tech-row"><span class="lab">1. เงินเดือน</span><span class="val">${THB(selectedPosition.salary)}/เดือน</span></div>
+        <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: CFYC สะสมเต็มโควตา (${THB(selectedPosition.cfycMonth)}) ครบ 1 เดือน = รับเงินเดือน 1 เดือน</div>
         <div class="tech-row"><span class="lab">2. ค่าขยายงาน</span><span class="val">${selectedPosition.tenurePct}%</span></div>
         <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: CFYC จริงแต่ละเดือน × ${selectedPosition.tenurePct}%</div>
         <div class="tech-row"><span class="lab">3. โบนัสส่วนเกินโควต้า</span><span class="val">โควตาปี ${THB(selectedPosition.cfycYear)}</span></div>
-        <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: คำนวณและจ่ายจริงเฉพาะสิ้นเดือนธันวาคม (สิ้นปี) เท่านั้น ต้องทำ CFYC ทั้งปีเกินโควตาจึงจ่ายตามอัตราขั้นบันได (โบนัส 1 = %ของส่วนเกิน, โบนัส 2 = บาทคงที่ประจำขั้น)</div>
+        <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: คำนวณและจ่ายจริงเฉพาะสิ้นเดือนธันวาคม (สิ้นปี) เท่านั้น ต้องทำ CFYC ทั้งปีเกินโควตาจึงจ่ายตามอัตราขั้นบันได (โบนัส 1 = %ของส่วนเกิน, โบนัส 2 = คงที่ประจำขั้น)</div>
         <div class="tech-row"><span class="lab">4. ค่าเสริมมือ</span><span class="val">30%</span></div>
         <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: 30% ของ FYC ตัวแทนใหม่ ในช่วง 12 เดือนแรกนับจากวันที่มีผลงานขึ้นแรก ไม่มีเกณฑ์ขั้นต่ำ</div>
-        <div class="tech-row"><span class="lab">5. ค่ารักษาทีมงาน</span><span class="val">500 บาท/หน่วยตรง</span></div>
-        <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: 500 บาทต่อหน่วยตรงใต้สังกัดที่มีผลงานครบโควตา เฉพาะเดือนที่ผลงานครบโควตานั้น (ยังไม่คำนวณให้ในแอปนี้)</div>
+        <div class="tech-row"><span class="lab">5. ค่ารักษาทีมงาน</span><span class="val">500/หน่วยตรง</span></div>
+        <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: 500 ต่อหน่วยตรงใต้สังกัดที่มีผลงานครบโควตา เฉพาะเดือนที่ผลงานครบโควตานั้น (ยังไม่คำนวณให้ในแอปนี้)</div>
         <div class="tech-row"><span class="lab">6. ค่าตอบแทนขายเองและตัวแทนตรง (DPO)</span><span class="val">เกณฑ์ ${THB(salesCompThreshold)}/ไตรมาส</span></div>
         <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: คิดจาก "ตัวแทนตรง" เท่านั้น (ไม่ใช่ CFYC) เทียบเกณฑ์ขั้นต่ำ/ไตรมาส — ทำได้ 100% ของเกณฑ์ = 20%, 175% = 22%, 250% = 25%</div>
         <div class="tech-row"><span class="lab">7. ค่าสร้างและรักษาตัวแทน</span></div>
@@ -900,7 +900,7 @@ function renderTeamTab(){
             <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:6px;">
               ${[0,1,2,3,4].map(i=>`<input type="text" inputmode="decimal" data-premium-agent="${esc(name)}" data-premium-idx="${i}" value="${esc(premiums[i]||"")}" placeholder="งวด ${i+1}" style="padding:5px 6px;font-size:14px;text-align:center;">`).join("")}
             </div>
-            <div style="text-align:right;font-size:15px;color:var(--navy);font-weight:700;">เบี้ยประกันรวม: ${THB(premiumSum)} บาท</div>
+            <div style="text-align:right;font-size:15px;color:var(--navy);font-weight:700;">เบี้ยประกันรวม: ${THB(premiumSum)}</div>
           </div>`;
         }).join("");
       })()}
@@ -991,7 +991,7 @@ function renderTeamTab(){
             ${diffRow("2. ค่าขยายงาน", resA.item2, resB.item2)}
             ${diffRow("3. โบนัสส่วนเกินโควตา (รวม)", resA.item3, resB.item3)}
             <tr><td style="text-align:left;padding-left:16px;font-size:14px;color:var(--muted);">— โบนัส 1 (อัตรา ${resA.rate3}% / ${resB.rate3}%)</td><td class="r" style="font-size:14px;color:var(--muted);">${THB(resA.bonus1)}</td><td class="r" style="font-size:14px;color:var(--muted);">${THB(resB.bonus1)}</td><td class="r"></td></tr>
-            ${(resA.flat3>0||resB.flat3>0)?`<tr><td style="text-align:left;padding-left:16px;font-size:14px;color:var(--muted);">— โบนัส 2 (บาทคงที่ประจำขั้น)</td><td class="r" style="font-size:14px;color:var(--muted);">${resA.flat3>0?THB(resA.flat3):'—'}</td><td class="r" style="font-size:14px;color:var(--muted);">${resB.flat3>0?THB(resB.flat3):'—'}</td><td class="r"></td></tr>`:''}
+            ${(resA.flat3>0||resB.flat3>0)?`<tr><td style="text-align:left;padding-left:16px;font-size:14px;color:var(--muted);">— โบนัส 2 (คงที่ประจำขั้น)</td><td class="r" style="font-size:14px;color:var(--muted);">${resA.flat3>0?THB(resA.flat3):'—'}</td><td class="r" style="font-size:14px;color:var(--muted);">${resB.flat3>0?THB(resB.flat3):'—'}</td><td class="r"></td></tr>`:''}
             ${diffRow("6. ค่าตอบแทนขายเอง/ตัวแทนตรง (DPO)", resA.item6, resB.item6)}
             <tr><td style="text-align:left;">7. ค่าสร้างและรักษาตัวแทน</td><td class="r">${THB(item7cmp)}</td><td class="r">${THB(item7cmp)}</td><td class="r" style="color:var(--muted);">เท่ากัน</td></tr>
             <tr style="border-top:2px solid #123F6B22;font-weight:700;">
@@ -1021,19 +1021,19 @@ function renderSpecialEventsSection(entries){
       const reached = achieved>=t;
       return `<div style="flex:1;min-width:90px;border-radius:10px;padding:10px;text-align:center;background:${reached?'#F1F8F3':'var(--cream)'};border:1.5px solid ${reached?'var(--good)':'#123F6B22'};">
         <div style="font-size:15px;color:var(--muted);">ระดับ ${i+1}</div>
-        <div style="font-weight:700;color:${reached?'var(--good)':'var(--navy-deep)'};font-size:18px;">${THB(t)} ฿</div>
+        <div style="font-weight:700;color:${reached?'var(--good)':'var(--navy-deep)'};font-size:18px;">${THB(t)}</div>
         <div style="font-size:14px;margin-top:2px;color:${reached?'var(--good)':'var(--muted)'};">${reached?'✔ ผ่านแล้ว':'ยังไม่ถึง'}</div>
       </div>`;
     }).join("");
     const statusLine = nextTier!==undefined
-      ? `<div style="margin-top:8px;font-size:17px;color:var(--muted);">ขาดอีก <b style="color:var(--warn);">${THB(nextTier-achieved)} บาท</b> ถึงระดับถัดไป (${THB(nextTier)} บาท)</div>`
+      ? `<div style="margin-top:8px;font-size:17px;color:var(--muted);">ขาดอีก <b style="color:var(--warn);">${THB(nextTier-achieved)}</b> ถึงระดับถัดไป (${THB(nextTier)})</div>`
       : `<div style="margin-top:8px;font-size:17px;color:var(--good);font-weight:700;">🎉 ผ่านครบทุกระดับแล้ว!</div>`;
     return `<div class="card" style="margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;">
         <h3 style="margin:0;">${esc(ev.name)}</h3>
         <span style="font-size:15px;color:var(--muted);">${thDate(ev.start)} – ${thDate(ev.end)}</span>
       </div>
-      <div style="font-size:17px;color:var(--muted);margin:4px 0 10px;">ผลงานสะสมในช่วงแข่งขัน: <b style="color:var(--navy-deep);">${THB(achieved)} บาท</b></div>
+      <div style="font-size:17px;color:var(--muted);margin:4px 0 10px;">ผลงานสะสมในช่วงแข่งขัน: <b style="color:var(--navy-deep);">${THB(achieved)}</b></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">${tiersHtml}</div>
       ${statusLine}
     </div>`;
@@ -1393,6 +1393,7 @@ function renderGoalsTab(){
 
   const ringR = 44, ringC = 2*Math.PI*ringR;
   const ringOffset = ringC - (progressPct/100)*ringC;
+  const annualRingOffset = ringC - (annualProgressPct/100)*ringC;
 
   let monthRows = "";
   if (pacing){
@@ -1422,22 +1423,22 @@ function renderGoalsTab(){
   const blendedAnnualTarget = pacing ? pacing.reduce((s,m)=>s+(m.target||0),0) : annualGoalFYC;
   const netDiffAnnual = achievedFullYear - blendedAnnualTarget;
   const netHtmlAnnual = blendedAnnualTarget>0 ? (netDiffAnnual >= 0
-    ? `<span style="color:var(--good);">เกิน ${THB(netDiffAnnual)} บาท</span>`
-    : `<span style="color:var(--bad);">ขาด ${THB(-netDiffAnnual)} บาท</span>`) : '—';
+    ? `<span style="color:var(--good);">เกิน ${THB(netDiffAnnual)}</span>`
+    : `<span style="color:var(--bad);">ขาด ${THB(-netDiffAnnual)}</span>`) : '—';
   const netDiffPeriod = achieved - goalFYC;
   const netHtmlPeriod = goalFYC>0 ? (netDiffPeriod >= 0
-    ? `<span style="color:var(--good);">เกิน ${THB(netDiffPeriod)} บาท</span>`
-    : `<span style="color:var(--bad);">ขาด ${THB(-netDiffPeriod)} บาท</span>`) : '—';
+    ? `<span style="color:var(--good);">เกิน ${THB(netDiffPeriod)}</span>`
+    : `<span style="color:var(--bad);">ขาด ${THB(-netDiffPeriod)}</span>`) : '—';
   const totalRow = pacing ? `<tr style="border-top:2px solid #123F6B22;font-weight:700;">
     <td style="color:var(--navy-deep);">รวม (สะสมทั้งปี)</td>
     <td class="num" style="color:var(--navy-deep);">${THB(blendedAnnualTarget)}</td>
     <td class="num" style="color:var(--navy-deep);">${THB(achievedFullYear)}</td>
     <td class="num" colspan="2">${netHtmlAnnual}</td>
   </tr>
-  <tr style="font-size:14px;">
-    <td style="color:var(--muted);">เทียบเป้าช่วงพิเศษ</td>
-    <td class="num" style="color:var(--muted);">${THB(goalFYC)}</td>
-    <td class="num" style="color:var(--muted);">${THB(achieved)}</td>
+  <tr style="font-weight:700;">
+    <td style="color:var(--navy-deep);">เทียบเป้าช่วงพิเศษ</td>
+    <td class="num" style="color:var(--navy-deep);">${THB(goalFYC)}</td>
+    <td class="num" style="color:var(--navy-deep);">${THB(achieved)}</td>
     <td class="num" colspan="2">${netHtmlPeriod}</td>
   </tr>` : "";
 
@@ -1452,16 +1453,32 @@ function renderGoalsTab(){
       <div style="position:relative;">
         <h3>🎯 ตั้งเป้าหมายรายได้ประจำปี</h3>
         <p class="sub">ตั้งได้ 2 ส่วนแยกกัน: เป้าหมายทั้งปี (ม.ค.-ธ.ค. เสมอ) และเป้าหมายเฉพาะช่วง (แคมเปญ/ไตรมาสพิเศษ) รายงานผลจะแยกให้เห็นทั้งสองแบบ ไม่ปนกัน</p>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
-          <label class="field dark" style="max-width:320px;flex:1;min-width:200px;"><span>1) เป้าหมาย FYC ทั้งปี (บาท)</span>
-            <input type="text" inputmode="decimal" id="annual-goal-fyc-input" value="${esc(annualGoalsFycInput)}"
-              style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;">
-          </label>
+
+        <label class="field dark" style="max-width:320px;margin-bottom:16px;"><span>1) เป้าหมาย FYC ทั้งปี</span>
+          <input type="text" inputmode="decimal" id="annual-goal-fyc-input" value="${esc(annualGoalsFycInput)}"
+            style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;">
+        </label>
+        <div class="goal-flex" style="margin-bottom:20px;">
+          <div class="ring-wrap">
+            <svg width="108" height="108" style="transform:rotate(-90deg)">
+              <circle cx="54" cy="54" r="${ringR}" stroke="#ffffff22" stroke-width="10" fill="none"/>
+              <circle cx="54" cy="54" r="${ringR}" stroke="url(#ga)" stroke-width="10" fill="none"
+                stroke-dasharray="${ringC}" stroke-dashoffset="${annualRingOffset}" stroke-linecap="round"/>
+              <defs><linearGradient id="ga" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#9CE3B8"/><stop offset="100%" stop-color="#4FAE74"/>
+              </linearGradient></defs>
+            </svg>
+            <div class="center"><span class="pct">${Math.round(annualProgressPct)}%</span><span class="lbl">ของเป้าทั้งปี</span></div>
+          </div>
+          <div style="flex:1;min-width:220px;">
+            <div class="tech-row"><span class="lab">เป้าหมายทั้งปี (ม.ค. – ธ.ค.)</span><span class="val">${THB(annualGoalFYC)}</span></div>
+            <div class="tech-row"><span class="lab">ทำได้แล้ว (ทั้งปี)</span><span class="val good">${THB(achievedFullYear)}</span></div>
+            <div class="tech-row"><span class="lab">ยังขาดอีก (ทั้งปี)</span><span class="val ${annualRemaining>0?'warn':''}">${THB(annualRemaining)}</span></div>
+          </div>
         </div>
-        <div class="tech-row" style="margin-bottom:16px;"><span class="lab">ผลงานทั้งปี (ม.ค.-ธ.ค.)</span><span class="val good">${THB(achievedFullYear)} บาท ${annualGoalFYC>0?`/ ${THB(annualGoalFYC)} บาท (ขาดอีก ${THB(annualRemaining)} บาท, ${Math.round(annualProgressPct)}%)`:''}</span></div>
 
         <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;border-top:1px dashed #ffffff33;padding-top:14px;">
-          <label class="field dark" style="max-width:320px;flex:1;min-width:200px;"><span>2) เป้าหมาย FYC เฉพาะช่วง (บาท)</span>
+          <label class="field dark" style="max-width:320px;flex:1;min-width:200px;"><span>2) เป้าหมาย FYC เฉพาะช่วง</span>
             <input type="text" inputmode="decimal" id="goal-fyc-input" value="${esc(goalsFycInput)}"
               style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;">
           </label>
@@ -1485,10 +1502,10 @@ function renderGoalsTab(){
             <div class="center"><span class="pct">${Math.round(progressPct)}%</span><span class="lbl">ของเป้าช่วงนี้</span></div>
           </div>
           <div style="flex:1;min-width:220px;">
-            <div class="tech-row"><span class="lab">เป้าหมายช่วงพิเศษ (${THAI_MONTH_NAMES[startMonth]} – ${THAI_MONTH_NAMES[endMonth]})</span><span class="val">${THB(goalFYC)} บาท</span></div>
-            <div class="tech-row"><span class="lab">ทำได้แล้ว (ช่วงนี้)</span><span class="val good">${THB(achieved)} บาท</span></div>
-            <div class="tech-row"><span class="lab">ยังขาดอีก (ช่วงนี้)</span><span class="val ${remaining>0?'warn':''}">${THB(remaining)} บาท</span></div>
-            <div class="tech-row"><span class="lab">เฉลี่ยต่อเดือนที่ต้องทำ (นับจากนี้)</span><span class="val highlight">${planEnded ? 'สิ้นสุดแผนแล้ว' : THB(avgMonthlyTargetNow)+' บาท/เดือน'}</span></div>
+            <div class="tech-row"><span class="lab">เป้าหมายช่วงพิเศษ (${THAI_MONTH_NAMES[startMonth]} – ${THAI_MONTH_NAMES[endMonth]})</span><span class="val">${THB(goalFYC)}</span></div>
+            <div class="tech-row"><span class="lab">ทำได้แล้ว (ช่วงนี้)</span><span class="val good">${THB(achieved)}</span></div>
+            <div class="tech-row"><span class="lab">ยังขาดอีก (ช่วงนี้)</span><span class="val ${remaining>0?'warn':''}">${THB(remaining)}</span></div>
+            <div class="tech-row"><span class="lab">เฉลี่ยต่อเดือนที่ต้องทำ (นับจากนี้)</span><span class="val highlight">${planEnded ? 'สิ้นสุดแผนแล้ว' : THB(avgMonthlyTargetNow)+'/เดือน'}</span></div>
           </div>
         </div>
       </div>
@@ -1500,7 +1517,7 @@ function renderGoalsTab(){
       <h3>เป้าหมายรายเดือน</h3>
       <p class="sub">"เป้าหมาย" คงที่เท่ากันทุกเดือนในช่วงที่ตั้งไว้ (เป้ารวม ÷ จำนวนเดือนในแผน) · "คงเหลือถึงเป้า" และ "เฉลี่ย/เดือนจากนี้" อ้างอิงเดือนปัจจุบันตามปฏิทินจริงเท่านั้น (โชว์เฉพาะเดือนปัจจุบันจนถึงเดือนสิ้นสุดแผน)</p>
       ${pacing ? `<div style="overflow-x:auto"><table>
-        <thead><tr><th>เดือน</th><th style="text-align:right">เป้าหมาย (บาท)</th><th style="text-align:right">ทำได้จริง (บาท)</th><th style="text-align:right">คงเหลือถึงเป้า</th><th style="text-align:right">เฉลี่ย/เดือนจากนี้</th></tr></thead>
+        <thead><tr><th>เดือน</th><th style="text-align:right">เป้าหมาย</th><th style="text-align:right">ทำได้จริง</th><th style="text-align:right">คงเหลือถึงเป้า</th><th style="text-align:right">เฉลี่ย/เดือนจากนี้</th></tr></thead>
         <tbody>${monthRows}${totalRow}</tbody>
       </table></div>` : `<div class="empty">กรอกเป้าหมาย FYC ด้านบนก่อน เพื่อดูตารางเป้าหมายรายเดือน</div>`}
     </div>
@@ -1518,11 +1535,11 @@ function renderBillingPreviewHtml(){
   const total = schedule.reduce((s,x)=>s+x.amount,0);
   if (entryForm.billing==="monthly"){
     return `<div style="font-size:17.25px;color:var(--muted);margin-top:5px;line-height:1.6;">
-      เก็บล่วงหน้าเดือนแรก ${THB(rawFyc)} บาท (2 เดือน) เว้น 1 เดือน จากนั้นเก็บทุกเดือนๆ ละ ${THB(rawFyc/2)} บาท รวม ${schedule.length} งวด ตลอดปี ${THB(total)} บาท
+      เก็บล่วงหน้าเดือนแรก ${THB(rawFyc)} (2 เดือน) เว้น 1 เดือน จากนั้นเก็บทุกเดือนๆ ละ ${THB(rawFyc/2)} รวม ${schedule.length} งวด ตลอดปี ${THB(total)}
     </div>`;
   }
   return `<div style="font-size:17.25px;color:var(--muted);margin-top:5px;">
-    บันทึก ${mode.installments} งวด งวดละ ${THB(rawFyc)} บาท ทุก ${mode.intervalMonths} เดือน รวมทั้งหมด ${THB(total)} บาท
+    บันทึก ${mode.installments} งวด งวดละ ${THB(rawFyc)} ทุก ${mode.intervalMonths} เดือน รวมทั้งหมด ${THB(total)}
   </div>`;
 }
 function billingModeOf(e){
@@ -1587,7 +1604,7 @@ function renderEntryTab(){
     </table></div>`;
   }
 
-  const billingLabel = entryForm.billing==="" ? "ค่าคอมมิชชั่น (บาท)" : (entryForm.billing==="annual" ? "ค่าคอมมิชชั่นปีแรก (FYC) บาท" : "ค่าคอมมิชชั่นต่องวด (บาท)");
+  const billingLabel = entryForm.billing==="" ? "ค่าคอมมิชชั่น" : (entryForm.billing==="annual" ? "ค่าคอมมิชชั่นปีแรก (FYC)" : "ค่าคอมมิชชั่นต่องวด");
   const radiosHtml = BILLING_MODES.map(m=>{
     const sel = entryForm.billing===m.value;
     return `<label style="display:flex;align-items:center;justify-content:center;cursor:pointer;padding:10px 2px;border-radius:8px;border:1.5px solid ${sel?'var(--good)':'#123F6B22'};background:${sel?'var(--good)':'#fff'};font-weight:${sel?700:400};font-size:14px;transition:all .12s;flex:1;min-width:0;text-align:center;">
@@ -1621,7 +1638,7 @@ function renderEntryTab(){
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
         <h3>รายการผลงาน พ.ศ. ${toBE(selYear)}</h3>
-        <span style="font-size:18.75px;color:var(--muted);">${originCount} ราย · FYC รวม <b style="color:var(--navy)">${THB(totalFYC)}</b> บาท</span>
+        <span style="font-size:18.75px;color:var(--muted);">${originCount} ราย · FYC รวม <b style="color:var(--navy)">${THB(totalFYC)}</b></span>
       </div>
       <p style="font-size:15px;color:var(--muted);margin:-4px 0 10px;">วันที่สีน้ำเงิน = วันที่ลูกค้าชำระเบี้ยจริง (งวดแรก) ส่วนงวดที่เข้าต่อเนื่องเป็นสีปกติ</p>
       ${rows}
@@ -1680,7 +1697,7 @@ function renderCompetitionsTab(){
   const joiningTierBonus = joiningTier ? joiningTier.bonus : 0;
   const joiningTopUp = Math.max(0, Math.min(JOINING_BONUS_CAP, joiningTierBonus) - joiningTotalPaid);
   const joiningGrandTotal = Math.min(JOINING_BONUS_CAP, joiningTotalPaid + joiningTopUp);
-  // ขั้นถัดไปของ Joining Bonus: อีกกี่รายหรือกี่บาทถึงจะขยับขั้น และสูงสุดจะได้เท่าไหร่
+  // ขั้นถัดไปของ Joining Bonus: อีกกี่รายหรือเท่าไหร่ถึงจะขยับขั้น และสูงสุดจะได้เท่าไหร่
   const joiningNextTier = JOINING_CUM_TABLE.find(t=>!(joiningCumCases>=t.cases && joiningCumFYC>=t.fyc));
   const joiningCasesShort = joiningNextTier ? Math.max(0, joiningNextTier.cases-joiningCumCases) : 0;
   const joiningFycShort = joiningNextTier ? Math.max(0, joiningNextTier.fyc-joiningCumFYC) : 0;
@@ -1740,12 +1757,12 @@ function renderCompetitionsTab(){
       if (pmActive){ qTargetSum += pm.target; qHasTarget = true; }
       const rowBg = (monthIdx===currentMonthIdx && isCurrentYear) ? "background:#4FAE7414;" : "";
       monthRowsHtml += `<tr style="${rowBg}">
-        <td style="color:${m.count>0?'var(--navy-deep)':'var(--muted)'};font-weight:${m.count>0?600:400};">${THAI_MONTH_SHORT[m.month]}</td>
-        <td class="r" style="color:${m.count>0?'var(--ink)':'var(--muted)'};">${m.count}</td>
-        ${pacing?`<td class="r" style="color:var(--muted);">${pmActive?THB(pm.target):'—'}</td>`:''}
-        <td class="r">
-          <input type="text" inputmode="decimal" data-fyc-override="${ovKey}" value="${esc(formatThousands(String(displayFyc)))}" style="width:82px;padding:4px 5px;font-size:14px;text-align:center;">
-          <div style="font-size:11px;color:${isOv?'var(--gold)':'var(--muted)'};">${isOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
+        <td style="color:${m.count>0?'var(--navy-deep)':'var(--muted)'};font-weight:${m.count>0?600:400};vertical-align:top;padding-top:8px;">${THAI_MONTH_SHORT[m.month]}</td>
+        <td class="r" style="color:${m.count>0?'var(--ink)':'var(--muted)'};vertical-align:top;padding-top:8px;">${m.count}</td>
+        ${pacing?`<td class="r" style="color:var(--muted);vertical-align:top;padding-top:8px;">${pmActive?THB(pm.target):'—'}</td>`:''}
+        <td class="r" style="vertical-align:top;padding-top:0;">
+          <input type="text" inputmode="decimal" data-fyc-override="${ovKey}" value="${esc(formatThousands(String(displayFyc)))}" style="width:98px;padding:4px 5px;font-size:21px;font-weight:700;font-family:'Space Grotesk',sans-serif;text-align:center;color:var(--navy-deep);">
+          <div style="font-size:11px;color:${isOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${isOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
         </td>
       </tr>`;
     });
@@ -1757,7 +1774,7 @@ function renderCompetitionsTab(){
       <td class="r" style="color:var(--navy-deep);">${THB(qFycSum)}</td>
     </tr>`;
     const qNetLine = (pacing && qHasTarget) ? `<div style="font-size:16px;margin-top:4px;text-align:right;">
-      ${qNetDiff>=0?`<span style="color:var(--good);">เกินสุทธิ ${THB(qNetDiff)} บาท</span>`:`<span style="color:var(--bad);">ขาดสุทธิ ${THB(-qNetDiff)} บาท</span>`}
+      ${qNetDiff>=0?`<span style="color:var(--good);">เกินสุทธิ ${THB(qNetDiff)}</span>`:`<span style="color:var(--bad);">ขาดสุทธิ ${THB(-qNetDiff)}</span>`}
     </div>` : '';
 
     return `<div class="qcard" style="${borderStyle}background:${NAVY_TINTS[r.q-1]};">
@@ -1767,13 +1784,13 @@ function renderCompetitionsTab(){
       ${!r.qualifies?`<div class="alert-box">
         <div class="title">⚠ ขาดอีกเพื่อผ่านคุณวุฒิไตรมาสนี้</div>
         ${casesShort>0?`<div class="line">· ขาดอีก ${casesShort} ราย</div>`:''}
-        ${fycShort>0?`<div class="line">· ขาดอีก ${THB(fycShort)} บาท</div>`:''}
+        ${fycShort>0?`<div class="line">· ขาดอีก ${THB(fycShort)}</div>`:''}
         ${monthsShort>0?`<div class="line">· ต้องมีผลงานเพิ่มอีก ${monthsShort} เดือน</div>`:''}
       </div>`:''}
       <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #123F6B1A;">
         <div style="font-size:16.5px;font-weight:700;color:var(--navy-deep);margin-bottom:6px;">ผลงานรายเดือน${pacing?' เทียบเป้าหมาย':''}</div>
         <table class="qtable">
-          <thead><tr><th>เดือน</th><th class="r">ราย</th>${pacing?'<th class="r">เป้า FYC (฿)</th>':''}<th class="r">FYC ที่ได้ (฿)</th></tr></thead>
+          <thead><tr><th>เดือน</th><th class="r">ราย</th>${pacing?'<th class="r">เป้า FYC</th>':''}<th class="r">FYC ที่ได้</th></tr></thead>
           <tbody>${monthRowsHtml}${qTotalRow}</tbody>
         </table>
         ${qNetLine}
@@ -1785,13 +1802,13 @@ function renderCompetitionsTab(){
           <span>อัตราคงอยู่ (ตามช่วงบริษัท)</span>
           <select data-persist-band="${bKey}">${PERSISTENCY_BAND_OPTIONS.map(p=>`<option value="${p.value}" ${p.value===bPersist?"selected":""}>${p.label}</option>`).join("")}</select>
         </div>
-        <div class="reward"><span style="font-size:17.25px;color:var(--muted);">อัตรา ${bPct}%</span><span class="amt" style="color:${bQualifies?'var(--good)':'var(--muted)'};">${THB(bReward)} ฿</span></div>
+        <div class="reward"><span style="font-size:17.25px;color:var(--muted);">อัตรา ${bPct}%</span><span class="amt" style="color:${bQualifies?'var(--good)':'var(--muted)'};">${THB(bReward)}</span></div>
         ${!bQualifies?`<div class="alert-box" style="margin-top:6px;padding:7px 9px;">
           <div class="title" style="font-size:16.5px;">⚠ ยังไม่เข้าเกณฑ์โบนัสไตรมาส</div>
           ${bCasesShort>0?`<div class="line" style="font-size:17px;">· ขาดอีก ${bCasesShort} ราย</div>`:''}
-          ${bFycShort>0?`<div class="line" style="font-size:17px;">· ขาดอีก ${THB(bFycShort)} บาท</div>`:''}
+          ${bFycShort>0?`<div class="line" style="font-size:17px;">· ขาดอีก ${THB(bFycShort)}</div>`:''}
           ${bPersistShort>0?`<div class="line" style="font-size:17px;">· อัตราคงอยู่ขาดอีก ${bPersistShort}%</div>`:''}
-          <div style="font-size:17px;margin-top:4px;padding-top:4px;border-top:1px dashed #B4453B33;color:var(--good);font-weight:700;">✓ ถ้าครบเกณฑ์ จะได้รับประมาณ ${THB((r.fyc*bPct)/100)} บาท (อัตรา ${bPct}% ของ FYC ปัจจุบัน)</div>
+          <div style="font-size:17px;margin-top:4px;padding-top:4px;border-top:1px dashed #B4453B33;color:var(--good);font-weight:700;">✓ ถ้าครบเกณฑ์ จะได้รับประมาณ ${THB((r.fyc*bPct)/100)} (อัตรา ${bPct}% ของ FYC ปัจจุบัน)</div>
         </div>`:''}
       </div>
     </div>`;
@@ -1801,8 +1818,8 @@ function renderCompetitionsTab(){
     <div class="jbcard" style="border-top:1.5px solid #4FAE7433;border-right:1.5px solid #4FAE7433;border-bottom:1.5px solid #4FAE7433;border-left:5px solid ${m.qualifies?'var(--good)':'var(--bad)'};background:${GOLD_TINTS[i]};">
       <div class="head"><span>เดือนที่ ${i+1} (${thMonth(m.y,m.m)})</span><span>${m.qualifies?'✔':'✕'}</span></div>
       <div class="mini-row"><span>รายใหม่</span><span class="v ${m.count>=JOINING_MONTHLY_MIN_CASES?'ok':''}">${m.count} ราย</span></div>
-      <div class="mini-row"><span>FYC</span><span class="v ${m.fyc>=JOINING_MONTHLY_MIN_FYC?'ok':''}">${THB(m.fyc)} บาท</span></div>
-      <div style="margin-top:6px;font-size:17.25px;color:var(--muted);">ได้รับ: <b style="color:${m.paid?'var(--good)':'var(--muted)'};">${THB(m.paid)} บาท</b></div>
+      <div class="mini-row"><span>FYC</span><span class="v ${m.fyc>=JOINING_MONTHLY_MIN_FYC?'ok':''}">${THB(m.fyc)}</span></div>
+      <div style="margin-top:6px;font-size:17.25px;color:var(--muted);">ได้รับ: <b style="color:${m.paid?'var(--good)':'var(--muted)'};">${THB(m.paid)}</b></div>
     </div>`).join("");
 
   return `
@@ -1810,12 +1827,12 @@ function renderCompetitionsTab(){
       <h3>รายได้รวม ประจำปี ${toBE(selYear)}</h3>
       <p class="sub">สรุปรายได้แยกตามประเภท จากผลงานที่บันทึกไว้ทั้งหมด</p>
       <div class="income-grid">
-        <div class="income-chip"><div class="lbl">ค่าคอมมิชชั่น (FYC)</div><div class="val">${THB(annualFYC)} ฿</div></div>
-        <div class="income-chip"><div class="lbl">เงินรางวัลคุณวุฒิไตรมาส</div><div class="val">${THB(reward)} ฿</div></div>
-        <div class="income-chip"><div class="lbl">โบนัสไตรมาส (รวม 4 ไตรมาส)</div><div class="val">${THB(totalQuarterlyBonus)} ฿</div></div>
+        <div class="income-chip"><div class="lbl">ค่าคอมมิชชั่น (FYC)</div><div class="val">${THB(annualFYC)}</div></div>
+        <div class="income-chip"><div class="lbl">เงินรางวัลคุณวุฒิไตรมาส</div><div class="val">${THB(reward)}</div></div>
+        <div class="income-chip"><div class="lbl">โบนัสไตรมาส (รวม 4 ไตรมาส)</div><div class="val">${THB(totalQuarterlyBonus)}</div></div>
         <div class="income-chip">
           <div class="lbl">โบนัสปี (สุทธิ)</div>
-          <div class="val">${THB(annualBonusNet)} ฿</div>
+          <div class="val">${THB(annualBonusNet)}</div>
           <div style="margin-top:6px;">
             <select data-annual-persist-band style="width:100%;padding:3px 5px;font-size:15px;background:#0E2F5299;color:#fff;border-color:#ffffff33;">
               <option value="60" ${annualPersist<75?"selected":""}>คงอยู่ต่ำกว่า 75%</option>
@@ -1825,11 +1842,11 @@ function renderCompetitionsTab(){
             </select>
           </div>
         </div>
-        <div class="income-chip"><div class="lbl">Joining Bonus</div><div class="val">${THB(joiningGrandTotal)} ฿</div></div>
+        <div class="income-chip"><div class="lbl">Joining Bonus</div><div class="val">${THB(joiningGrandTotal)}</div></div>
       </div>
       <div style="border-top:1px solid #ffffff33;padding-top:12px;display:flex;justify-content:space-between;align-items:baseline;">
         <span style="font-size:20.25px;color:#B9C4D6;font-weight:600;">รวมรายได้ทั้งหมด</span>
-        <span class="mono" style="font-size:33px;font-weight:800;color:var(--gold);">${THB(totalIncome)} บาท</span>
+        <span class="mono" style="font-size:33px;font-weight:800;color:var(--gold);">${THB(totalIncome)}</span>
       </div>
     </div>
 
@@ -1837,21 +1854,21 @@ function renderCompetitionsTab(){
 
     <div class="card">
       <h3>การแข่งขันคุณวุฒิไตรมาส ประจำปี ${toBE(selYear)}</h3>
-      <p class="sub">เกณฑ์ต่อไตรมาส: ผลงาน ≥ 6 ราย · FYC ≥ 40,000 บาท · มีผลงานรายใหม่อย่างน้อย 2 ใน 3 เดือน (ประกาศที่ 3/2569)</p>
+      <p class="sub">เกณฑ์ต่อไตรมาส: ผลงาน ≥ 6 ราย · FYC ≥ 40,000 · มีผลงานรายใหม่อย่างน้อย 2 ใน 3 เดือน (ประกาศที่ 3/2569)</p>
       <div class="qgrid">${qCardsHtml}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div>
           <div class="mini-row"><span>ผลงานสะสมทั้งปี</span><span class="v ${annualCases>=ANNUAL_GATE_CASES?'ok':''}" style="font-size:22.5px;">${annualCases} ราย</span></div>
-          <div class="mini-row"><span>FYC สะสมทั้งปี</span><span class="v ${annualFYC>=ANNUAL_GATE_FYC?'ok':''}" style="font-size:22.5px;">${THB(annualFYC)} บาท</span></div>
+          <div class="mini-row"><span>FYC สะสมทั้งปี</span><span class="v ${annualFYC>=ANNUAL_GATE_FYC?'ok':''}" style="font-size:22.5px;">${THB(annualFYC)}</span></div>
           <div class="mini-row"><span>ไตรมาสติดต่อกันสูงสุด</span><span class="v ${streak>=1?'ok':''}" style="font-size:22.5px;">${streak} ไตรมาส</span></div>
-          <div style="font-size:18px;color:var(--muted);margin-top:4px;">เกณฑ์ผ่านทั้งปี: ≥ ${ANNUAL_GATE_CASES} ราย และ FYC ≥ ${THB(ANNUAL_GATE_FYC)} บาท ${annualGate?"✔ ผ่านแล้ว":"— ยังไม่ผ่าน"}</div>
+          <div style="font-size:18px;color:var(--muted);margin-top:4px;">เกณฑ์ผ่านทั้งปี: ≥ ${ANNUAL_GATE_CASES} ราย และ FYC ≥ ${THB(ANNUAL_GATE_FYC)} ${annualGate?"✔ ผ่านแล้ว":"— ยังไม่ผ่าน"}</div>
         </div>
         <div style="${hasTrophy?`background:linear-gradient(135deg, var(--navy-deep), var(--navy));`:`background:var(--cream);`}border:1.5px solid ${hasTrophy?'var(--gold)':'#123F6B1A'};border-radius:12px;padding:16px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span>🏆</span><span style="font-size:19.5px;color:${hasTrophy?'#C9D3E0':'var(--muted)'};">ระดับคุณวุฒิที่ทำได้</span></div>
           <div style="font-size:36px;font-weight:800;color:${hasTrophy?'var(--gold-soft)':'var(--navy-deep)'};">${achievedLevel>0?`คุณวุฒิระดับ ${achievedLevel} ไตรมาส`:"ยังไม่ถึงระดับ 1"}</div>
           <div style="margin-top:10px;padding-top:10px;border-top:1px dashed ${hasTrophy?'#ffffff33':'#123F6B22'};display:flex;justify-content:space-between;align-items:baseline;">
             <span style="font-size:18.75px;color:${hasTrophy?'#C9D3E0':'var(--muted)'};">เงินรางวัลโดยประมาณ</span>
-            <span style="font-size:30px;font-weight:800;color:${hasTrophy?'#fff':'var(--muted)'};">${THB(reward)} ฿</span>
+            <span style="font-size:30px;font-weight:800;color:${hasTrophy?'#fff':'var(--muted)'};">${THB(reward)}</span>
           </div>
           ${hasTrophy?`<div style="font-size:17.25px;color:#C9D3E0;margin-top:6px;">+ ถ้วยเกียรติยศ และเชิญร่วมงานรับรางวัลประจำปี</div>`:''}
         </div>
@@ -1867,8 +1884,8 @@ function renderCompetitionsTab(){
           <div class="title" style="color:var(--navy);">🎯 ก้าวถัดไป: คุณวุฒิระดับ ${nextLevel} ไตรมาส</div>
           ${quartersNeededMore>0?`<div class="line" style="color:var(--navy);">· ต้องทำให้ผ่านเกณฑ์ไตรมาสติดต่อกันเพิ่มอีก ${quartersNeededMore} ไตรมาส</div>`:''}
           ${annualCasesShort>0?`<div class="line" style="color:var(--navy);">· ผลงานสะสมทั้งปี ขาดอีก ${annualCasesShort} ราย</div>`:''}
-          ${annualFycShort>0?`<div class="line" style="color:var(--navy);">· FYC สะสมทั้งปี ขาดอีก ${THB(annualFycShort)} บาท</div>`:''}
-          <div style="font-size:17px;margin-top:4px;padding-top:4px;border-top:1px dashed #C69A3B55;color:var(--good);font-weight:700;">✓ ถ้าทำได้ครบ จะได้รับเพิ่มเป็น ${THB(nextReward)} บาท (เพิ่มขึ้น ${THB(nextReward-reward)} บาท จากตอนนี้)</div>
+          ${annualFycShort>0?`<div class="line" style="color:var(--navy);">· FYC สะสมทั้งปี ขาดอีก ${THB(annualFycShort)}</div>`:''}
+          <div style="font-size:17px;margin-top:4px;padding-top:4px;border-top:1px dashed #C69A3B55;color:var(--good);font-weight:700;">✓ ถ้าทำได้ครบ จะได้รับเพิ่มเป็น ${THB(nextReward)} (เพิ่มขึ้น ${THB(nextReward-reward)} จากตอนนี้)</div>
         </div>`;
       })():''}
     </div>
@@ -1880,18 +1897,18 @@ function renderCompetitionsTab(){
       ${!startDate ? `<div class="empty">กรอกเดือนที่เริ่มมีผลงานครั้งแรก เพื่อคำนวณ Joining Bonus</div>` : `
         <div class="jbgrid">${jbCardsHtml}</div>
         <div class="annual-box" style="background:#FBF6E8;">
-          <div class="mini-row"><span>ผลงานสะสม 4 เดือน</span><span class="v">${joiningCumCases} ราย · ${THB(joiningCumFYC)} บาท</span></div>
-          <div class="mini-row"><span>จ่ายไปแล้วรายเดือน</span><span class="v">${THB(joiningTotalPaid)} บาท</span></div>
-          <div class="mini-row"><span>เติมให้ครบตามตารางสะสม</span><span class="v">+ ${THB(joiningTopUp)} บาท</span></div>
+          <div class="mini-row"><span>ผลงานสะสม 4 เดือน</span><span class="v">${joiningCumCases} ราย · ${THB(joiningCumFYC)}</span></div>
+          <div class="mini-row"><span>จ่ายไปแล้วรายเดือน</span><span class="v">${THB(joiningTotalPaid)}</span></div>
+          <div class="mini-row"><span>เติมให้ครบตามตารางสะสม</span><span class="v">+ ${THB(joiningTopUp)}</span></div>
           <div style="border-top:1px dashed #4FAE7455;margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;">
-            <span style="font-weight:700;color:var(--navy-deep);font-size:20.25px;">รวม Joining Bonus (สูงสุด ${THB(JOINING_BONUS_CAP)} บาท)</span>
-            <span style="font-weight:800;font-size:27px;color:var(--good);">${THB(joiningGrandTotal)} ฿</span>
+            <span style="font-weight:700;color:var(--navy-deep);font-size:20.25px;">รวม Joining Bonus (สูงสุด ${THB(JOINING_BONUS_CAP)})</span>
+            <span style="font-weight:800;font-size:27px;color:var(--good);">${THB(joiningGrandTotal)}</span>
           </div>
         </div>
         ${joiningNextTier?`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);margin-top:10px;">
           <div class="title" style="color:var(--navy);">🎯 ขั้นถัดไป</div>
-          <div class="line" style="color:var(--navy);">ขาดอีก ${joiningCasesShort>0?`${joiningCasesShort} ราย `:''}${joiningFycShort>0?`${THB(joiningFycShort)} บาท `:''}จะได้สูงสุด ${THB(joiningNextTier.bonus)} บาท</div>
-        </div>`:`<div class="alert-box" style="background:#F1F8F3;border-color:var(--good);margin-top:10px;"><div class="line" style="color:var(--good);font-weight:700;">🏆 ถึงขั้นสูงสุดแล้ว (${THB(JOINING_BONUS_CAP)} บาท)</div></div>`}
+          <div class="line" style="color:var(--navy);">ขาดอีก ${joiningCasesShort>0?`${joiningCasesShort} ราย `:''}${joiningFycShort>0?`${THB(joiningFycShort)} `:''}จะได้สูงสุด ${THB(joiningNextTier.bonus)}</div>
+        </div>`:`<div class="alert-box" style="background:#F1F8F3;border-color:var(--good);margin-top:10px;"><div class="line" style="color:var(--good);font-weight:700;">🏆 ถึงขั้นสูงสุดแล้ว (${THB(JOINING_BONUS_CAP)})</div></div>`}
       `}
     </div>
     <div class="foot-note">* ประมาณการจากข้อมูลที่บันทึกเองเท่านั้น รางวัลจริงต้องเป็นไปตามการตรวจสอบและอนุมัติของบริษัท และเป็นรายได้ที่ต้องเสียภาษีตามกฎหมาย</div>
