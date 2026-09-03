@@ -886,11 +886,11 @@ function renderTeamTab(){
             <div id="item3-hypothetical-result" style="font-size:14px;color:var(--muted);"></div>
           </div>
           <div class="tech-row"><span class="lab">4. ค่าเสริมมือ</span><span class="val good">${THB(serviceFee)}</span></div>
-          ${serviceFeeDetail.length?`<table class="qtable" style="margin-bottom:8px;"><thead><tr><th>ตัวแทน</th><th class="r">FYC</th><th class="r">ค่าเสริมมือ (30%)</th></tr></thead><tbody>${serviceFeeDetail.map(d=>`<tr><td style="color:var(--navy-deep);">${esc(d.name)}</td><td class="r">${THB(d.eligibleFYC)}</td><td class="r" style="color:var(--good);">${THB(d.eligibleFYC*0.3)}</td></tr>`).join("")}</tbody></table>`:''}
+          ${serviceFeeDetail.length?`<div style="max-height:50vh;overflow-y:auto;margin-bottom:8px;border:1px solid #123F6B14;border-radius:6px;"><table class="qtable" style="font-size:14px;"><thead><tr><th style="padding:4px 6px;">ตัวแทน</th><th class="r" style="padding:4px 6px;">FYC</th><th class="r" style="padding:4px 6px;">ค่าเสริมมือ</th></tr></thead><tbody>${serviceFeeDetail.map(d=>`<tr><td style="color:var(--navy-deep);padding:3px 6px;">${esc(d.name)}</td><td class="r" style="padding:3px 6px;font-size:15px;">${THB(d.eligibleFYC)}</td><td class="r" style="color:var(--good);padding:3px 6px;font-size:15px;">${THB(d.eligibleFYC*0.3)}</td></tr>`).join("")}</tbody></table></div>`:''}
           <div class="tech-row"><span class="lab">6. ค่าตอบแทนขายเอง/ตัวแทนตรง (DPO)</span><span class="val good">${THB(salesCompReward)}</span></div>
-          ${salesCompDetail.length?`<div style="font-size:14px;color:var(--muted);margin-bottom:6px;">คิดจาก: ${salesCompDetail.map(d=>`ไตรมาส${d.q} ตัวแทนตรง ${THB(d.qTeamFyc)}×${d.rate}%`).join(', ')}</div>`:''}
+          ${salesCompDetail.length?`<div style="font-size:14px;color:var(--muted);margin-bottom:6px;">คิดจาก:<br>${salesCompDetail.map(d=>`· ไตรมาส${d.q} ตัวแทนตรง ${THB(d.qTeamFyc)} × ${d.rate}% = <b style="color:var(--good);">${THB(d.reward)}</b>`).join('<br>')}</div>`:''}
           <div class="tech-row"><span class="lab">7. ค่าสร้างและรักษาตัวแทน</span><span class="val good">${THB(teamBuildingReward)}</span></div>
-          ${teamBuildingDetail.length?`<div style="font-size:14px;color:var(--muted);">คิดจาก:<br>${teamBuildingDetail.map(d=>`· ${esc(d.name)} ไตรมาส${d.q} — ${d.level}`).join('<br>')}</div>`:''}
+          ${teamBuildingDetail.length?`<table class="qtable" style="margin-bottom:8px;"><thead><tr><th>ตัวแทน</th><th>ไตรมาส</th><th>ระดับ</th><th class="r">ได้รับ</th></tr></thead><tbody>${teamBuildingDetail.map(d=>`<tr><td style="color:var(--navy-deep);">${esc(d.name)}</td><td>${d.q}</td><td>${d.level}</td><td class="r" style="color:var(--good);">${THB(d.reward)}</td></tr>`).join("")}</tbody></table>`:''}
         </div>
         <div style="margin-top:14px;padding-top:10px;border-top:2px solid #123F6B22;display:flex;justify-content:space-between;align-items:center;">
           <span style="font-weight:700;color:var(--navy);">สรุปรวมสะสม (ไม่รวมข้อ 4) ถึงเดือน${THAI_MONTH_NAMES[umViewAsOfMonth]}</span>
@@ -905,7 +905,7 @@ function renderTeamTab(){
 
     <div class="card">
       <h3>🆕 ตัวแทนใหม่ พ.ศ. ${toBE(selYear)}</h3>
-      <p class="sub">นับจากวันที่มีผลงานขึ้นแรก (Joining Bonus) ที่ตกอยู่ในปีนี้ — คีย์เบี้ยประกันจากการแข่งขันตัวแทนใหม่เองได้ 4 ช่อง</p>
+      <p class="sub">นับจากวันที่มีผลงานขึ้นแรก (Joining Bonus) ที่ตกอยู่ในปีนี้ — คีย์เบี้ยประกันจากการแข่งขันตัวแทนใหม่เองได้ 5 ช่อง</p>
       ${(()=>{
         const newAgentsThisYear = names.filter(name=>{
           const sd = state.agents[name].competitions?.firstSaleDate;
@@ -928,6 +928,39 @@ function renderTeamTab(){
             <div style="text-align:right;font-size:15px;color:var(--navy);font-weight:700;">เบี้ยประกันรวม: ${THB(premiumSum)}</div>
           </div>`;
         }).join("");
+      })()}
+    </div>
+
+    <div class="card">
+      <h3>🏆 การแข่งขันรับสมัครตัวแทนใหม่ (สำหรับ UM)</h3>
+      <p class="sub">ตัวแทนที่เริ่มงาน พ.ค.–ก.ย. ${toBE(selYear)} และมีเบี้ยประกันรวมในช่วงนี้ ≥50,000 — ถ้ามีครบ 2 คนขึ้นไป UM ได้รางวัลคนละ 10,000</p>
+      ${(()=>{
+        const rangeStart = new Date(selYear, 4, 1); // 1 พ.ค.
+        const rangeEnd = new Date(selYear, 8, 30, 23, 59, 59); // 30 ก.ย.
+        const candidates = names.filter(name=>{
+          const sd = state.agents[name].competitions?.firstSaleDate;
+          if (!sd) return false;
+          const d = new Date(sd+"T00:00:00");
+          return d>=rangeStart && d<=rangeEnd;
+        }).map(name=>{
+          const premiums = (state.umGoal.newAgentPremiums && state.umGoal.newAgentPremiums[name]) || ["","","","",""];
+          const premiumSum = premiums.reduce((s,v)=>s+(Number(stripCommas(String(v||0)))||0),0);
+          return { name, premiumSum, qualifies: premiumSum>=50000 };
+        });
+        const qualified = candidates.filter(c=>c.qualifies);
+        const rowsHtml = candidates.map(c=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #123F6B0D;">
+          <span style="color:var(--navy-deep);">${c.qualifies?'✔':'✕'} ${esc(c.name)}</span>
+          <span style="color:${c.qualifies?'var(--good)':'var(--muted)'};font-weight:600;">${THB(c.premiumSum)}${c.qualifies?'':` (ขาดอีก ${THB(50000-c.premiumSum)})`}</span>
+        </div>`).join("");
+        const totalReward = qualified.length>=2 ? qualified.length*10000 : 0;
+        return `
+          ${candidates.length?rowsHtml:`<div class="empty">ยังไม่มีตัวแทนที่เริ่มงานในช่วง พ.ค.–ก.ย. ${toBE(selYear)}</div>`}
+          <div style="margin-top:10px;padding-top:10px;border-top:2px solid #123F6B22;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;color:var(--navy);">ผ่านเกณฑ์ ${qualified.length} คน${qualified.length>=2?' (ครบ 2 คนขึ้นไป)':qualified.length===1?' — ยังขาดอีก 1 คนถึงจะได้รางวัล':''}</span>
+            <span style="font-weight:800;font-size:23px;color:${totalReward>0?'var(--good)':'var(--muted)'};">${THB(totalReward)}</span>
+          </div>
+          ${qualified.length===1?`<div style="font-size:14px;color:var(--gold);margin-top:6px;">🎯 ถ้ามีอีก 1 คนผ่านเกณฑ์ (เบี้ย≥50,000 ในช่วง พ.ค.-ก.ย.) จะได้รางวัลรวม ${THB(20000)}</div>`:''}
+        `;
       })()}
     </div>
 
