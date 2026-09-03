@@ -1120,24 +1120,21 @@ function longestConsecutiveStreak(qResults){
   return best;
 }
 
-function computeMonthlyPacing(entries, year, goalFYC, startMonth, endMonth){
-  // เป้าหมายรายเดือน = ค่าคงที่เสมอ (เป้ารวม ÷ จำนวนเดือนในแผน) ไม่เปลี่ยนแปลงตามผลงานจริง
-  // เดือนนอกช่วง [startMonth, endMonth] ไม่นับในแผนนี้ (excluded) — ถ้าเปลี่ยนเป้า/ช่วงใหม่ระหว่างปี เดือนที่ผ่านไปแล้วจะไม่ถูกแก้ย้อนหลัง
+function computeMonthlyPacing(entries, year, goalFYC, startMonth, endMonth, annualGoalFYC){
+  // เป้าหมายรายเดือน พื้นฐาน = เป้าทั้งปี ÷ 12 ทุกเดือน — ถ้ามีการตั้งเป้าช่วงพิเศษ (startMonth-endMonth) จะปรับเฉพาะเดือนในช่วงนั้นให้ใช้เป้าช่วงพิเศษ ÷ จำนวนเดือนในช่วงแทน
   const sm = startMonth || 0;
   const em = (endMonth===undefined || endMonth===null) ? 11 : endMonth;
   const totalMonthsInPlan = Math.max(0, em - sm + 1);
-  const baseline = totalMonthsInPlan > 0 ? goalFYC / totalMonthsInPlan : 0;
+  const periodBaseline = totalMonthsInPlan > 0 ? goalFYC / totalMonthsInPlan : 0;
+  const annualBaseline = (annualGoalFYC||0) / 12;
   const monthActual = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>{
     const list = entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===year && d.getMonth()===m; });
     return { actual: list.reduce((s,e)=>s+e.fyc,0), count: list.length };
   });
   const months = [];
   for (let m=0; m<12; m++){
-    if (m < sm || m > em){
-      months.push({ year, month:m, target:null, excluded:true, actual: monthActual[m].actual, count: monthActual[m].count });
-    } else {
-      months.push({ year, month:m, target: baseline, actual: monthActual[m].actual, count: monthActual[m].count });
-    }
+    const inSpecialPeriod = m>=sm && m<=em && goalFYC>0;
+    months.push({ year, month:m, target: inSpecialPeriod ? periodBaseline : annualBaseline, inSpecialPeriod, actual: monthActual[m].actual, count: monthActual[m].count });
   }
   return months;
 }
@@ -1378,7 +1375,7 @@ function renderGoalsTab(){
   const now = new Date();
   const isCurrentYear = selYear === now.getFullYear();
   const currentMonthIdx = now.getMonth();
-  const pacing = goalFYC>0 ? computeMonthlyPacing(agent().entries, selYear, goalFYC, startMonth, endMonth) : null;
+  const pacing = (goalFYC>0 || annualGoalFYC>0) ? computeMonthlyPacing(agent().entries, selYear, goalFYC, startMonth, endMonth, annualGoalFYC) : null;
   const yearEntries = getYearEntries().filter(e => { const m = new Date(e.date).getMonth(); return m >= startMonth && m <= endMonth; });
   const achieved = yearEntries.reduce((s,e)=>s+e.fyc,0);
   const remaining = Math.max(0, goalFYC-achieved);
@@ -1421,17 +1418,25 @@ function renderGoalsTab(){
       </tr>`;
     });
   }
-  const totalTarget = goalFYC;
-  const totalActual = achievedFullYear; // ยอดรวมด้านล่างต้องเป็นสะสมทั้งปี (ผลงานช่วงเป้าหมายพิเศษโชว์แยกไว้ด้านบนแล้ว)
-  const netDiff = totalActual - totalTarget;
-  const netHtml = netDiff >= 0
-    ? `<span style="color:var(--good);">เกินสุทธิ ${THB(netDiff)} บาท</span>`
-    : `<span style="color:var(--bad);">ขาดสุทธิ ${THB(-netDiff)} บาท</span>`;
+  const netDiffAnnual = achievedFullYear - annualGoalFYC;
+  const netHtmlAnnual = annualGoalFYC>0 ? (netDiffAnnual >= 0
+    ? `<span style="color:var(--good);">เกิน ${THB(netDiffAnnual)} บาท</span>`
+    : `<span style="color:var(--bad);">ขาด ${THB(-netDiffAnnual)} บาท</span>`) : '—';
+  const netDiffPeriod = achieved - goalFYC;
+  const netHtmlPeriod = goalFYC>0 ? (netDiffPeriod >= 0
+    ? `<span style="color:var(--good);">เกิน ${THB(netDiffPeriod)} บาท</span>`
+    : `<span style="color:var(--bad);">ขาด ${THB(-netDiffPeriod)} บาท</span>`) : '—';
   const totalRow = pacing ? `<tr style="border-top:2px solid #123F6B22;font-weight:700;">
-    <td style="color:var(--navy-deep);">รวม</td>
-    <td class="num" style="color:var(--navy-deep);">${THB(totalTarget)}</td>
-    <td class="num" style="color:var(--navy-deep);">${THB(totalActual)}</td>
-    <td class="num" colspan="2">${netHtml}</td>
+    <td style="color:var(--navy-deep);">รวม (สะสมทั้งปี)</td>
+    <td class="num" style="color:var(--navy-deep);">${THB(annualGoalFYC)}</td>
+    <td class="num" style="color:var(--navy-deep);">${THB(achievedFullYear)}</td>
+    <td class="num" colspan="2">${netHtmlAnnual}</td>
+  </tr>
+  <tr style="font-size:14px;">
+    <td style="color:var(--muted);">เทียบเป้าช่วงพิเศษ</td>
+    <td class="num" style="color:var(--muted);">${THB(goalFYC)}</td>
+    <td class="num" style="color:var(--muted);">${THB(achieved)}</td>
+    <td class="num" colspan="2">${netHtmlPeriod}</td>
   </tr>` : "";
 
   const startMonthOptions = THAI_MONTH_NAMES.map((name,i)=>
