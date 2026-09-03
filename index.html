@@ -1822,10 +1822,56 @@ function renderCompetitionsTab(){
       <div style="margin-top:6px;font-size:17.25px;color:var(--muted);">ได้รับ: <b style="color:${m.paid?'var(--good)':'var(--muted)'};">${THB(m.paid)}</b></div>
     </div>`).join("");
 
+  // ภาพรวมสถานการณ์: ขั้นถัดไปของโบนัสไตรมาสปัจจุบัน, โบนัสปี, และคุณวุฒิไตรมาสที่ยังไม่ผ่าน
+  const curQ = isCurrentYear ? currentActual.quarter : null;
+  const curQResult = curQ ? qResults.find(r=>r.q===curQ) : null;
+  let qBonusOverview = null;
+  if (curQResult){
+    const bKey = `${selYear}-Q${curQ}`;
+    const bPersist = agent().persistQuarterly[bKey] ?? 80;
+    const bQualifies = curQResult.count>=3 && curQResult.fyc>=12500 && bPersist>=75;
+    const bPct = quarterlyPct(curQResult.fyc);
+    const bReward = bQualifies ? (curQResult.fyc*bPct)/100 : 0;
+    const fycShortToGate = Math.max(0, 12500 - curQResult.fyc);
+    const nextTier = QUARTERLY_TIERS.find(t=>t.min > curQResult.fyc);
+    let increase = 0;
+    if (nextTier){
+      const previewReward = (nextTier.min * nextTier.pct)/100;
+      increase = previewReward - bReward;
+    }
+    qBonusOverview = { q: curQ, bQualifies, bReward, bPct, fycShortToGate, nextTier, increase };
+  }
+  const annualCasesShortToGate = Math.max(0, ANNUAL_GATE_CASES - annualCases);
+  const annualFycShortToGate = Math.max(0, ANNUAL_GATE_FYC - annualFYC);
+  const annualNextTierRange = ANNUAL_TIER_RANGES.find(t => t.min > annualFYC);
+  let annualIncrease = 0, annualNextPct = 0;
+  if (annualNextTierRange){
+    const idx = ANNUAL_TIER_RANGES.indexOf(annualNextTierRange);
+    annualNextPct = ANNUAL_BANDS[annualBand].pct[idx];
+    const previewGross = (annualNextTierRange.min * annualNextPct)/100;
+    const previewNet = Math.max(0, previewGross - totalQuarterlyBonus);
+    annualIncrease = previewNet - annualBonusNet;
+  }
+  const qualShortfalls = qResults.filter(r=>!r.qualifies).map(r=>({
+    q: r.q, casesShort: Math.max(0,QUALIFY_MIN_CASES-r.count), fycShort: Math.max(0,QUALIFY_MIN_FYC-r.fyc), monthsShort: Math.max(0,QUALIFY_MIN_ACTIVE_MONTHS-r.activeMonths)
+  }));
+
   return `
     <div class="card dark">
       <h3>รายได้รวม ประจำปี ${toBE(selYear)}</h3>
-      <p class="sub">สรุปรายได้แยกตามประเภท จากผลงานที่บันทึกไว้ทั้งหมด</p>
+      <p class="sub">สรุปรายได้แยกตามประเภท จากผลงานที่บันทึกไว้ทั้งหมด — ข้อมูล ณ เดือน${isCurrentYear?THAI_MONTH_NAMES[currentMonthIdx]:'ธันวาคม (ปีนี้จบแล้ว)'}</p>
+
+      <div style="background:#0E2F5299;border:1px solid #ffffff22;border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+        <div style="font-weight:700;color:#fff;margin-bottom:8px;">📊 ภาพรวมสถานการณ์</div>
+        ${qualShortfalls.length?qualShortfalls.map(qs=>`<div style="font-size:15px;color:#F5C6C0;margin-bottom:4px;">⚠ ไตรมาส ${qs.q} (คุณวุฒิ): ขาดอีก ${qs.casesShort>0?`${qs.casesShort} ราย `:''}${qs.fycShort>0?`${THB(qs.fycShort)} `:''}${qs.monthsShort>0?`ต้องมีผลงานเพิ่มอีก ${qs.monthsShort} เดือน`:''}</div>`).join(""):`<div style="font-size:15px;color:#9CE3B8;margin-bottom:4px;">✔ คุณวุฒิไตรมาสผ่านครบทุกไตรมาสที่ผ่านมา</div>`}
+        ${qBonusOverview?(qBonusOverview.fycShortToGate>0?`<div style="font-size:15px;color:#F5C6C0;margin-bottom:4px;">⚠ โบนัสไตรมาส ${qBonusOverview.q} (ปัจจุบัน): ขาดอีก ${THB(qBonusOverview.fycShortToGate)} ถึงจะเริ่มได้</div>`
+          :qBonusOverview.nextTier?`<div style="font-size:15px;color:#B9C4D6;margin-bottom:4px;">🎯 โบนัสไตรมาส ${qBonusOverview.q}: ประมาณการปัจจุบัน ${THB(qBonusOverview.bReward)} (อัตรา ${qBonusOverview.bPct}%) — ขาดอีก ${THB(qBonusOverview.nextTier.min-curQResult.fyc)} จะขยับเป็น ${qBonusOverview.nextTier.pct}% (เพิ่มขึ้น ${THB(qBonusOverview.increase)})</div>`
+          :`<div style="font-size:15px;color:#9CE3B8;margin-bottom:4px;">🏆 โบนัสไตรมาส ${qBonusOverview.q}: อยู่ขั้นสูงสุดแล้ว ประมาณการ ${THB(qBonusOverview.bReward)}</div>`):''}
+        ${!annualGate?`<div style="font-size:15px;color:#F5C6C0;">⚠ โบนัสปี: ขาดอีก ${annualCasesShortToGate>0?`${annualCasesShortToGate} ราย `:''}${annualFycShortToGate>0?`${THB(annualFycShortToGate)} `:''}ถึงจะเริ่มได้</div>`
+          :annualNextTierRange?`<div style="font-size:15px;color:#B9C4D6;">🎯 โบนัสปี: ประมาณการปัจจุบัน ${THB(annualBonusNet)} — ขาดอีก ${THB(annualNextTierRange.min-annualFYC)} จะขยับเป็น ${annualNextPct}% (เพิ่มขึ้น ${THB(annualIncrease)})</div>`
+          :`<div style="font-size:15px;color:#9CE3B8;">🏆 โบนัสปี: อยู่ขั้นสูงสุดแล้ว ประมาณการ ${THB(annualBonusNet)}</div>`}
+      </div>
+
       <div class="income-grid">
         <div class="income-chip"><div class="lbl">ค่าคอมมิชชั่น (FYC)</div><div class="val">${THB(annualFYC)}</div></div>
         <div class="income-chip"><div class="lbl">เงินรางวัลคุณวุฒิไตรมาส</div><div class="val">${THB(reward)}</div></div>
@@ -1848,6 +1894,55 @@ function renderCompetitionsTab(){
         <span style="font-size:20.25px;color:#B9C4D6;font-weight:600;">รวมรายได้ทั้งหมด</span>
         <span class="mono" style="font-size:33px;font-weight:800;color:var(--gold);">${THB(totalIncome)}</span>
       </div>
+    </div>
+
+    <div class="card">
+      <h3>📅 รายละเอียดรายได้รายเดือน</h3>
+      <p class="sub">FYC ที่ได้แต่ละเดือน เทียบเป้าหมาย (ถ้าตั้งไว้) — ดูได้ว่าเดือนไหนขาด/เกิน ควรเร่งเดือนไหนเพิ่ม</p>
+      ${(()=>{
+        const capMonth = isCurrentYear ? currentMonthIdx : 11;
+        const monthlyFyc = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>
+          yearEntries.filter(e=>new Date(e.date).getMonth()===m).reduce((s,e)=>s+e.fyc,0)
+        );
+        const rowsHtml = [0,1,2,3,4,5,6,7,8,9,10,11].filter(m=>m<=capMonth).map(m=>{
+          const fyc = monthlyFyc[m];
+          const target = pacing ? pacing[m].target : null;
+          const diff = target!==null ? fyc-target : null;
+          const isNow = isCurrentYear && m===currentMonthIdx;
+          return `<tr style="${isNow?'background:#4FAE7414;':''}">
+            <td style="font-weight:${isNow?700:500};color:${isNow?'var(--navy-deep)':'var(--ink)'};">${THAI_MONTH_SHORT[m]}${isNow?' ⚡':''}</td>
+            <td class="num" style="font-weight:600;">${THB(fyc)}</td>
+            <td class="num" style="color:var(--muted);">${target!==null?THB(target):'—'}</td>
+            <td class="num" style="color:${diff===null?'var(--muted)':(diff>=0?'var(--good)':'var(--bad)')};font-weight:600;">${diff===null?'—':(diff>=0?`+${THB(diff)}`:`-${THB(-diff)}`)}</td>
+          </tr>`;
+        }).join("");
+        const totalFycToDate = monthlyFyc.slice(0,capMonth+1).reduce((a,b)=>a+b,0);
+        return `<div style="overflow-x:auto"><table>
+          <thead><tr><th>เดือน</th><th style="text-align:right">FYC ที่ได้</th><th style="text-align:right">เป้าหมาย</th><th style="text-align:right">ขาด/เกิน</th></tr></thead>
+          <tbody>${rowsHtml}
+            <tr style="border-top:2px solid #123F6B22;font-weight:700;">
+              <td style="color:var(--navy);">รวมถึงเดือน${THAI_MONTH_NAMES[capMonth]}</td>
+              <td class="num" style="color:var(--navy);">${THB(totalFycToDate)}</td>
+              <td colspan="2"></td>
+            </tr>
+          </tbody>
+        </table></div>
+        <div style="margin-top:14px;padding-top:10px;border-top:1px dashed #123F6B22;">
+          <div style="font-size:16.5px;font-weight:700;color:var(--navy-deep);margin-bottom:6px;">สรุปโบนัสรายไตรมาส (นอกเหนือจาก FYC ค่าคอม)</div>
+          <div style="overflow-x:auto"><table>
+            <thead><tr><th>ไตรมาส</th><th style="text-align:right">FYC ไตรมาส</th><th style="text-align:right">คุณวุฒิ</th><th style="text-align:right">โบนัสไตรมาส</th></tr></thead>
+            <tbody>${qResults.map(r=>{
+              const bKey = `${selYear}-Q${r.q}`;
+              const bPersist = agent().persistQuarterly[bKey] ?? 80;
+              const bQualifies = r.count>=3 && r.fyc>=12500 && bPersist>=75;
+              const bPct = quarterlyPct(r.fyc);
+              const bReward = bQualifies ? (r.fyc*bPct)/100 : 0;
+              return `<tr><td>ไตรมาส ${r.q}</td><td class="num">${THB(r.fyc)}</td><td class="num" style="color:${r.qualifies?'var(--good)':'var(--bad)'};">${r.qualifies?'✔ ผ่าน':'✕ ไม่ผ่าน'}</td><td class="num" style="color:var(--good);">${THB(bReward)}</td></tr>`;
+            }).join("")}</tbody>
+          </table></div>
+        </div>
+      `;
+      })()}
     </div>
 
     ${renderSpecialEventsSection(entries)}
