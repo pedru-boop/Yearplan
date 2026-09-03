@@ -880,6 +880,11 @@ function renderTeamTab(){
             <div class="line" style="color:var(--navy);">🎯 ถึงเกณฑ์รับโบนัสแล้ว ประมาณการจากยอดปัจจุบัน: <b>${THB(previewBonusIfToday)}</b></div>
             <div class="line" style="color:var(--good);font-weight:700;">ขั้นถัดไป: ขาดอีก ${THB(nextBand3Info.shortfall)} จะขยับเป็นอัตรา ${nextBand3Info.nextRate}% (เพิ่มขึ้น ${THB(nextBand3Info.increase)})</div>
           </div>`:`<div class="alert-box" style="background:#F1F8F3;border-color:var(--good);margin-bottom:10px;"><div class="line" style="color:var(--good);font-weight:700;">🏆 อยู่ขั้นสูงสุดแล้ว (เกินโควตา 200%+) ประมาณการ: ${THB(previewBonusIfToday)}</div></div>`}
+          <div style="background:#F5F8FC;border:1px dashed #123F6B33;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+            <div style="font-size:14px;color:var(--navy-deep);font-weight:600;margin-bottom:6px;">🧪 ลองสมมติ: ถ้า CFYC เพิ่มขึ้นอีก</div>
+            <input type="text" inputmode="decimal" id="item3-hypothetical-input" data-current-cfyc="${teamCFYCForItem3}" data-quota3="${quota3}" data-position="${selectedPosition.value}" placeholder="0" style="width:140px;padding:5px 8px;font-size:18px;text-align:center;margin-bottom:6px;">
+            <div id="item3-hypothetical-result" style="font-size:14px;color:var(--muted);"></div>
+          </div>
           <div class="tech-row"><span class="lab">4. ค่าเสริมมือ</span><span class="val good">${THB(serviceFee)}</span></div>
           ${serviceFeeDetail.length?`<table class="qtable" style="margin-bottom:8px;"><thead><tr><th>ตัวแทน</th><th class="r">FYC</th><th class="r">ค่าเสริมมือ (30%)</th></tr></thead><tbody>${serviceFeeDetail.map(d=>`<tr><td style="color:var(--navy-deep);">${esc(d.name)}</td><td class="r">${THB(d.eligibleFYC)}</td><td class="r" style="color:var(--good);">${THB(d.eligibleFYC*0.3)}</td></tr>`).join("")}</tbody></table>`:''}
           <div class="tech-row"><span class="lab">6. ค่าตอบแทนขายเอง/ตัวแทนตรง (DPO)</span><span class="val good">${THB(salesCompReward)}</span></div>
@@ -2327,6 +2332,43 @@ function bindEvents(){
       saveState(); render();
     };
   });
+  const item3HypInput = document.getElementById("item3-hypothetical-input");
+  if (item3HypInput){
+    const resultEl = document.getElementById("item3-hypothetical-result");
+    const recompute = ()=>{
+      const raw = Number(stripCommas(item3HypInput.value)) || 0;
+      const curCfyc = Number(item3HypInput.dataset.currentCfyc);
+      const quota3v = Number(item3HypInput.dataset.quota3);
+      const posValue = item3HypInput.dataset.position;
+      const table = NEW_AGENT_PROFIT_TABLE[posValue];
+      if (raw<=0){ resultEl.innerHTML = ''; return; }
+      const hypTotal = curCfyc + raw;
+      const hypExcess = Math.max(0, hypTotal - quota3v);
+      const hypPct = quota3v>0 ? (hypExcess/quota3v)*100 : 0;
+      const hypBandIdx = hypExcess>0 ? newAgentProfitBandIndex(hypPct) : -1;
+      if (hypBandIdx<0){
+        resultEl.innerHTML = `<div style="color:var(--bad);">ถ้าเพิ่ม ${formatThousands(String(raw))} (รวมเป็น ${formatThousands(String(hypTotal))}) ยังไม่เกินโควตา ${formatThousands(String(quota3v))} จึงยังไม่ได้โบนัสข้อนี้</div>`;
+        return;
+      }
+      const hypRate = table.rates[hypBandIdx];
+      const hypFlat = table.amounts ? table.amounts[hypBandIdx] : 0;
+      const hypBonus = (hypExcess*hypRate/100) + hypFlat;
+      const nextIdx = hypBandIdx+1;
+      let nextNote = 'อยู่ขั้นสูงสุดแล้ว';
+      if (nextIdx < NEW_AGENT_PROFIT_BAND_MIN_PCT.length){
+        const nextMinPct = NEW_AGENT_PROFIT_BAND_MIN_PCT[nextIdx];
+        const nextExcessNeeded = (nextMinPct/100)*quota3v;
+        const shortfall = Math.max(0, nextExcessNeeded - hypExcess);
+        const nextRate = table.rates[nextIdx];
+        const nextFlat = table.amounts ? table.amounts[nextIdx] : 0;
+        const nextBonus = (nextExcessNeeded*nextRate/100) + nextFlat;
+        nextNote = `ขาดอีก ${formatThousands(String(Math.round(shortfall)))} จะขยับเป็นอัตรา ${nextRate}% (ได้เพิ่มเป็น ${formatThousands(String(Math.round(nextBonus)))})`;
+      }
+      resultEl.innerHTML = `<div style="color:var(--navy);">ถ้าเพิ่ม ${formatThousands(String(raw))} (รวมเป็น ${formatThousands(String(hypTotal))}) → โบนัสประมาณ <b style="color:var(--good);">${formatThousands(String(Math.round(hypBonus)))}</b> (อัตรา ${hypRate}%)</div><div style="color:var(--gold);font-weight:600;margin-top:2px;">🎯 ${nextNote}</div>`;
+    };
+    item3HypInput.oninput = (e)=>{ e.target.value = formatThousands(stripCommas(e.target.value)); recompute(); };
+    item3HypInput.onfocus = (e)=>e.target.select();
+  }
   document.querySelectorAll("[data-fyc-override]").forEach(inp=>{
     inp.oninput = (e)=>{ const f = formatThousands(stripCommas(e.target.value)); e.target.value = f; };
     inp.onfocus = (e)=>e.target.select();
