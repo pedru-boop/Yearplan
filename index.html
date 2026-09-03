@@ -208,6 +208,8 @@ const QUALIFY_MIN_FYC = 40000;
 const QUALIFY_MIN_ACTIVE_MONTHS = 2;
 const ANNUAL_GATE_CASES = 24;
 const ANNUAL_GATE_FYC = 160000;
+const ANNUAL_BONUS_GATE_CASES = 12;
+const ANNUAL_BONUS_GATE_FYC = 50000;
 const STREAK_REWARDS = { 4: 32000, 3: 16000, 2: 8000, 1: 0 };
 
 const JOINING_MONTHLY_MIN_CASES = 2;
@@ -1678,6 +1680,7 @@ function renderCompetitionsTab(){
   const annualCases = yearEntries.filter(isOrigin).length;
   const annualFYC = yearEntries.reduce((s,e)=>s+e.fyc,0);
   const annualGate = annualCases>=ANNUAL_GATE_CASES && annualFYC>=ANNUAL_GATE_FYC;
+  const annualBonusGate = annualCases>=ANNUAL_BONUS_GATE_CASES && annualFYC>=ANNUAL_BONUS_GATE_FYC;
   const achievedLevel = annualGate ? Math.min(streak,4) : 0;
   const reward = achievedLevel>0 ? STREAK_REWARDS[achievedLevel] : 0;
   const hasTrophy = achievedLevel>0;
@@ -1733,8 +1736,8 @@ function renderCompetitionsTab(){
   const annualPersistKey = `annual-${selYear}`;
   const annualPersist = agent().persistQuarterly[annualPersistKey] ?? 90;
   const annualBand = annualPersist>=90?'high':annualPersist>=85?'mid':'low';
-  const annualBonusPct = annualGate ? annualPct(annualFYC, annualBand) : 0;
-  const annualBonusGross = annualGate ? (annualFYC*annualBonusPct)/100 : 0;
+  const annualBonusPct = annualBonusGate ? annualPct(annualFYC, annualBand) : 0;
+  const annualBonusGross = annualBonusGate ? (annualFYC*annualBonusPct)/100 : 0;
   const annualBonusNet = Math.max(0, annualBonusGross - totalQuarterlyBonus);
 
   const totalIncome = annualFYC + reward + totalQuarterlyBonus + annualBonusNet + joiningGrandTotal;
@@ -1862,8 +1865,8 @@ function renderCompetitionsTab(){
     }
     qBonusOverview = { q: curQ, bQualifies, bReward, bPct, fycShortToGate, nextTier, increase };
   }
-  const annualCasesShortToGate = Math.max(0, ANNUAL_GATE_CASES - annualCases);
-  const annualFycShortToGate = Math.max(0, ANNUAL_GATE_FYC - annualFYC);
+  const annualCasesShortToGate = Math.max(0, ANNUAL_BONUS_GATE_CASES - annualCases);
+  const annualFycShortToGate = Math.max(0, ANNUAL_BONUS_GATE_FYC - annualFYC);
   const annualNextTierRange = ANNUAL_TIER_RANGES.find(t => t.min > annualFYC);
   let annualIncrease = 0, annualNextPct = 0;
   if (annualNextTierRange){
@@ -1888,7 +1891,7 @@ function renderCompetitionsTab(){
         ${qBonusOverview?(qBonusOverview.fycShortToGate>0?`<div style="font-size:15px;color:#F5C6C0;margin-bottom:4px;">⚠ โบนัสไตรมาส ${qBonusOverview.q} (ปัจจุบัน): ขาดอีก ${THB(qBonusOverview.fycShortToGate)} ถึงจะเริ่มได้</div>`
           :qBonusOverview.nextTier?`<div style="font-size:15px;color:#B9C4D6;margin-bottom:4px;">🎯 โบนัสไตรมาส ${qBonusOverview.q}: ประมาณการปัจจุบัน ${THB(qBonusOverview.bReward)} (อัตรา ${qBonusOverview.bPct}%) — ขาดอีก ${THB(qBonusOverview.nextTier.min-curQResult.fyc)} จะขยับเป็น ${qBonusOverview.nextTier.pct}% (เพิ่มขึ้น ${THB(qBonusOverview.increase)})</div>`
           :`<div style="font-size:15px;color:#9CE3B8;margin-bottom:4px;">🏆 โบนัสไตรมาส ${qBonusOverview.q}: อยู่ขั้นสูงสุดแล้ว ประมาณการ ${THB(qBonusOverview.bReward)}</div>`):''}
-        ${!annualGate?`<div style="font-size:15px;color:#F5C6C0;">⚠ โบนัสปี: ขาดอีก ${annualCasesShortToGate>0?`${annualCasesShortToGate} ราย `:''}${annualFycShortToGate>0?`${THB(annualFycShortToGate)} `:''}ถึงจะเริ่มได้</div>`
+        ${!annualBonusGate?`<div style="font-size:15px;color:#F5C6C0;">⚠ โบนัสปี: ขาดอีก ${annualCasesShortToGate>0?`${annualCasesShortToGate} ราย `:''}${annualFycShortToGate>0?`${THB(annualFycShortToGate)} `:''}ถึงจะเริ่มได้</div>`
           :annualNextTierRange?`<div style="font-size:15px;color:#B9C4D6;">🎯 โบนัสปี: ประมาณการปัจจุบัน ${THB(annualBonusNet)} — ขาดอีก ${THB(annualNextTierRange.min-annualFYC)} จะขยับเป็น ${annualNextPct}% (เพิ่มขึ้น ${THB(annualIncrease)})</div>`
           :`<div style="font-size:15px;color:#9CE3B8;">🏆 โบนัสปี: อยู่ขั้นสูงสุดแล้ว ประมาณการ ${THB(annualBonusNet)}</div>`}
       </div>
