@@ -964,6 +964,40 @@ function renderTeamTab(){
       })()}
     </div>
 
+    <div class="card">
+      <h3>🏆 การแข่งขันตัวแทนออกโค้ดต้นปี (สำหรับ UM)</h3>
+      <p class="sub">ตัวแทนที่เริ่มงาน (ออกโค้ด) ม.ค.–เม.ย. ${toBE(selYear)} และมีผลงาน FYC ในช่วง พ.ค.–ส.ค. ${toBE(selYear)} ≥100,000 — UM ได้รางวัลคนละ 10,000</p>
+      ${(()=>{
+        const codeStart = new Date(selYear, 0, 1); // 1 ม.ค.
+        const codeEnd = new Date(selYear, 3, 30, 23, 59, 59); // 30 เม.ย.
+        const workStart = new Date(selYear, 4, 1); // 1 พ.ค.
+        const workEnd = new Date(selYear, 7, 31, 23, 59, 59); // 31 ส.ค.
+        const candidates = names.filter(name=>{
+          const sd = state.agents[name].competitions?.firstSaleDate;
+          if (!sd) return false;
+          const d = new Date(sd+"T00:00:00");
+          return d>=codeStart && d<=codeEnd;
+        }).map(name=>{
+          const ag = state.agents[name];
+          const workFyc = ag.entries.filter(e=>{ const d=new Date(e.date); return d>=workStart && d<=workEnd; }).reduce((s,e)=>s+e.fyc,0);
+          return { name, workFyc, qualifies: workFyc>=100000 };
+        });
+        const qualified = candidates.filter(c=>c.qualifies);
+        const rowsHtml = candidates.map(c=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #123F6B0D;">
+          <span style="color:var(--navy-deep);">${c.qualifies?'✔':'✕'} ${esc(c.name)}</span>
+          <span style="color:${c.qualifies?'var(--good)':'var(--muted)'};font-weight:600;">${THB(c.workFyc)}${c.qualifies?'':` (ขาดอีก ${THB(100000-c.workFyc)})`}</span>
+        </div>`).join("");
+        const totalReward = qualified.length*10000;
+        return `
+          ${candidates.length?rowsHtml:`<div class="empty">ยังไม่มีตัวแทนที่ออกโค้ดในช่วง ม.ค.–เม.ย. ${toBE(selYear)}</div>`}
+          <div style="margin-top:10px;padding-top:10px;border-top:2px solid #123F6B22;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;color:var(--navy);">ผ่านเกณฑ์ ${qualified.length} คน</span>
+            <span style="font-weight:800;font-size:23px;color:${totalReward>0?'var(--good)':'var(--muted)'};">${THB(totalReward)}</span>
+          </div>
+        `;
+      })()}
+    </div>
+
     ${(()=>{
       const flagged = rows.filter(r=>r.isQuiet);
       if (!flagged.length) return '';
