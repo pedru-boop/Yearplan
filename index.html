@@ -378,7 +378,8 @@ function renderInsightsSection(entries, selYearArg, pacing){
 
   // 3) เดือนที่ดีที่สุด/แย่ที่สุดในปีนี้
   if (pacing){
-    const withData = pacing.filter(m=>!m.excluded && m.actual>0);
+    const capMonth = isCurrentYearView ? today.getMonth() : 11;
+    const withData = pacing.filter(m=>!m.excluded && m.actual>0 && m.month<=capMonth);
     if (withData.length>=2){
       const best = withData.reduce((a,b)=>a.actual>b.actual?a:b);
       const worst = withData.reduce((a,b)=>a.actual<b.actual?a:b);
@@ -1143,7 +1144,7 @@ function computeMonthlyPacing(entries, year, goalFYC, startMonth, endMonth, annu
 const DEFAULT_AGENT_DATA = {
   entries: [],
   persistQuarterly: {},
-  competitions: { firstSaleDate: "" },
+  competitions: { firstSaleDate: "", monthlyFycOverride: {} },
   goals: { targetFYC: 300000, startMonth: 0, endMonth: 11, annualTargetFYC: 300000 },
 };
 const DEFAULT_STATE = {
@@ -1418,8 +1419,9 @@ function renderGoalsTab(){
       </tr>`;
     });
   }
-  const netDiffAnnual = achievedFullYear - annualGoalFYC;
-  const netHtmlAnnual = annualGoalFYC>0 ? (netDiffAnnual >= 0
+  const blendedAnnualTarget = pacing ? pacing.reduce((s,m)=>s+(m.target||0),0) : annualGoalFYC;
+  const netDiffAnnual = achievedFullYear - blendedAnnualTarget;
+  const netHtmlAnnual = blendedAnnualTarget>0 ? (netDiffAnnual >= 0
     ? `<span style="color:var(--good);">เกิน ${THB(netDiffAnnual)} บาท</span>`
     : `<span style="color:var(--bad);">ขาด ${THB(-netDiffAnnual)} บาท</span>`) : '—';
   const netDiffPeriod = achieved - goalFYC;
@@ -1428,7 +1430,7 @@ function renderGoalsTab(){
     : `<span style="color:var(--bad);">ขาด ${THB(-netDiffPeriod)} บาท</span>`) : '—';
   const totalRow = pacing ? `<tr style="border-top:2px solid #123F6B22;font-weight:700;">
     <td style="color:var(--navy-deep);">รวม (สะสมทั้งปี)</td>
-    <td class="num" style="color:var(--navy-deep);">${THB(annualGoalFYC)}</td>
+    <td class="num" style="color:var(--navy-deep);">${THB(blendedAnnualTarget)}</td>
     <td class="num" style="color:var(--navy-deep);">${THB(achievedFullYear)}</td>
     <td class="num" colspan="2">${netHtmlAnnual}</td>
   </tr>
@@ -1723,19 +1725,28 @@ function renderCompetitionsTab(){
       : `border-top:1.5px solid #123F6B22;border-right:1.5px solid #123F6B22;border-bottom:1.5px solid #123F6B22;border-left:5px solid ${r.qualifies?'var(--good)':'var(--bad)'};`;
 
     let monthRowsHtml = "";
-    let qTargetSum = 0, qFycSum = r.fyc, qHasTarget = false;
+    let qTargetSum = 0, qFycSum = 0, qHasTarget = false;
+    const fycOverrides = agent().competitions.monthlyFycOverride || {};
     r.months.forEach((m,i)=>{
       const monthIdx = (r.q-1)*3+i;
       const pm = pacing ? pacing[monthIdx] : null;
       const pmActive = pm && !pm.excluded;
-      const hit = pmActive ? m.fyc>=pm.target : null;
+      const ovKey = `${selYear}-${monthIdx}`;
+      const ov = fycOverrides[ovKey];
+      const isOv = ov!==undefined && ov!==null;
+      const displayFyc = isOv ? ov : m.fyc;
+      qFycSum += displayFyc;
+      const hit = pmActive ? displayFyc>=pm.target : null;
       if (pmActive){ qTargetSum += pm.target; qHasTarget = true; }
       const rowBg = (monthIdx===currentMonthIdx && isCurrentYear) ? "background:#4FAE7414;" : "";
       monthRowsHtml += `<tr style="${rowBg}">
         <td style="color:${m.count>0?'var(--navy-deep)':'var(--muted)'};font-weight:${m.count>0?600:400};">${THAI_MONTH_SHORT[m.month]}</td>
         <td class="r" style="color:${m.count>0?'var(--ink)':'var(--muted)'};">${m.count}</td>
         ${pacing?`<td class="r" style="color:var(--muted);">${pmActive?THB(pm.target):'—'}</td>`:''}
-        <td class="r" style="font-weight:600;color:${pmActive?(hit?'var(--good)':(m.count>0?'var(--warn)':'var(--muted)')):'var(--ink)'};">${THB(m.fyc)}</td>
+        <td class="r">
+          <input type="text" inputmode="decimal" data-fyc-override="${ovKey}" value="${esc(formatThousands(String(displayFyc)))}" style="width:82px;padding:4px 5px;font-size:14px;text-align:center;">
+          <div style="font-size:11px;color:${isOv?'var(--gold)':'var(--muted)'};">${isOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
+        </td>
       </tr>`;
     });
     const qNetDiff = qFycSum - qTargetSum;
@@ -1762,7 +1773,7 @@ function renderCompetitionsTab(){
       <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #123F6B1A;">
         <div style="font-size:16.5px;font-weight:700;color:var(--navy-deep);margin-bottom:6px;">ผลงานรายเดือน${pacing?' เทียบเป้าหมาย':''}</div>
         <table class="qtable">
-          <thead><tr><th>เดือน</th><th class="r">ราย</th>${pacing?'<th class="r">เป้า (฿)</th>':''}<th class="r">${pacing?'จริง (฿)':'FYC (฿)'}</th></tr></thead>
+          <thead><tr><th>เดือน</th><th class="r">ราย</th>${pacing?'<th class="r">เป้า FYC (฿)</th>':''}<th class="r">FYC ที่ได้ (฿)</th></tr></thead>
           <tbody>${monthRowsHtml}${qTotalRow}</tbody>
         </table>
         ${qNetLine}
@@ -2165,6 +2176,22 @@ function bindEvents(){
   document.querySelectorAll("[data-persist-band]").forEach(sel=>{
     sel.onchange = ()=>{
       agent().persistQuarterly[sel.dataset.persistBand] = Number(sel.value);
+      saveState(); render();
+    };
+  });
+  document.querySelectorAll("[data-fyc-override]").forEach(inp=>{
+    inp.oninput = (e)=>{ const f = formatThousands(stripCommas(e.target.value)); e.target.value = f; };
+    inp.onfocus = (e)=>e.target.select();
+    inp.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
+    inp.onblur = (e)=>{
+      const key = inp.dataset.fycOverride;
+      const raw = stripCommas(e.target.value.trim());
+      if (!agent().competitions.monthlyFycOverride) agent().competitions.monthlyFycOverride = {};
+      if (raw===""){ delete agent().competitions.monthlyFycOverride[key]; }
+      else{
+        const num = Number(raw);
+        if (!isNaN(num) && num>=0){ agent().competitions.monthlyFycOverride[key] = num; }
+      }
       saveState(); render();
     };
   });
