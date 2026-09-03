@@ -50,7 +50,7 @@
   .agent-picker select{padding:6px 12px; color:var(--navy-deep); background:var(--card); font-weight:600;}
   .add-agent-form{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;}
   .year-picker span{font-size:19.5px; color:var(--muted); font-weight:600;}
-  select, input[type=text], input[type=number]{
+  select, input[type=text], input[type=number], input[type=date]{
     border:1.5px solid #123F6B22; border-radius:8px; padding:8px 10px; font-size:21px;
     font-family:'Sarabun',sans-serif; color:var(--ink); background:#fff; outline:none;
   }
@@ -932,15 +932,15 @@ function renderTeamTab(){
     </div>
 
     <div class="card">
-      <h3>🏆 การแข่งขันรับสมัครตัวแทนใหม่ (สำหรับ UM)</h3>
-      <p class="sub">ตัวแทนที่เริ่มงาน พ.ค.–ก.ย. ${toBE(selYear)} และมีเบี้ยประกันรวมในช่วงนี้ ≥50,000 — ถ้ามีครบ 2 คนขึ้นไป UM ได้รางวัลคนละ 10,000</p>
+      <h3>🏆 แข่งขันตัวแทนใหม่ สำหรับ UM — รุ่น พ.ค.-ก.ย.</h3>
+      <p class="sub">ตัวแทนที่ออกบัตรตัวแทน พ.ค.–ก.ย. ${toBE(selYear)} และมีเบี้ยประกันรวมในช่วงนี้ ≥50,000 — ถ้ามีครบ 2 คนขึ้นไป UM ได้รางวัลคนละ 10,000</p>
       ${(()=>{
         const rangeStart = new Date(selYear, 4, 1); // 1 พ.ค.
         const rangeEnd = new Date(selYear, 8, 30, 23, 59, 59); // 30 ก.ย.
         const candidates = names.filter(name=>{
-          const sd = state.agents[name].competitions?.firstSaleDate;
-          if (!sd) return false;
-          const d = new Date(sd+"T00:00:00");
+          const cd = state.agents[name].license?.cardIssueDate;
+          if (!cd) return false;
+          const d = new Date(cd+"T00:00:00");
           return d>=rangeStart && d<=rangeEnd;
         }).map(name=>{
           const premiums = (state.umGoal.newAgentPremiums && state.umGoal.newAgentPremiums[name]) || ["","","","",""];
@@ -954,7 +954,7 @@ function renderTeamTab(){
         </div>`).join("");
         const totalReward = qualified.length>=2 ? qualified.length*10000 : 0;
         return `
-          ${candidates.length?rowsHtml:`<div class="empty">ยังไม่มีตัวแทนที่เริ่มงานในช่วง พ.ค.–ก.ย. ${toBE(selYear)}</div>`}
+          ${candidates.length?rowsHtml:`<div class="empty">ยังไม่มีตัวแทนที่ออกบัตรตัวแทนในช่วง พ.ค.–ก.ย. ${toBE(selYear)} (ตั้งวันที่ออกบัตรได้ที่แท็บเป้าหมาย → ข้อมูลบัตรตัวแทน)</div>`}
           <div style="margin-top:10px;padding-top:10px;border-top:2px solid #123F6B22;display:flex;justify-content:space-between;align-items:center;">
             <span style="font-weight:700;color:var(--navy);">ผ่านเกณฑ์ ${qualified.length} คน${qualified.length>=2?' (ครบ 2 คนขึ้นไป)':qualified.length===1?' — ยังขาดอีก 1 คนถึงจะได้รางวัล':''}</span>
             <span style="font-weight:800;font-size:23px;color:${totalReward>0?'var(--good)':'var(--muted)'};">${THB(totalReward)}</span>
@@ -965,17 +965,17 @@ function renderTeamTab(){
     </div>
 
     <div class="card">
-      <h3>🏆 การแข่งขันตัวแทนออกโค้ดต้นปี (สำหรับ UM)</h3>
-      <p class="sub">ตัวแทนที่เริ่มงาน (ออกโค้ด) ม.ค.–เม.ย. ${toBE(selYear)} และมีผลงาน FYC ในช่วง พ.ค.–ส.ค. ${toBE(selYear)} ≥100,000 — UM ได้รางวัลคนละ 10,000</p>
+      <h3>🏆 แข่งขันตัวแทนใหม่ สำหรับ UM — รุ่น ม.ค.-เม.ย.</h3>
+      <p class="sub">ตัวแทนที่ออกบัตรตัวแทน ม.ค.–เม.ย. ${toBE(selYear)} และมีผลงาน FYC ในช่วง พ.ค.–ส.ค. ${toBE(selYear)} ≥100,000 — UM ได้รางวัลคนละ 10,000</p>
       ${(()=>{
         const codeStart = new Date(selYear, 0, 1); // 1 ม.ค.
         const codeEnd = new Date(selYear, 3, 30, 23, 59, 59); // 30 เม.ย.
         const workStart = new Date(selYear, 4, 1); // 1 พ.ค.
         const workEnd = new Date(selYear, 7, 31, 23, 59, 59); // 31 ส.ค.
         const candidates = names.filter(name=>{
-          const sd = state.agents[name].competitions?.firstSaleDate;
-          if (!sd) return false;
-          const d = new Date(sd+"T00:00:00");
+          const cd = state.agents[name].license?.cardIssueDate;
+          if (!cd) return false;
+          const d = new Date(cd+"T00:00:00");
           return d>=codeStart && d<=codeEnd;
         }).map(name=>{
           const ag = state.agents[name];
@@ -989,7 +989,7 @@ function renderTeamTab(){
         </div>`).join("");
         const totalReward = qualified.length*10000;
         return `
-          ${candidates.length?rowsHtml:`<div class="empty">ยังไม่มีตัวแทนที่ออกโค้ดในช่วง ม.ค.–เม.ย. ${toBE(selYear)}</div>`}
+          ${candidates.length?rowsHtml:`<div class="empty">ยังไม่มีตัวแทนที่ออกบัตรตัวแทนในช่วง ม.ค.–เม.ย. ${toBE(selYear)} (ตั้งวันที่ออกบัตรได้ที่แท็บเป้าหมาย → ข้อมูลบัตรตัวแทน)</div>`}
           <div style="margin-top:10px;padding-top:10px;border-top:2px solid #123F6B22;display:flex;justify-content:space-between;align-items:center;">
             <span style="font-weight:700;color:var(--navy);">ผ่านเกณฑ์ ${qualified.length} คน</span>
             <span style="font-weight:800;font-size:23px;color:${totalReward>0?'var(--good)':'var(--muted)'};">${THB(totalReward)}</span>
@@ -1252,6 +1252,8 @@ let selYear = new Date().getFullYear();
 let entryForm = { date: new Date().toISOString().slice(0,10), fyc: "", note: "", billing: "" };
 let editingId = null;
 let editDraft = { date:"", fyc:"", note:"" };
+let newTrainingDraft = { courseName: "", date: "" };
+let trainingSectionOpen = false;
 let goalsFycInput = formatThousands(String(agent().goals.targetFYC ?? 300000));
 let annualGoalsFycInput = formatThousands(String(agent().goals.annualTargetFYC ?? 0));
 let umGoalsFycInput = formatThousands(String(state.umGoal?.targetFYC ?? 0));
@@ -1277,6 +1279,8 @@ function syncAgentFormState(){
   entryForm = { date: new Date().toISOString().slice(0,10), fyc: "", note: "", billing: "" };
   editingId = null;
   editDraft = { date:"", fyc:"", note:"" };
+  newTrainingDraft = { courseName: "", date: "" };
+  trainingSectionOpen = false;
   closeAllCalendars();
 }
 
@@ -1571,10 +1575,10 @@ function renderGoalsTab(){
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
         <label class="field" style="flex:1;min-width:150px;"><span>วันที่ออกบัตร</span>
-          <input type="date" id="license-issue-date" value="${esc(agent().license.cardIssueDate)}">
+          ${renderDateInput("license-issue", agent().license.cardIssueDate)}
         </label>
         <label class="field" style="flex:1;min-width:150px;"><span>วันหมดอายุบัตร</span>
-          <input type="date" id="license-expiry-date" value="${esc(agent().license.cardExpiryDate)}">
+          ${renderDateInput("license-expiry", agent().license.cardExpiryDate)}
         </label>
       </div>
       ${cardExpiryWarning?(cardExpiryWarning.expired?`<div class="alert-box" style="background:#FBEEEC;border-color:var(--bad);margin-bottom:14px;"><div class="line" style="color:var(--bad);font-weight:700;">⚠ บัตรตัวแทนหมดอายุแล้ว (${cardExpiryWarning.expDate.toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})})</div></div>`
@@ -1583,9 +1587,9 @@ function renderGoalsTab(){
       <div style="border-top:1px dashed #123F6B22;padding-top:12px;">
         <div id="training-toggle" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
           <span style="font-weight:600;color:var(--navy);font-size:18px;">📚 ประวัติการอบรม (${agent().license.trainings.length} รายการ)</span>
-          <span id="training-arrow" style="font-size:14px;color:var(--muted);">▼ แตะเพื่อดู</span>
+          <span id="training-arrow" style="font-size:14px;color:var(--muted);">${trainingSectionOpen?'▲ ซ่อน':'▼ แตะเพื่อดู'}</span>
         </div>
-        <div id="training-content" style="display:none;margin-top:10px;">
+        <div id="training-content" style="display:${trainingSectionOpen?'block':'none'};margin-top:10px;">
           ${agent().license.trainings.length?agent().license.trainings.map((t,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #123F6B0D;">
             <div>
               <div style="font-weight:600;color:var(--navy-deep);">${esc(t.courseName)}</div>
@@ -1593,9 +1597,9 @@ function renderGoalsTab(){
             </div>
             <span data-remove-training="${i}" style="color:var(--bad);cursor:pointer;font-size:20px;padding:4px 8px;">×</span>
           </div>`).join(""):`<div class="empty" style="padding:8px 0;">ยังไม่มีประวัติการอบรม</div>`}
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
-            <input type="text" id="new-training-name" placeholder="ชื่อหลักสูตร" style="flex:2;min-width:150px;padding:6px 8px;">
-            <input type="date" id="new-training-date" style="flex:1;min-width:130px;padding:6px 8px;">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:flex-start;">
+            <input type="text" id="new-training-name" placeholder="ชื่อหลักสูตร" value="${esc(newTrainingDraft.courseName)}" style="flex:2;min-width:150px;padding:6px 8px;">
+            <div style="flex:1;min-width:150px;">${renderDateInput("new-training", newTrainingDraft.date, true)}</div>
             <button id="add-training-btn" class="btn" style="padding:6px 14px;">+ เพิ่ม</button>
           </div>
         </div>
@@ -2241,44 +2245,38 @@ function bindEvents(){
     };
     goalInput.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
   }
-  // ข้อมูลบัตรตัวแทนและการอบรม
-  const licenseFieldMap = { "license-agent-code":"agentCode", "license-card-number":"cardNumber", "license-issue-date":"cardIssueDate", "license-expiry-date":"cardExpiryDate" };
-  Object.keys(licenseFieldMap).forEach(id=>{
+  // ข้อมูลบัตรตัวแทนและการอบรม — วันที่ 2 ช่องนี้ใช้ปฏิทินกำหนดเองของแอป (ผูกผ่าน data-toggle-cal/data-pick-day ที่อื่นแล้ว) จึงเหลือแค่ช่องข้อความ
+  const licenseTextFieldMap = { "license-agent-code":"agentCode", "license-card-number":"cardNumber" };
+  Object.keys(licenseTextFieldMap).forEach(id=>{
     const el = document.getElementById(id);
     if (el){
-      el.onblur = (e)=>{ agent().license[licenseFieldMap[id]] = e.target.value; saveState(); render(); };
-      if (el.type!=="date") el.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
-      else el.onchange = el.onblur;
+      el.onblur = (e)=>{ agent().license[licenseTextFieldMap[id]] = e.target.value; saveState(); render(); };
+      el.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
     }
   });
   const trainingToggle = document.getElementById("training-toggle");
   if (trainingToggle){
-    trainingToggle.onclick = ()=>{
-      const content = document.getElementById("training-content");
-      const arrow = document.getElementById("training-arrow");
-      const isHidden = content.style.display==="none";
-      content.style.display = isHidden ? "block" : "none";
-      arrow.textContent = isHidden ? "▲ ซ่อน" : "▼ แตะเพื่อดู";
-    };
+    trainingToggle.onclick = ()=>{ trainingSectionOpen = !trainingSectionOpen; render(); };
   }
   document.querySelectorAll("[data-remove-training]").forEach(el=>{
     el.onclick = ()=>{
       const idx = Number(el.dataset.removeTraining);
       agent().license.trainings.splice(idx,1);
       saveState(); render();
-      setTimeout(()=>{ const c=document.getElementById("training-content"); const a=document.getElementById("training-arrow"); if(c){c.style.display="block"; a.textContent="▲ ซ่อน";} },0);
     };
   });
+  const newTrainingNameInput = document.getElementById("new-training-name");
+  if (newTrainingNameInput){
+    newTrainingNameInput.oninput = (e)=>{ newTrainingDraft.courseName = e.target.value; };
+  }
   const addTrainingBtn = document.getElementById("add-training-btn");
   if (addTrainingBtn){
     addTrainingBtn.onclick = ()=>{
-      const nameEl = document.getElementById("new-training-name");
-      const dateEl = document.getElementById("new-training-date");
-      const courseName = nameEl.value.trim();
+      const courseName = newTrainingDraft.courseName.trim();
       if (!courseName) return;
-      agent().license.trainings.push({ courseName, trainingDate: dateEl.value });
+      agent().license.trainings.push({ courseName, trainingDate: newTrainingDraft.date });
+      newTrainingDraft = { courseName: "", date: "" };
       saveState(); render();
-      setTimeout(()=>{ const c=document.getElementById("training-content"); const a=document.getElementById("training-arrow"); if(c){c.style.display="block"; a.textContent="▲ ซ่อน";} },0);
     };
   }
   const annualGoalInput = document.getElementById("annual-goal-fyc-input");
@@ -2627,12 +2625,18 @@ function getIsoForPicker(id){
   if (id==="main") return entryForm.date;
   if (id==="edit") return editDraft.date;
   if (id==="joining") return agent().competitions.firstSaleDate;
+  if (id==="license-issue") return agent().license.cardIssueDate;
+  if (id==="license-expiry") return agent().license.cardExpiryDate;
+  if (id==="new-training") return newTrainingDraft.date;
   return "";
 }
 function setIsoForPicker(id, iso){
   if (id==="main") entryForm.date = iso;
   else if (id==="edit") editDraft.date = iso;
   else if (id==="joining"){ agent().competitions.firstSaleDate = iso; saveState(); }
+  else if (id==="license-issue"){ agent().license.cardIssueDate = iso; saveState(); }
+  else if (id==="license-expiry"){ agent().license.cardExpiryDate = iso; saveState(); }
+  else if (id==="new-training"){ newTrainingDraft.date = iso; }
 }
 
 function confirmAddAgent(){
