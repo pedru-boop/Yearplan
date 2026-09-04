@@ -917,7 +917,7 @@ function renderTeamTab(){
 
     <div class="card">
       <h3>🆕 ตัวแทนใหม่ พ.ศ. ${toBE(selYear)}</h3>
-      <p class="sub">นับจากวันที่มีผลงานขึ้นแรก (Joining Bonus) ที่ตกอยู่ในปีนี้ — คีย์เบี้ยประกันจากการแข่งขันตัวแทนใหม่เองได้ 5 ช่อง</p>
+      <p class="sub">นับจากวันที่มีผลงานขึ้นแรก (Joining Bonus) ที่ตกอยู่ในปีนี้ — คีย์เบี้ยประกันแต่ละงวดพร้อมวันที่รับเบี้ย เพื่อให้กรองตามช่วงเวลาการแข่งขันได้ถูกต้อง</p>
       ${(()=>{
         const newAgentsThisYear = names.filter(name=>{
           const sd = state.agents[name].competitions?.firstSaleDate;
@@ -927,16 +927,18 @@ function renderTeamTab(){
         return newAgentsThisYear.map(name=>{
           const sd = state.agents[name].competitions.firstSaleDate;
           const sdLabel = new Date(sd+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
-          const premiums = (state.umGoal.newAgentPremiums && state.umGoal.newAgentPremiums[name]) || ["","","","",""];
-          const premiumSum = premiums.reduce((s,v)=>s+(Number(stripCommas(String(v||0)))||0),0);
+          const premiums = getNormalizedPremiums(name);
+          const premiumSum = premiums.reduce((s,p)=>s+(Number(stripCommas(String(p.amount||0)))||0),0);
           return `<div style="padding:10px 0;border-bottom:1px solid #123F6B0D;">
             <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
               <span style="font-weight:600;color:var(--navy);">${esc(name)}</span>
               <span style="color:var(--muted);font-size:15px;">เริ่มมีผลงาน ${sdLabel}</span>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:6px;">
-              ${[0,1,2,3,4].map(i=>`<input type="text" inputmode="decimal" data-premium-agent="${esc(name)}" data-premium-idx="${i}" value="${esc(premiums[i]||"")}" placeholder="งวด ${i+1}" style="width:100%;box-sizing:border-box;padding:5px 3px;font-size:13px;text-align:center;">`).join("")}
-            </div>
+            ${[0,1,2,3,4].map(i=>`<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;">
+              <span style="font-size:13px;color:var(--muted);width:38px;flex-shrink:0;">งวด${i+1}</span>
+              <div style="flex:1;min-width:0;">${renderDateInput(`premium|${encodeURIComponent(name)}|${i}`, premiums[i].date, true)}</div>
+              <input type="text" inputmode="decimal" data-premium-agent="${esc(name)}" data-premium-idx="${i}" value="${esc(premiums[i].amount||"")}" placeholder="จำนวนเงิน" style="flex:1;min-width:0;box-sizing:border-box;padding:5px 3px;font-size:13px;text-align:center;">
+            </div>`).join("")}
             <div style="text-align:right;font-size:15px;color:var(--navy);font-weight:700;">เบี้ยประกันรวม: ${THB(premiumSum)}</div>
           </div>`;
         }).join("");
@@ -945,7 +947,7 @@ function renderTeamTab(){
 
     <div class="card">
       <h3>🏆 แข่งขันตัวแทนใหม่ สำหรับ UM — รุ่น พ.ค.-ก.ย.</h3>
-      <p class="sub">ตัวแทนที่ออกบัตรตัวแทน พ.ค.–ก.ย. ${toBE(selYear)} และมีเบี้ยประกันรวมในช่วงนี้ ≥50,000 — ถ้ามีครบ 2 คนขึ้นไป UM ได้รางวัลคนละ 10,000</p>
+      <p class="sub">ตัวแทนที่ออกบัตรตัวแทน พ.ค.–ก.ย. ${toBE(selYear)} และมีเบี้ยประกันที่รับจริงในช่วง พ.ค.–ก.ย. รวม ≥50,000 (นับเฉพาะงวดที่มีวันที่อยู่ในช่วงนี้) — ถ้ามีครบ 2 คนขึ้นไป UM ได้รางวัลคนละ 10,000</p>
       ${(()=>{
         const rangeStart = new Date(selYear, 4, 1); // 1 พ.ค.
         const rangeEnd = new Date(selYear, 8, 30, 23, 59, 59); // 30 ก.ย.
@@ -955,8 +957,12 @@ function renderTeamTab(){
           const d = new Date(cd+"T00:00:00");
           return d>=rangeStart && d<=rangeEnd;
         }).map(name=>{
-          const premiums = (state.umGoal.newAgentPremiums && state.umGoal.newAgentPremiums[name]) || ["","","","",""];
-          const premiumSum = premiums.reduce((s,v)=>s+(Number(stripCommas(String(v||0)))||0),0);
+          const premiums = getNormalizedPremiums(name);
+          const premiumSum = premiums.filter(p=>{
+            if (!p.date) return false;
+            const pd = new Date(p.date+"T00:00:00");
+            return pd>=rangeStart && pd<=rangeEnd;
+          }).reduce((s,p)=>s+(Number(stripCommas(String(p.amount||0)))||0),0);
           return { name, premiumSum, qualifies: premiumSum>=50000 };
         });
         const qualified = candidates.filter(c=>c.qualifies);
@@ -978,7 +984,7 @@ function renderTeamTab(){
 
     <div class="card">
       <h3>🏆 แข่งขันตัวแทนใหม่ สำหรับ UM — รุ่น ม.ค.-เม.ย.</h3>
-      <p class="sub">ตัวแทนที่ออกบัตรตัวแทน ม.ค.–เม.ย. ${toBE(selYear)} และมีผลงาน FYC ในช่วง พ.ค.–ส.ค. ${toBE(selYear)} ≥100,000 — UM ได้รางวัลคนละ 10,000</p>
+      <p class="sub">ตัวแทนที่ออกบัตรตัวแทน ม.ค.–เม.ย. ${toBE(selYear)} และมีเบี้ยประกันที่รับจริงในช่วง พ.ค.–ส.ค. ${toBE(selYear)} รวม ≥100,000 (นับเฉพาะงวดที่มีวันที่อยู่ในช่วงนี้) — UM ได้รางวัลคนละ 10,000</p>
       ${(()=>{
         const codeStart = new Date(selYear, 0, 1); // 1 ม.ค.
         const codeEnd = new Date(selYear, 3, 30, 23, 59, 59); // 30 เม.ย.
@@ -990,14 +996,18 @@ function renderTeamTab(){
           const d = new Date(cd+"T00:00:00");
           return d>=codeStart && d<=codeEnd;
         }).map(name=>{
-          const ag = state.agents[name];
-          const workFyc = ag.entries.filter(e=>{ const d=new Date(e.date); return d>=workStart && d<=workEnd; }).reduce((s,e)=>s+e.fyc,0);
-          return { name, workFyc, qualifies: workFyc>=100000 };
+          const premiums = getNormalizedPremiums(name);
+          const premiumSum = premiums.filter(p=>{
+            if (!p.date) return false;
+            const pd = new Date(p.date+"T00:00:00");
+            return pd>=workStart && pd<=workEnd;
+          }).reduce((s,p)=>s+(Number(stripCommas(String(p.amount||0)))||0),0);
+          return { name, premiumSum, qualifies: premiumSum>=100000 };
         });
         const qualified = candidates.filter(c=>c.qualifies);
         const rowsHtml = candidates.map(c=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #123F6B0D;">
           <span style="color:var(--navy-deep);">${c.qualifies?'✔':'✕'} ${esc(c.name)}</span>
-          <span style="color:${c.qualifies?'var(--good)':'var(--muted)'};font-weight:600;">${THB(c.workFyc)}${c.qualifies?'':` (ขาดอีก ${THB(100000-c.workFyc)})`}</span>
+          <span style="color:${c.qualifies?'var(--good)':'var(--muted)'};font-weight:600;">${THB(c.premiumSum)}${c.qualifies?'':` (ขาดอีก ${THB(100000-c.premiumSum)})`}</span>
         </div>`).join("");
         const totalReward = qualified.length*10000;
         return `
@@ -1428,13 +1438,22 @@ function getQuarterBuckets(){
 }
 
 /* ================= CALENDAR WIDGET ================= */
+function getNormalizedPremiums(name){
+  // เดิมเก็บเป็น array ของยอดเงินล้วน ("100000") ไม่มีวันที่ — ถ้าเจอข้อมูลเก่าแบบนี้ ให้แปลงเป็น {amount, date:""} เพื่อให้ใช้ร่วมกับของใหม่ได้ ไม่กระทบยอดเดิมที่เคยคีย์ไว้
+  const raw = (state.umGoal.newAgentPremiums && state.umGoal.newAgentPremiums[name]) || ["","","","",""];
+  return [0,1,2,3,4].map(i=>{
+    const v = raw[i];
+    if (v && typeof v==="object") return { amount: v.amount||"", date: v.date||"" };
+    return { amount: v||"", date: "" };
+  });
+}
 function calState(id){
   if (!calendars[id]) calendars[id] = { open:false, viewYear:new Date().getFullYear(), viewMonth:new Date().getMonth() };
   return calendars[id];
 }
 function renderDateInput(id, isoValue, compact){
   const selected = isoValue ? new Date(isoValue+"T00:00:00") : new Date();
-  const label = selected.toLocaleDateString("th-TH", {day:"numeric", month:"long", year:"numeric"});
+  const label = isoValue ? selected.toLocaleDateString("th-TH", {day:"numeric", month:"long", year:"numeric"}) : "เลือกวันที่";
   const cs = calState(id);
   const padStyle = compact ? "padding:5px 7px;font-size:18.75px;" : "padding:8px 10px;font-size:21px;";
   let popHtml = "";
@@ -1469,7 +1488,7 @@ function renderDateInput(id, isoValue, compact){
       </div>`;
   }
   return `<div class="date-wrap" data-date-input="${id}">
-    <button type="button" class="date-btn" style="${padStyle}border:1.5px solid #123F6B22;border-radius:8px;font-family:'Sarabun',sans-serif;color:var(--ink);" data-toggle-cal="${id}">
+    <button type="button" class="date-btn" style="${padStyle}border:1.5px solid #123F6B22;border-radius:8px;font-family:'Sarabun',sans-serif;color:${isoValue?'var(--ink)':'var(--muted)'};" data-toggle-cal="${id}">
       <span>${label}</span><span>📅</span>
     </button>
     ${popHtml}
@@ -2380,9 +2399,10 @@ function bindEvents(){
     inp.onblur = (e)=>{
       const agentName = inp.dataset.premiumAgent;
       const idx = Number(inp.dataset.premiumIdx);
+      const premiums = getNormalizedPremiums(agentName);
+      premiums[idx].amount = e.target.value.trim();
       if (!state.umGoal.newAgentPremiums) state.umGoal.newAgentPremiums = {};
-      if (!state.umGoal.newAgentPremiums[agentName]) state.umGoal.newAgentPremiums[agentName] = ["","","","",""];
-      state.umGoal.newAgentPremiums[agentName][idx] = e.target.value.trim();
+      state.umGoal.newAgentPremiums[agentName] = premiums;
       saveState(); render();
     };
   });
@@ -2590,7 +2610,9 @@ function bindEvents(){
   document.querySelectorAll("[data-shift-month]").forEach(btn=>{
     btn.onclick = (e)=>{
       e.stopPropagation();
-      const [id,delta] = btn.dataset.shiftMonth.split("|");
+      const raw = btn.dataset.shiftMonth;
+      const sep = raw.lastIndexOf("|");
+      const id = raw.slice(0,sep), delta = raw.slice(sep+1);
       const cs = calState(id);
       let m = cs.viewMonth + Number(delta), y = cs.viewYear;
       if (m<0){m=11;y-=1;} if (m>11){m=0;y+=1;}
@@ -2609,7 +2631,9 @@ function bindEvents(){
   document.querySelectorAll("[data-pick-day]").forEach(btn=>{
     btn.onclick = (e)=>{
       e.stopPropagation();
-      const [id, day] = btn.dataset.pickDay.split("|");
+      const raw = btn.dataset.pickDay;
+      const sep = raw.lastIndexOf("|");
+      const id = raw.slice(0,sep), day = raw.slice(sep+1);
       const cs = calState(id);
       const iso = `${cs.viewYear}-${String(cs.viewMonth+1).padStart(2,"0")}-${String(Number(day)).padStart(2,"0")}`;
       cs.open = false;
@@ -2638,6 +2662,12 @@ function getIsoForPicker(id){
   if (id==="license-issue") return agent().license.cardIssueDate;
   if (id==="license-expiry") return agent().license.cardExpiryDate;
   if (id==="new-training") return newTrainingDraft.date;
+  if (id.startsWith("premium|")){
+    const parts = id.split("|"); // premium|<encodedName>|<idx>
+    const name = decodeURIComponent(parts[1]);
+    const idx = Number(parts[2]);
+    return getNormalizedPremiums(name)[idx].date;
+  }
   return "";
 }
 function setIsoForPicker(id, iso){
@@ -2647,6 +2677,16 @@ function setIsoForPicker(id, iso){
   else if (id==="license-issue"){ agent().license.cardIssueDate = iso; saveState(); }
   else if (id==="license-expiry"){ agent().license.cardExpiryDate = iso; saveState(); }
   else if (id==="new-training"){ newTrainingDraft.date = iso; }
+  else if (id.startsWith("premium|")){
+    const parts = id.split("|");
+    const name = decodeURIComponent(parts[1]);
+    const idx = Number(parts[2]);
+    const premiums = getNormalizedPremiums(name);
+    premiums[idx].date = iso;
+    if (!state.umGoal.newAgentPremiums) state.umGoal.newAgentPremiums = {};
+    state.umGoal.newAgentPremiums[name] = premiums;
+    saveState();
+  }
 }
 
 function confirmAddAgent(){
