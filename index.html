@@ -157,6 +157,11 @@
     <div class="grid-bg"></div>
     <div class="glow"></div>
     <div class="glow2"></div>
+    <div style="position:absolute;top:14px;right:14px;z-index:5;display:flex;gap:6px;">
+      <button id="btn-export-header" title="แบ็กอัพข้อมูลทั้งหมด (ทุกตัวแทน + UM)" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:8px 10px;color:#fff;font-size:20px;cursor:pointer;">⭳</button>
+      <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:8px 10px;color:#fff;font-size:20px;cursor:pointer;">⭱</button>
+      <input type="file" id="file-import-header" accept="application/json" style="display:none">
+    </div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -1314,7 +1319,7 @@ const DEFAULT_STATE = {
 };
 let state = loadState();
 let activeTab = "goals";
-let activeSection = "agent"; // "um" หรือ "agent" — แถบใหญ่บนสุด, ต้องจิ้มเข้า "ตัวแทน" ก่อนถึงจะเห็นแท็บย่อย
+let activeSection = "um"; // "um" หรือ "agent" — แถบใหญ่บนสุด, ต้องจิ้มเข้า "ตัวแทน" ก่อนถึงจะเห็นแท็บย่อย
 let selYear = new Date().getFullYear();
 let entryForm = { date: new Date().toISOString().slice(0,10), fyc: "", note: "", billing: "" };
 let editingId = null;
@@ -1879,11 +1884,6 @@ function renderEntryTab(){
       </div>
       <p style="font-size:15px;color:var(--muted);margin:-4px 0 10px;">วันที่สีน้ำเงิน = วันที่ลูกค้าชำระเบี้ยจริง (งวดแรก) ส่วนงวดที่เข้าต่อเนื่องเป็นสีปกติ</p>
       ${rows}
-      <div class="backup-row">
-        <button class="btn-ghost" id="btn-export">⭳ แบ็กอัพข้อมูล</button>
-        <button class="btn-ghost" id="btn-import">⭱ นำเข้าข้อมูล</button>
-        <input type="file" id="file-import" accept="application/json" style="display:none">
-      </div>
     </div>
   `;
 }
@@ -2542,7 +2542,7 @@ function bindEvents(){
     };
   });
 
-  const exportBtn = document.getElementById("btn-export");
+  const exportBtn = document.getElementById("btn-export-header");
   if (exportBtn) exportBtn.onclick = ()=>{
     const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
     const url = URL.createObjectURL(blob);
@@ -2550,8 +2550,8 @@ function bindEvents(){
     a.href=url; a.download=`ped-dashboard-backup-${new Date().toISOString().slice(0,10)}.json`;
     a.click(); URL.revokeObjectURL(url);
   };
-  const importBtn = document.getElementById("btn-import");
-  const fileInput = document.getElementById("file-import");
+  const importBtn = document.getElementById("btn-import-header");
+  const fileInput = document.getElementById("file-import-header");
   if (importBtn && fileInput){
     importBtn.onclick = ()=>fileInput.click();
     fileInput.onchange = (e)=>{
