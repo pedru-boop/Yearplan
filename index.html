@@ -2555,7 +2555,18 @@ function bindEvents(){
   document.querySelectorAll("[data-remove]").forEach(btn=>{
     btn.onclick = ()=>{
       const id = Number(btn.dataset.remove);
-      agent().entries = agent().entries.filter(e=>e.id!==id);
+      const target = agent().entries.find(e=>e.id===id);
+      if (!target) return;
+      const isOriginInstallment = (target.installmentIndex ?? 0) === 0;
+      const hasSiblings = (target.installmentTotal ?? 1) > 1;
+      if (isOriginInstallment && hasSiblings){
+        const siblingCount = agent().entries.filter(e=>e.policyId===target.policyId).length;
+        const ok = confirm(`รายการนี้เป็นงวดแรกของแผนผ่อนชำระ ${siblingCount} งวด ถ้าลบจะลบงวดที่เหลือทั้งหมดไปด้วย (ไม่งั้นงวดหลังจะค้างอยู่โดยไม่มีต้นฉบับ) ต้องการลบทั้งชุดใช่ไหม?`);
+        if (!ok) return;
+        agent().entries = agent().entries.filter(e=>e.policyId!==target.policyId);
+      } else {
+        agent().entries = agent().entries.filter(e=>e.id!==id);
+      }
       saveState(); render();
     };
   });
