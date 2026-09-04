@@ -2565,7 +2565,22 @@ function bindEvents(){
         if (!ok) return;
         agent().entries = agent().entries.filter(e=>e.policyId!==target.policyId);
       } else {
+        const ok = confirm(`ลบรายการผลงานวันที่ ${target.date} จำนวน ${THB(target.fyc)} บาท ใช่ไหม? (ลบแล้วกู้คืนไม่ได้ นอกจากนำเข้าไฟล์แบ็กอัพ)`);
+        if (!ok) return;
         agent().entries = agent().entries.filter(e=>e.id!==id);
+      }
+      // ถ้าลบจนไม่เหลือผลงานเลย แต่ยังมี "วันที่มีผลงานขึ้นแรก" หรือเบี้ยประกัน (UM) ผูกอยู่ ถามว่าจะล้างด้วยไหม เพราะ 2 อย่างนี้ไม่ได้ผูกกับ entries โดยตรง จึงไม่หายไปเองอัตโนมัติ
+      if (agent().entries.length===0){
+        const hasFirstSaleDate = !!agent().competitions?.firstSaleDate;
+        const premiumKey = state.currentAgent;
+        const hasPremium = state.umGoal?.newAgentPremiums?.[premiumKey]?.some(p=>p.amount);
+        if (hasFirstSaleDate || hasPremium){
+          const clear = confirm(`ตัวแทน "${state.currentAgent}" ไม่มีผลงานเหลือแล้ว แต่ยังมี${hasFirstSaleDate?' "วันที่มีผลงานขึ้นแรก"':''}${hasFirstSaleDate&&hasPremium?' และ':''}${hasPremium?' เบี้ยประกันที่คีย์ไว้ใน UM':''} ผูกอยู่ ต้องการล้างข้อมูลเหล่านี้ด้วยไหม? (จะทำให้หายจากกล่องแข่งขันตัวแทนใหม่)`);
+          if (clear){
+            if (hasFirstSaleDate) agent().competitions.firstSaleDate = "";
+            if (hasPremium && state.umGoal?.newAgentPremiums) delete state.umGoal.newAgentPremiums[premiumKey];
+          }
+        }
       }
       saveState(); render();
     };
