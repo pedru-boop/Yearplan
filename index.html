@@ -618,7 +618,7 @@ function renderTeamTab(){
           </div>
         </div>
         ${umGoalFYC>0 && umProgressPct>=100?`<div style="margin-top:14px;background:#1F7A4F55;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;font-weight:700;">🎉 ถึงเป้าหมาย UM แล้ว!</div>`
-          :umGoalFYC>0 && umProgressPct>=80?`<div style="margin-top:14px;background:#C69A3B33;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;">🔥 ใกล้ถึงเป้าหมาย UM แล้ว! เหลืออีกแค่ ${THB(umRemaining)} (${Math.round(umProgressPct)}%)</div>`:''}
+          :umGoalFYC>0 && umProgressPct>=80?`<div style="margin-top:14px;background:#C69A3B33;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;">🔥 ใกล้ถึงเป้าหมาย UM แล้ว! เหลืออีกแค่ ${THB(umRemaining)} (ขาดอีก ${Math.round(100-umProgressPct)}%)</div>`:''}
       </div>
     </div>
 
@@ -824,8 +824,8 @@ function renderTeamTab(){
                   <span style="font-weight:700;font-size:19px;color:${annualRemaining>0?'var(--bad)':'var(--good)'};">${annualRemaining>0?THB(annualRemaining):'ครบเป้าแล้ว 🎉'}</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
-                  <span style="font-size:13px;color:var(--muted);">* เทียบจังหวะ ${monthsCumPassed} เดือนที่ผ่านมา (ไม่ใช่เป้าจบปี)</span>
-                  <span style="font-size:13px;font-weight:600;color:${aheadOfPace?'var(--good)':'var(--bad)'};">${aheadOfPace?'นำจังหวะ':'ตามหลังจังหวะ'} ${THB(Math.abs(paceDiff))}</span>
+                  <span style="font-size:13px;color:var(--muted);">* เทียบกับที่ควรทำได้ใน ${monthsCumPassed} เดือนนี้ (เฉลี่ยจากเป้าทั้งปี)</span>
+                  <span style="font-size:13px;font-weight:600;color:${aheadOfPace?'var(--good)':'var(--bad)'};">${aheadOfPace?'ทำได้เร็วกว่ากำหนด':'ทำได้ช้ากว่ากำหนด'} ${THB(Math.abs(paceDiff))}</span>
                 </div>
               </div>`;
             })()}
@@ -937,7 +937,7 @@ function renderTeamTab(){
             ${[0,1,2,3,4].map(i=>`<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;">
               <span style="font-size:13px;color:var(--muted);width:38px;flex-shrink:0;">งวด${i+1}</span>
               <div style="flex:1;min-width:0;">${renderDateInput(`premium|${encodeURIComponent(name)}|${i}`, premiums[i].date, true)}</div>
-              <input type="text" inputmode="decimal" data-premium-agent="${esc(name)}" data-premium-idx="${i}" value="${esc(premiums[i].amount||"")}" placeholder="จำนวนเงิน" style="flex:1;min-width:0;box-sizing:border-box;padding:5px 3px;font-size:13px;text-align:center;">
+              <input type="text" inputmode="decimal" data-premium-agent="${esc(name)}" data-premium-idx="${i}" value="${esc(premiums[i].amount||"")}" placeholder="จำนวนเงิน" style="flex:1;min-width:0;box-sizing:border-box;padding:5px 7px;font-size:18.75px;text-align:center;">
             </div>`).join("")}
             <div style="text-align:right;font-size:15px;color:var(--navy);font-weight:700;">เบี้ยประกันรวม: ${THB(premiumSum)}</div>
           </div>`;
@@ -1021,17 +1021,64 @@ function renderTeamTab(){
     </div>
 
     ${(()=>{
-      const flagged = rows.filter(r=>r.isQuiet);
-      if (!flagged.length) return '';
+      const curQInfo = getQuarter(today.toISOString());
+      const agentAlerts = names.map(name=>{
+        const ag = state.agents[name];
+        const alerts = [];
+        const r = rows.find(rr=>rr.name===name);
+        if (r && r.isQuiet) alerts.push(`😴 ไม่มีผลงานเดือน${THAI_MONTH_NAMES[umViewAsOfMonth]}`);
+        const exp = ag.license?.cardExpiryDate;
+        if (exp){
+          const expDate = new Date(exp+"T00:00:00");
+          const warnFrom = new Date(expDate); warnFrom.setMonth(warnFrom.getMonth()-4);
+          if (today>expDate) alerts.push(`⚠ บัตรตัวแทนหมดอายุแล้ว`);
+          else if (today>=warnFrom) alerts.push(`🔔 บัตรตัวแทนใกล้หมดอายุ (เหลือ ${Math.ceil((expDate-today)/86400000)} วัน)`);
+        }
+        // ภาพรวมสถานการณ์ของตัวแทนคนนี้: ยังต้องทำอีกเท่าไหร่ถึงเป้า/ขั้นถัดไป (เฉพาะปีที่กำลังดูอยู่)
+        if (curQInfo.year===selYear){
+          const qResultsA = quarterlyQualifyResults(ag.entries, selYear);
+          const curQResultA = qResultsA.find(qr=>qr.q===curQInfo.quarter);
+          if (curQResultA && !curQResultA.qualifies){
+            const casesShort = Math.max(0, QUALIFY_MIN_CASES-curQResultA.count);
+            const fycShort = Math.max(0, QUALIFY_MIN_FYC-curQResultA.fyc);
+            alerts.push(`🎯 คุณวุฒิไตรมาสนี้: ขาดอีก ${casesShort>0?`${casesShort} ราย `:''}${fycShort>0?`FYC ${THB(fycShort)} `:''}จึงจะผ่าน`);
+          }
+          if (curQResultA){
+            const bKeyA = `${selYear}-Q${curQInfo.quarter}`;
+            const bPersistA = ag.persistQuarterly?.[bKeyA] ?? 80;
+            const bQualifiesA = curQResultA.count>=3 && curQResultA.fyc>=12500 && bPersistA>=75;
+            const bFycShortA = Math.max(0, 12500-curQResultA.fyc);
+            const bCasesShortA = Math.max(0, 3-curQResultA.count);
+            if (!bQualifiesA){
+              alerts.push(`💰 โบนัสไตรมาสนี้: ขาดอีก ${bCasesShortA>0?`${bCasesShortA} ราย `:''}${bFycShortA>0?`FYC ${THB(bFycShortA)} `:''}จึงจะเริ่มได้`);
+            } else {
+              const bPctA = quarterlyPct(curQResultA.fyc);
+              const nextTierA = QUARTERLY_TIERS.find(t=>t.min > curQResultA.fyc);
+              if (nextTierA) alerts.push(`💰 โบนัสไตรมาสนี้: ขาดอีก FYC ${THB(nextTierA.min-curQResultA.fyc)} จะขยับเป็นอัตรา ${nextTierA.pct}%`);
+            }
+          }
+          const yearEntriesA = ag.entries.filter(e=>new Date(e.date).getFullYear()===selYear);
+          const annualCasesA = yearEntriesA.filter(isOrigin).length;
+          const annualFycA = yearEntriesA.reduce((s,e)=>s+e.fyc,0);
+          const annualBonusGateA = annualCasesA>=ANNUAL_BONUS_GATE_CASES && annualFycA>=ANNUAL_BONUS_GATE_FYC;
+          if (!annualBonusGateA){
+            const casesShortA = Math.max(0, ANNUAL_BONUS_GATE_CASES-annualCasesA);
+            const fycShortA = Math.max(0, ANNUAL_BONUS_GATE_FYC-annualFycA);
+            alerts.push(`📈 โบนัสปี: ขาดอีก ${casesShortA>0?`${casesShortA} ราย `:''}${fycShortA>0?`FYC ${THB(fycShortA)} `:''}จึงจะเริ่มได้`);
+          }
+        }
+        return { name, alerts };
+      }).filter(a=>a.alerts.length>0);
+      if (!agentAlerts.length) return '';
       return `<div class="card">
         <h3>⚠️ ตัวแทนที่ต้องจับตา</h3>
-        <p class="sub">แตะชื่อเพื่อสลับไปดู/แก้ไขรายการผลงานของคนนั้นได้โดยตรง</p>
-        ${flagged.map(r=>`<div data-switch-agent="${esc(r.name)}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #123F6B0D;cursor:pointer;">
-          <div>
-            <div style="font-weight:600;color:var(--navy);font-size:19px;">😴 ${esc(r.name)}</div>
-            <div style="font-size:15px;color:var(--bad);">ไม่มีผลงานเดือน${THAI_MONTH_NAMES[umViewAsOfMonth]}</div>
+        <p class="sub">รวมสถานการณ์ปัจจุบันของตัวแทนแต่ละคน — เห็นเลยว่าใครยังต้องทำอีกเท่าไหร่ถึงเป้าหรือขั้นถัดไป — แตะชื่อเพื่อสลับไปดู/แก้ไขได้โดยตรง</p>
+        ${agentAlerts.map(a=>`<div data-switch-agent="${esc(a.name)}" style="padding:10px 0;border-bottom:1px solid #123F6B0D;cursor:pointer;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:600;color:var(--navy);font-size:19px;">${esc(a.name)}</span>
+            <span style="color:var(--muted);font-size:18px;">›</span>
           </div>
-          <span style="color:var(--muted);font-size:18px;">›</span>
+          ${a.alerts.map(al=>`<div style="font-size:15px;color:var(--bad);margin-top:2px;">${al}</div>`).join("")}
         </div>`).join("")}
       </div>`;
     })()}
@@ -1387,6 +1434,9 @@ function positionOpenCalendars(){
   });
 }
 function renderAgentPicker(){
+  const container = document.getElementById("agent-picker");
+  if (activeSection!=="agent"){ container.style.display = "none"; container.innerHTML = ""; return; }
+  container.style.display = "";
   const names = Object.keys(state.agents);
   const options = names.map(n=>`<option value="${esc(n)}" ${n===state.currentAgent?"selected":""}>${esc(n)}</option>`).join("");
   const startDate = agent().competitions?.firstSaleDate || "";
