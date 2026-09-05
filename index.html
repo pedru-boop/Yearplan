@@ -947,7 +947,7 @@ function renderTeamTab(){
           const alreadyQualifies = newCases>=2 && tier;
           const hasSomeActivity = newCases>0 || qFyc>0;
           if (alreadyQualifies || !hasSomeActivity) return;
-          item7Rows.push({ name, casesOk:newCases>=2, casesGot:newCases, casesNeed:2, fycOk:newCases>=2&&qFyc>=15000, fycGot:qFyc, fycNeed:15000, fycNA: newCases<2 });
+          item7Rows.push({ name, casesOk:newCases>=2, casesGot:newCases, casesNeed:2, fycOk:qFyc>=15000, fycGot:qFyc, fycNeed:15000, fycNA:false });
         });
         if (item7Rows.length){
           sections.push({ title: `👤 ข้อ 7 — ค่าสร้างและรักษาตัวแทน — ไตรมาส ${curQ7}`, urgent: isUrgent7, rows: item7Rows, cols: ["cases","fyc"] });
@@ -2551,6 +2551,13 @@ function bindEvents(){
     if (state.agents[trimmed]){ showToast("มีชื่อนี้อยู่แล้ว"); return; }
     state.agents[trimmed] = state.agents[oldName];
     delete state.agents[oldName];
+    // ย้ายเบี้ยประกันที่คีย์ไว้ (UM) ตามชื่อใหม่ด้วย ไม่งั้นจะกลายเป็นข้อมูลกำพร้าค้างอยู่ใต้ชื่อเก่า หาไม่เจออีกต่อไป
+    if (state.umGoal?.newAgentPremiums?.[oldName]){
+      if (!state.umGoal.newAgentPremiums[trimmed]){
+        state.umGoal.newAgentPremiums[trimmed] = state.umGoal.newAgentPremiums[oldName];
+      }
+      delete state.umGoal.newAgentPremiums[oldName];
+    }
     state.currentAgent = trimmed;
     saveState(); render();
   };
@@ -2559,6 +2566,7 @@ function bindEvents(){
     const name = state.currentAgent;
     if (!window.confirm(`ลบข้อมูลทั้งหมดของ "${name}" ใช่หรือไม่? การลบนี้ย้อนกลับไม่ได้`)) return;
     delete state.agents[name];
+    if (state.umGoal?.newAgentPremiums?.[name]) delete state.umGoal.newAgentPremiums[name];
     const remaining = Object.keys(state.agents);
     state.currentAgent = remaining[0];
     syncAgentFormState();
