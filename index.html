@@ -928,7 +928,7 @@ function renderTeamTab(){
         const q6DirectFyc = q6Months.reduce((s,m)=>s+monthlyDirectAgentFYC[m],0);
         const q6Threshold = SALES_COMP_QUARTERLY_THRESHOLD[selectedPosition.value];
         if (q6DirectFyc < q6Threshold){
-          items.push({ urgent:isUrgent7, text: `💰 ข้อ 6 (DPO ทีม) ไตรมาส ${curQ7}: ขาดอีก ${THB(q6Threshold-q6DirectFyc)} ถึงจะเข้าเกณฑ์ขั้นแรก (20%)` });
+          items.push({ urgent:isUrgent7, text: `💰 ข้อ 6 — ค่าตอบแทนขายเองและตัวแทนตรง (DPO) — ไตรมาส ${curQ7}: FYC ✗ ขาดอีก ${THB(q6Threshold-q6DirectFyc)} (มี ${THB(q6DirectFyc)}/${THB(q6Threshold)}) ถึงจะเข้าเกณฑ์ขั้นแรก (20%)` });
         }
 
         // ข้อ 7 (รายบุคคล) — เฉพาะไตรมาสปัจจุบัน
@@ -941,9 +941,9 @@ function renderTeamTab(){
           const alreadyQualifies = newCases>=2 && tier;
           const hasSomeActivity = newCases>0 || qFyc>0;
           if (alreadyQualifies || !hasSomeActivity) return;
-          const casesShort = Math.max(0, 2-newCases);
-          const fycShort = newCases>=2 ? Math.max(0, 15000-qFyc) : 0;
-          items.push({ urgent:isUrgent7, text: `👤 ข้อ 7 — ${esc(name)}: ขาดอีก ${casesShort>0?`${casesShort} ราย `:''}${fycShort>0?`FYC ${THB(fycShort)} `:''}ถึงจะได้รับ` });
+          const casesStatus = newCases>=2 ? `จำนวนราย ✓ ถึงแล้ว (${newCases}/2)` : `จำนวนราย ✗ ขาดอีก ${2-newCases} ราย (มี ${newCases}/2)`;
+          const fycStatus = newCases>=2 ? (qFyc>=15000 ? `FYC ✓ ถึงแล้ว (${THB(qFyc)})` : `FYC ✗ ขาดอีก ${THB(15000-qFyc)} (มี ${THB(qFyc)}/15,000)`) : `FYC — ยังไม่ครบเกณฑ์จำนวนรายก่อน`;
+          items.push({ urgent:isUrgent7, text: `👤 ข้อ 7 — ค่าสร้างและรักษาตัวแทน — ${esc(name)}: ${casesStatus} · ${fycStatus}` });
         });
 
         // ข้อ 4 (ค่าเสริมมือ) — ตัวแทนที่ตั้งวันขึ้นแรกไว้ แต่หน้าต่าง 12 เดือนกำลังจะหมด (≤60 วัน) และยังมี FYC สะสมน้อย
@@ -956,7 +956,7 @@ function renderTeamTab(){
           if (daysToWindowEnd<0 || daysToWindowEnd>60) return;
           const eligibleFYC = ag.entries.filter(e=>{ const d=new Date(e.date); return d>=new Date(sd+"T00:00:00") && d<=windowEnd; }).reduce((s,e)=>s+e.fyc,0);
           if (eligibleFYC>=100000) return; // ถือว่าทำไปพอสมควรแล้ว ไม่ต้องเตือน
-          items.push({ urgent: daysToWindowEnd<=14, text: `🆕 ข้อ 4 — ${esc(name)}: เหลืออีก ${daysToWindowEnd} วันจะครบ 12 เดือน (ตอนนี้มี FYC สะสม ${THB(eligibleFYC)} เท่านั้น)` });
+          items.push({ urgent: daysToWindowEnd<=14, text: `🆕 ข้อ 4 — ค่าเสริมมือ — ${esc(name)}: เวลา ✗ เหลืออีก ${daysToWindowEnd} วันจะครบ 12 เดือน · FYC สะสม ${THB(eligibleFYC)} (ยังน้อย)` });
         });
 
         if (!items.length) return '';
@@ -2102,13 +2102,13 @@ function renderCompetitionsTab(){
 
     return `<div class="qcard" style="${borderStyle}background:${NAVY_TINTS[r.q-1]};">
       ${isCurrentQuarter?`<div class="badge-current">ไตรมาสปัจจุบัน</div>`:''}
-      <div class="head"><span>ไตรมาส ${r.q}</span><span>${isCurrentQuarter?'⏳':(r.qualifies?'✔':'✕')}</span></div>
+      <div class="head"><span>ไตรมาส ${r.q} — คุณวุฒิไตรมาส</span><span>${isCurrentQuarter?'⏳':(r.qualifies?'✔':'✕')}</span></div>
       <div class="mini-row"><span>เดือนที่มีผลงาน</span><span class="v ${r.activeMonths>=QUALIFY_MIN_ACTIVE_MONTHS?'ok':''}">${r.activeMonths}/3 เดือน</span></div>
       ${!r.qualifies?`<div class="alert-box">
-        <div class="title">${isCurrentQuarter?'⏳ ไตรมาสนี้ยังไม่จบ — ขาดอีกเพื่อผ่านคุณวุฒิไตรมาส':'⚠ ขาดอีกเพื่อผ่านคุณวุฒิไตรมาสนี้'}</div>
-        ${casesShort>0?`<div class="line">· ขาดอีก ${casesShort} ราย</div>`:''}
-        ${fycShort>0?`<div class="line">· ขาดอีก ${THB(fycShort)}</div>`:''}
-        ${monthsShort>0?`<div class="line">· ต้องมีผลงานเพิ่มอีก ${monthsShort} เดือน</div>`:''}
+        <div class="title">${isCurrentQuarter?'⏳ ไตรมาสนี้ยังไม่จบ — เกณฑ์คุณวุฒิไตรมาส':'⚠ เกณฑ์คุณวุฒิไตรมาสนี้'}</div>
+        <div class="line">· จำนวนราย ${casesShort>0?`✗ ขาดอีก ${casesShort} ราย (มี ${r.count}/${QUALIFY_MIN_CASES})`:`✓ ถึงแล้ว (${r.count}/${QUALIFY_MIN_CASES})`}</div>
+        <div class="line">· FYC ${fycShort>0?`✗ ขาดอีก ${THB(fycShort)} (มี ${THB(r.fyc)}/${THB(QUALIFY_MIN_FYC)})`:`✓ ถึงแล้ว (${THB(r.fyc)})`}</div>
+        <div class="line">· เดือนที่มีผลงาน ${monthsShort>0?`✗ ขาดอีก ${monthsShort} เดือน (มี ${r.activeMonths}/${QUALIFY_MIN_ACTIVE_MONTHS})`:`✓ ถึงแล้ว (${r.activeMonths}/${QUALIFY_MIN_ACTIVE_MONTHS})`}</div>
       </div>`:''}
       <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #123F6B1A;">
         <div style="font-size:16.5px;font-weight:700;color:var(--navy-deep);margin-bottom:6px;">ผลงานรายเดือน${pacing?' เทียบเป้าหมาย':''}</div>
@@ -2127,10 +2127,10 @@ function renderCompetitionsTab(){
         </div>
         <div class="reward"><span style="font-size:17.25px;color:var(--muted);">อัตรา ${bPct}%</span><span class="amt" style="color:${bQualifies?'var(--good)':'var(--muted)'};">${THB(bReward)}</span></div>
         ${!bQualifies?`<div class="alert-box" style="margin-top:6px;padding:7px 9px;">
-          <div class="title" style="font-size:16.5px;">${isCurrentQuarter?'⏳ ไตรมาสนี้ยังไม่จบ — ยังไม่เข้าเกณฑ์โบนัสไตรมาส':'⚠ ยังไม่เข้าเกณฑ์โบนัสไตรมาส'}</div>
-          ${bCasesShort>0?`<div class="line" style="font-size:17px;">· ขาดอีก ${bCasesShort} ราย</div>`:''}
-          ${bFycShort>0?`<div class="line" style="font-size:17px;">· ขาดอีก ${THB(bFycShort)}</div>`:''}
-          ${bPersistShort>0?`<div class="line" style="font-size:17px;">· อัตราคงอยู่ขาดอีก ${bPersistShort}%</div>`:''}
+          <div class="title" style="font-size:16.5px;">${isCurrentQuarter?'⏳ ไตรมาสนี้ยังไม่จบ — เกณฑ์โบนัสไตรมาส (เงินรางวัลตัวแทน)':'⚠ เกณฑ์โบนัสไตรมาส (เงินรางวัลตัวแทน)'}</div>
+          <div class="line" style="font-size:17px;">· จำนวนราย ${bCasesShort>0?`✗ ขาดอีก ${bCasesShort} ราย (มี ${r.count}/3)`:`✓ ถึงแล้ว (${r.count}/3)`}</div>
+          <div class="line" style="font-size:17px;">· FYC ${bFycShort>0?`✗ ขาดอีก ${THB(bFycShort)} (มี ${THB(r.fyc)}/12,500)`:`✓ ถึงแล้ว (${THB(r.fyc)})`}</div>
+          <div class="line" style="font-size:17px;">· อัตราคงอยู่ ${bPersistShort>0?`✗ ขาดอีก ${bPersistShort}% (มี ${bPersist}%/75%)`:`✓ ถึงแล้ว (${bPersist}%)`}</div>
           <div style="font-size:17px;margin-top:4px;padding-top:4px;border-top:1px dashed #B4453B33;color:var(--good);font-weight:700;">✓ ถ้าครบเกณฑ์ จะได้รับประมาณ ${THB((r.fyc*bPct)/100)} (อัตรา ${bPct}% ของ FYC ปัจจุบัน)</div>
         </div>`:''}
       </div>
@@ -2181,7 +2181,8 @@ function renderCompetitionsTab(){
     annualIncrease = previewNet - annualBonusNet;
   }
   const qualShortfalls = qResults.filter(r=>!r.qualifies && (!isCurrentYear || r.q<=currentActual.quarter)).map(r=>({
-    q: r.q, casesShort: Math.max(0,QUALIFY_MIN_CASES-r.count), fycShort: Math.max(0,QUALIFY_MIN_FYC-r.fyc), monthsShort: Math.max(0,QUALIFY_MIN_ACTIVE_MONTHS-r.activeMonths)
+    q: r.q, casesShort: Math.max(0,QUALIFY_MIN_CASES-r.count), fycShort: Math.max(0,QUALIFY_MIN_FYC-r.fyc), monthsShort: Math.max(0,QUALIFY_MIN_ACTIVE_MONTHS-r.activeMonths),
+    count: r.count, fyc: r.fyc, activeMonths: r.activeMonths
   }));
 
   return `
@@ -2191,12 +2192,12 @@ function renderCompetitionsTab(){
 
       <div style="background:#0E2F5299;border:1px solid #ffffff22;border-radius:10px;padding:12px 14px;margin-bottom:16px;">
         <div style="font-weight:700;color:#fff;margin-bottom:8px;">📊 ภาพรวมสถานการณ์</div>
-        ${qualShortfalls.length?qualShortfalls.map(qs=>`<div style="font-size:15px;color:#F5C6C0;margin-bottom:4px;">⚠ ไตรมาส ${qs.q} (เทียบเกณฑ์คุณวุฒิไตรมาส): ขาดอีก ${qs.casesShort>0?`${qs.casesShort} ราย `:''}${qs.fycShort>0?`FYC ${THB(qs.fycShort)} `:''}${qs.monthsShort>0?`ต้องมีผลงานเพิ่มอีก ${qs.monthsShort} เดือน`:''}</div>`).join(""):`<div style="font-size:15px;color:#9CE3B8;margin-bottom:4px;">✔ คุณวุฒิไตรมาสผ่านครบทุกไตรมาสที่ผ่านมา</div>`}
-        ${qBonusOverview?(!qBonusOverview.bQualifies?`<div style="font-size:15px;color:#F5C6C0;margin-bottom:4px;">⚠ โบนัสไตรมาส ${qBonusOverview.q} (เทียบเกณฑ์โบนัสไตรมาสนี้): ขาดอีก ${qBonusOverview.casesShortToGate>0?`${qBonusOverview.casesShortToGate} ราย `:''}${qBonusOverview.fycShortToGate>0?`FYC ${THB(qBonusOverview.fycShortToGate)} `:''}ถึงจะเริ่มได้ — ปัจจุบัน FYC ทำได้ ${THB(qBonusOverview.curFyc)} ถ้าครบเกณฑ์จำนวนรายจะได้ประมาณ ${THB(qBonusOverview.projectedRewardAtCurrentFyc)} (อัตรา ${qBonusOverview.bPct}%)</div>`
-          :qBonusOverview.nextTier?`<div style="font-size:15px;color:#B9C4D6;margin-bottom:4px;">🎯 โบนัสไตรมาส ${qBonusOverview.q} (เทียบเกณฑ์โบนัสไตรมาสนี้): ประมาณการปัจจุบัน ${THB(qBonusOverview.bReward)} (อัตรา ${qBonusOverview.bPct}%) — ขาดอีก FYC ${THB(qBonusOverview.nextTier.min-curQResult.fyc)} จะขยับเป็น ${qBonusOverview.nextTier.pct}% (เพิ่มขึ้น ${THB(qBonusOverview.increase)})</div>`
+        ${qualShortfalls.length?qualShortfalls.map(qs=>`<div style="font-size:15px;color:#F5C6C0;margin-bottom:6px;">⚠ ไตรมาส ${qs.q} — คุณวุฒิไตรมาส:<br>&nbsp;&nbsp;· จำนวนราย ${qs.casesShort>0?`✗ ขาดอีก ${qs.casesShort} ราย (มี ${qs.count}/${QUALIFY_MIN_CASES})`:`✓ ถึงแล้ว (${qs.count}/${QUALIFY_MIN_CASES})`}<br>&nbsp;&nbsp;· FYC ${qs.fycShort>0?`✗ ขาดอีก ${THB(qs.fycShort)} (มี ${THB(qs.fyc)}/${THB(QUALIFY_MIN_FYC)})`:`✓ ถึงแล้ว (${THB(qs.fyc)})`}<br>&nbsp;&nbsp;· เดือนที่มีผลงาน ${qs.monthsShort>0?`✗ ขาดอีก ${qs.monthsShort} เดือน (มี ${qs.activeMonths}/${QUALIFY_MIN_ACTIVE_MONTHS})`:`✓ ถึงแล้ว (${qs.activeMonths}/${QUALIFY_MIN_ACTIVE_MONTHS})`}</div>`).join(""):`<div style="font-size:15px;color:#9CE3B8;margin-bottom:4px;">✔ คุณวุฒิไตรมาสผ่านครบทุกไตรมาสที่ผ่านมา</div>`}
+        ${qBonusOverview?(!qBonusOverview.bQualifies?`<div style="font-size:15px;color:#F5C6C0;margin-bottom:6px;">⚠ โบนัสไตรมาส ${qBonusOverview.q} — โบนัสไตรมาส (เงินรางวัลตัวแทน):<br>&nbsp;&nbsp;· จำนวนราย ${qBonusOverview.casesShortToGate>0?`✗ ขาดอีก ${qBonusOverview.casesShortToGate} ราย`:'✓ ถึงแล้ว'}<br>&nbsp;&nbsp;· FYC ${qBonusOverview.fycShortToGate>0?`✗ ขาดอีก ${THB(qBonusOverview.fycShortToGate)} (มี ${THB(qBonusOverview.curFyc)}/12,500)`:`✓ ถึงแล้ว (${THB(qBonusOverview.curFyc)})`}<br>&nbsp;&nbsp;· ถ้าครบเกณฑ์จำนวนรายจะได้ประมาณ ${THB(qBonusOverview.projectedRewardAtCurrentFyc)} (อัตรา ${qBonusOverview.bPct}%)</div>`
+          :qBonusOverview.nextTier?`<div style="font-size:15px;color:#B9C4D6;margin-bottom:4px;">🎯 โบนัสไตรมาส ${qBonusOverview.q} — โบนัสไตรมาส (เงินรางวัลตัวแทน): ประมาณการปัจจุบัน ${THB(qBonusOverview.bReward)} (อัตรา ${qBonusOverview.bPct}%) — ขาดอีก FYC ${THB(qBonusOverview.nextTier.min-curQResult.fyc)} จะขยับเป็น ${qBonusOverview.nextTier.pct}% (เพิ่มขึ้น ${THB(qBonusOverview.increase)})</div>`
           :`<div style="font-size:15px;color:#9CE3B8;margin-bottom:4px;">🏆 โบนัสไตรมาส ${qBonusOverview.q}: อยู่ขั้นสูงสุดแล้ว ประมาณการ ${THB(qBonusOverview.bReward)}</div>`):''}
-        ${!annualBonusGate?`<div style="font-size:15px;color:#F5C6C0;">⚠ โบนัสปี (เทียบเกณฑ์โบนัสปีทั้งปี): ขาดอีก ${annualCasesShortToGate>0?`${annualCasesShortToGate} ราย `:''}${annualFycShortToGate>0?`FYC ${THB(annualFycShortToGate)} `:''}ถึงจะเริ่มได้ — ปัจจุบัน FYC ทำได้ ${THB(annualFYC)}</div>`
-          :annualNextTierRange?`<div style="font-size:15px;color:#B9C4D6;">🎯 โบนัสปี (เทียบเกณฑ์โบนัสปีทั้งปี): ประมาณการปัจจุบัน ${THB(annualBonusNet)} — ขาดอีก FYC ${THB(annualNextTierRange.min-annualFYC)} จะขยับเป็น ${annualNextPct}% (เพิ่มขึ้น ${THB(annualIncrease)})</div>`
+        ${!annualBonusGate?`<div style="font-size:15px;color:#F5C6C0;">⚠ โบนัสปี — โบนัสปี (สุทธิ):<br>&nbsp;&nbsp;· จำนวนราย ${annualCasesShortToGate>0?`✗ ขาดอีก ${annualCasesShortToGate} ราย (มี ${annualCases}/${ANNUAL_BONUS_GATE_CASES})`:`✓ ถึงแล้ว (${annualCases}/${ANNUAL_BONUS_GATE_CASES})`}<br>&nbsp;&nbsp;· FYC ${annualFycShortToGate>0?`✗ ขาดอีก ${THB(annualFycShortToGate)} (มี ${THB(annualFYC)}/${THB(ANNUAL_BONUS_GATE_FYC)})`:`✓ ถึงแล้ว (${THB(annualFYC)})`}</div>`
+          :annualNextTierRange?`<div style="font-size:15px;color:#B9C4D6;">🎯 โบนัสปี (สุทธิ): ประมาณการปัจจุบัน ${THB(annualBonusNet)} — ขาดอีก FYC ${THB(annualNextTierRange.min-annualFYC)} จะขยับเป็น ${annualNextPct}% (เพิ่มขึ้น ${THB(annualIncrease)})</div>`
           :`<div style="font-size:15px;color:#9CE3B8;">🏆 โบนัสปี: อยู่ขั้นสูงสุดแล้ว ประมาณการ ${THB(annualBonusNet)}</div>`}
       </div>
 
@@ -2339,8 +2340,10 @@ function renderCompetitionsTab(){
           </div>
         </div>
         ${joiningNextTier?`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);margin-top:10px;">
-          <div class="title" style="color:var(--navy);">🎯 ขั้นถัดไป</div>
-          <div class="line" style="color:var(--navy);">ขาดอีก ${joiningCasesShort>0?`${joiningCasesShort} ราย `:''}${joiningFycShort>0?`${THB(joiningFycShort)} `:''}จะได้สูงสุด ${THB(joiningNextTier.bonus)}</div>
+          <div class="title" style="color:var(--navy);">🎯 ขั้นถัดไป — Joining Bonus (ตัวแทนใหม่)</div>
+          <div class="line" style="color:var(--navy);">· จำนวนราย ${joiningCasesShort>0?`✗ ขาดอีก ${joiningCasesShort} ราย (มี ${joiningCumCases}/${joiningNextTier.cases})`:`✓ ถึงแล้ว (${joiningCumCases}/${joiningNextTier.cases})`}</div>
+          <div class="line" style="color:var(--navy);">· FYC ${joiningFycShort>0?`✗ ขาดอีก ${THB(joiningFycShort)} (มี ${THB(joiningCumFYC)}/${THB(joiningNextTier.fyc)})`:`✓ ถึงแล้ว (${THB(joiningCumFYC)})`}</div>
+          <div class="line" style="color:var(--good);font-weight:700;margin-top:2px;padding-top:4px;border-top:1px dashed #C69A3B55;">✓ ถ้าครบเกณฑ์ จะได้สูงสุด ${THB(joiningNextTier.bonus)}</div>
         </div>`:`<div class="alert-box" style="background:#F1F8F3;border-color:var(--good);margin-top:10px;"><div class="line" style="color:var(--good);font-weight:700;">🏆 ถึงขั้นสูงสุดแล้ว (${THB(JOINING_BONUS_CAP)})</div></div>`}
       `}
     </div>
