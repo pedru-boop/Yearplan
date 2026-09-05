@@ -1227,6 +1227,127 @@ function renderTeamTab(){
     </div>
   `;
 }
+function generatePrintReport(){
+  const name = state.currentAgent;
+  const ag = agent();
+  const entries = ag.entries;
+  const yearEntries = getYearEntries();
+  const qResults = quarterlyQualifyResults(entries, selYear);
+  const streak = longestConsecutiveStreak(qResults);
+  const annualCases = yearEntries.filter(isOrigin).length;
+  const annualFYC = yearEntries.reduce((s,e)=>s+e.fyc,0);
+  const annualGate = annualCases>=ANNUAL_GATE_CASES && annualFYC>=ANNUAL_GATE_FYC;
+  const annualBonusGate = annualCases>=ANNUAL_BONUS_GATE_CASES && annualFYC>=ANNUAL_BONUS_GATE_FYC;
+  const achievedLevel = annualGate ? Math.min(streak,4) : 0;
+  const reward = achievedLevel>0 ? STREAK_REWARDS[achievedLevel] : 0;
+  let totalQuarterlyBonus = 0;
+  const qRows = qResults.map(r=>{
+    const bKey = `${selYear}-Q${r.q}`;
+    const bPersist = ag.persistQuarterly[bKey] ?? 80;
+    const bQualifies = r.count>=3 && r.fyc>=12500 && bPersist>=75;
+    const bPct = quarterlyPct(r.fyc);
+    const bReward = bQualifies ? (r.fyc*bPct)/100 : 0;
+    totalQuarterlyBonus += bReward;
+    return { q: r.q, count: r.count, fyc: r.fyc, qualifies: r.qualifies, bReward };
+  });
+  const annualPersistKey = `annual-${selYear}`;
+  const annualPersist = ag.persistQuarterly[annualPersistKey] ?? 90;
+  const annualBand = annualPersist>=90?'high':annualPersist>=85?'mid':'low';
+  const annualBonusPct = annualBonusGate ? annualPct(annualFYC, annualBand) : 0;
+  const annualBonusGross = annualBonusGate ? (annualFYC*annualBonusPct)/100 : 0;
+  const annualBonusNet = Math.max(0, annualBonusGross - totalQuarterlyBonus);
+  // Joining Bonus
+  const startDate = ag.competitions.firstSaleDate;
+  let joiningGrandTotal = 0;
+  if (startDate){
+    const start = new Date(startDate+"T00:00:00");
+    const startY = start.getFullYear(), startM = start.getMonth();
+    const joiningMonths = [0,1,2,3].map(i=>{
+      const y = startY + Math.floor((startM+i)/12);
+      const m = (startM+i)%12;
+      const list = entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===y && d.getMonth()===m; });
+      const count = list.filter(isOrigin).length;
+      const fyc = list.reduce((s,e)=>s+e.fyc,0);
+      const qualifies = count>=JOINING_MONTHLY_MIN_CASES && fyc>=JOINING_MONTHLY_MIN_FYC;
+      return { qualifies, paid: qualifies?JOINING_MONTHLY_BONUS:0, count, fyc };
+    });
+    const joiningTotalPaid = joiningMonths.reduce((s,m)=>s+m.paid,0);
+    const joiningCumCases = joiningMonths.reduce((s,m)=>s+m.count,0);
+    const joiningCumFYC = joiningMonths.reduce((s,m)=>s+m.fyc,0);
+    let joiningTier = null;
+    for (const t of JOINING_CUM_TABLE) if (joiningCumCases>=t.cases && joiningCumFYC>=t.fyc) joiningTier=t;
+    const joiningTierBonus = joiningTier ? joiningTier.bonus : 0;
+    const joiningTopUp = Math.max(0, Math.min(JOINING_BONUS_CAP, joiningTierBonus) - joiningTotalPaid);
+    joiningGrandTotal = Math.min(JOINING_BONUS_CAP, joiningTotalPaid + joiningTopUp);
+  }
+  const totalIncome = annualFYC + reward + totalQuarterlyBonus + annualBonusNet + joiningGrandTotal;
+  const monthlyFyc = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>
+    yearEntries.filter(e=>new Date(e.date).getMonth()===m).reduce((s,e)=>s+e.fyc,0)
+  );
+  const today = new Date();
+  const printDate = today.toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"});
+
+  const html = `<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+<title>รายงานสรุปผลงาน ${esc(name)} ปี ${toBE(selYear)}</title>
+<style>
+  body{font-family:'Sarabun',sans-serif;color:#1B2430;padding:30px;max-width:800px;margin:0 auto;}
+  h1{font-size:22px;margin-bottom:2px;}
+  h2{font-size:17px;margin-top:24px;margin-bottom:8px;border-bottom:2px solid #123F6B;padding-bottom:4px;}
+  .meta{color:#666;font-size:13px;margin-bottom:20px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:6px;}
+  th,td{padding:6px 8px;text-align:left;border-bottom:1px solid #ddd;}
+  th{background:#F5F8FC;text-align:right;}
+  th:first-child{text-align:left;}
+  td.r{text-align:right;}
+  .total-row{font-weight:700;border-top:2px solid #123F6B;}
+  .grand{display:flex;justify-content:space-between;align-items:baseline;background:#F5F8FC;padding:14px 16px;border-radius:8px;margin-top:16px;}
+  .grand .val{font-size:26px;font-weight:800;color:#4FAE74;}
+  .footer{margin-top:30px;font-size:11px;color:#999;border-top:1px solid #ddd;padding-top:10px;}
+  @media print { body{padding:10px;} }
+</style></head><body>
+  <h1>รายงานสรุปผลงานและผลตอบแทน</h1>
+  <div class="meta">ตัวแทน: <b>${esc(name)}</b> · ปี พ.ศ. ${toBE(selYear)} · พิมพ์เมื่อ ${printDate}</div>
+
+  <h2>สรุปรายได้</h2>
+  <table>
+    <tr><th style="text-align:left;">รายการ</th><th>จำนวนเงิน (บาท)</th></tr>
+    <tr><td>ค่าคอมมิชชั่น (FYC)</td><td class="r">${THB(annualFYC)}</td></tr>
+    <tr><td>เงินรางวัลคุณวุฒิไตรมาส (ระดับ ${achievedLevel})</td><td class="r">${THB(reward)}</td></tr>
+    <tr><td>โบนัสไตรมาส (รวม 4 ไตรมาส)</td><td class="r">${THB(totalQuarterlyBonus)}</td></tr>
+    <tr><td>โบนัสปี (สุทธิ)</td><td class="r">${THB(annualBonusNet)}</td></tr>
+    <tr><td>Joining Bonus</td><td class="r">${THB(joiningGrandTotal)}</td></tr>
+    <tr class="total-row"><td>รวมทั้งหมด</td><td class="r">${THB(totalIncome)}</td></tr>
+  </table>
+
+  <h2>ผลงานรายเดือน (FYC)</h2>
+  <table>
+    <tr><th style="text-align:left;">เดือน</th><th>FYC</th></tr>
+    ${THAI_MONTH_SHORT.map((mn,i)=>`<tr><td>${mn}</td><td class="r">${THB(monthlyFyc[i])}</td></tr>`).join("")}
+    <tr class="total-row"><td>รวมทั้งปี</td><td class="r">${THB(annualFYC)}</td></tr>
+  </table>
+
+  <h2>คุณวุฒิไตรมาส</h2>
+  <table>
+    <tr><th style="text-align:left;">ไตรมาส</th><th>จำนวนราย</th><th>FYC</th><th>ผล</th><th>โบนัสไตรมาส</th></tr>
+    ${qRows.map(r=>`<tr><td>ไตรมาส ${r.q}</td><td class="r">${r.count}</td><td class="r">${THB(r.fyc)}</td><td class="r">${r.qualifies?'ผ่าน':'ไม่ผ่าน'}</td><td class="r">${THB(r.bReward)}</td></tr>`).join("")}
+  </table>
+
+  <div class="grand">
+    <span>รวมรายได้ทั้งปี</span>
+    <span class="val">${THB(totalIncome)} บาท</span>
+  </div>
+
+  <div class="footer">* ประมาณการจากข้อมูลที่บันทึกเองในแอปเท่านั้น รางวัลจริงต้องเป็นไปตามการตรวจสอบและอนุมัติของบริษัท และเป็นรายได้ที่ต้องเสียภาษีตามกฎหมาย</div>
+</body></html>`;
+
+  const printWindow = window.open("", "_blank");
+  if (!printWindow){ showToast("เบราว์เซอร์บล็อกหน้าต่างใหม่ — กรุณาอนุญาต pop-up แล้วลองอีกครั้ง"); return; }
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(()=>{ printWindow.print(); }, 300);
+}
+
 function renderSpecialEventsSection(entries){
   const thDate = (iso)=> new Date(iso+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
   const cards = SPECIAL_EVENTS.map(ev=>{
@@ -1383,6 +1504,7 @@ let annualGoalsFycInput = formatThousands(String(agent().goals.annualTargetFYC ?
 let umGoalsFycInput = formatThousands(String(state.umGoal?.targetFYC ?? 0));
 let calendars = {}; // id -> {open, viewYear, viewMonth}
 let newAgentNameInput = "";
+let entrySearchQuery = "";
 let addAgentMode = false;
 
 function agent(){
@@ -1405,6 +1527,7 @@ function syncAgentFormState(){
   editDraft = { date:"", fyc:"", note:"" };
   newTrainingDraft = { courseName: "", date: "" };
   trainingSectionOpen = false;
+  entrySearchQuery = "";
   closeAllCalendars();
 }
 
@@ -1889,9 +2012,15 @@ function renderEntryTab(){
   const colTotals = { annual:0, semiannual:0, quarterly:0, monthly:0 };
   entries.forEach(e=>{ colTotals[billingModeOf(e)] += e.fyc; });
 
+  // ค้นหาจากหมายเหตุ ไม่กระทบยอดรวมทั้งปีด้านบน (แค่กรองแถวที่แสดง)
+  const q = entrySearchQuery.trim().toLowerCase();
+  const filtered = q ? sorted.filter(e=>(e.note||"").toLowerCase().includes(q)) : sorted;
+
   let rows = "";
   if (sorted.length===0){
     rows = `<div class="empty">ยังไม่มีรายการในปีนี้ — เริ่มบันทึกผลงานรายแรกด้านบนได้เลย</div>`;
+  } else if (filtered.length===0){
+    rows = `<div class="empty">ไม่พบรายการที่ตรงกับ "${esc(entrySearchQuery)}"</div>`;
   } else {
     const totalRow = `<tr style="border-top:2px solid #123F6B22;font-weight:700;">
       <td style="color:var(--navy);" colspan="2">รวม</td>
@@ -1903,7 +2032,7 @@ function renderEntryTab(){
     </tr>`;
     rows = `<div style="overflow-x:auto"><table>
       <thead><tr><th>วันที่</th><th>หมายเหตุ</th><th style="text-align:right">รายปี</th><th style="text-align:right">ราย 6 เดือน</th><th style="text-align:right">ราย 3 เดือน</th><th style="text-align:right">รายเดือน</th><th></th></tr></thead>
-      <tbody>${sorted.map(e=>{
+      <tbody>${filtered.map(e=>{
         if (editingId===e.id){
           return `<tr style="background:#4FAE7414;">
             <td>${renderDateInput('edit', editDraft.date, true)}</td>
@@ -1968,6 +2097,10 @@ function renderEntryTab(){
         <span style="font-size:18.75px;color:var(--muted);">${originCount} ราย · FYC รวม <b style="color:var(--navy)">${THB(totalFYC)}</b></span>
       </div>
       <p style="font-size:15px;color:var(--muted);margin:-4px 0 10px;">วันที่สีน้ำเงิน = วันที่ลูกค้าชำระเบี้ยจริง (งวดแรก) ส่วนงวดที่เข้าต่อเนื่องเป็นสีปกติ</p>
+      ${sorted.length>0?`<div style="margin-bottom:10px;position:relative;">
+        <input type="text" id="entry-search" placeholder="🔍 ค้นหาจากหมายเหตุ (ชื่อลูกค้า/เลขกรมธรรม์)" value="${esc(entrySearchQuery)}" style="width:100%;box-sizing:border-box;padding:8px 34px 8px 12px;">
+        ${entrySearchQuery?`<span id="entry-search-clear" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:18px;">✕</span>`:''}
+      </div>`:''}
       ${rows}
     </div>
   `;
@@ -2187,9 +2320,13 @@ function renderCompetitionsTab(){
 
   return `
     <div class="card dark">
-      <h3>รายได้รวม ประจำปี ${toBE(selYear)}</h3>
-      <p class="sub">สรุปรายได้แยกตามประเภท จากผลงานที่บันทึกไว้ทั้งหมด — ข้อมูล ณ เดือน${isCurrentYear?THAI_MONTH_NAMES[currentMonthIdx]:'ธันวาคม (ปีนี้จบแล้ว)'}</p>
-
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+        <div>
+          <h3 style="margin-bottom:0;">รายได้รวม ประจำปี ${toBE(selYear)}</h3>
+          <p class="sub" style="margin-bottom:14px;">สรุปรายได้แยกตามประเภท จากผลงานที่บันทึกไว้ทั้งหมด — ข้อมูล ณ เดือน${isCurrentYear?THAI_MONTH_NAMES[currentMonthIdx]:'ธันวาคม (ปีนี้จบแล้ว)'}</p>
+        </div>
+        <button id="btn-print-report" style="flex-shrink:0;background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:8px 12px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;">🖨️ พิมพ์รายงาน</button>
+      </div>
       <div style="background:#0E2F5299;border:1px solid #ffffff22;border-radius:10px;padding:12px 14px;margin-bottom:16px;">
         <div style="font-weight:700;color:#fff;margin-bottom:8px;">📊 ภาพรวมสถานการณ์</div>
         ${qualShortfalls.length?qualShortfalls.map(qs=>`<div style="font-size:15px;color:#F5C6C0;margin-bottom:6px;">⚠ ไตรมาส ${qs.q} — คุณวุฒิไตรมาส:<br>&nbsp;&nbsp;· จำนวนราย ${qs.casesShort>0?`✗ ขาดอีก ${qs.casesShort} ราย (มี ${qs.count}/${QUALIFY_MIN_CASES})`:`✓ ถึงแล้ว (${qs.count}/${QUALIFY_MIN_CASES})`}<br>&nbsp;&nbsp;· FYC ${qs.fycShort>0?`✗ ขาดอีก ${THB(qs.fycShort)} (มี ${THB(qs.fyc)}/${THB(QUALIFY_MIN_FYC)})`:`✓ ถึงแล้ว (${THB(qs.fyc)})`}<br>&nbsp;&nbsp;· เดือนที่มีผลงาน ${qs.monthsShort>0?`✗ ขาดอีก ${qs.monthsShort} เดือน (มี ${qs.activeMonths}/${QUALIFY_MIN_ACTIVE_MONTHS})`:`✓ ถึงแล้ว (${qs.activeMonths}/${QUALIFY_MIN_ACTIVE_MONTHS})`}</div>`).join(""):`<div style="font-size:15px;color:#9CE3B8;margin-bottom:4px;">✔ คุณวุฒิไตรมาสผ่านครบทุกไตรมาสที่ผ่านมา</div>`}
@@ -2586,6 +2723,12 @@ function bindEvents(){
   });
 
   // Entry form
+  const entrySearchInput = document.getElementById("entry-search");
+  if (entrySearchInput){
+    entrySearchInput.oninput = (e)=>{ entrySearchQuery = e.target.value; render(); setTimeout(()=>{ const el=document.getElementById("entry-search"); if(el){ el.focus(); el.selectionStart=el.selectionEnd=el.value.length; } },0); };
+  }
+  const entrySearchClear = document.getElementById("entry-search-clear");
+  if (entrySearchClear) entrySearchClear.onclick = ()=>{ entrySearchQuery=""; render(); };
   const fFyc = document.getElementById("f-fyc");
   if (fFyc){
     fFyc.oninput = (e)=>{
@@ -2719,6 +2862,8 @@ function bindEvents(){
   }
 
   // Competitions tab
+  const printReportBtn = document.getElementById("btn-print-report");
+  if (printReportBtn) printReportBtn.onclick = generatePrintReport;
   document.querySelectorAll("[data-persist-band]").forEach(sel=>{
     sel.onchange = ()=>{
       agent().persistQuarterly[sel.dataset.persistBand] = Number(sel.value);
@@ -2914,6 +3059,28 @@ function submitEntry(){
   errBox.innerHTML = "";
 
   const perInstallmentFyc = Number(rawFyc);
+  // เตือนความผิดปกติที่มักเกิดจากพิมพ์พลาด — ไม่บังคับแก้ แค่ให้เช็คซ้ำก่อนบันทึกจริง
+  const warnings = [];
+  if (perInstallmentFyc >= 1000000){
+    warnings.push(`FYC ${THB(perInstallmentFyc)} สูงผิดปกติมาก (เกิน 1 ล้านบาทต่องวด) — พิมพ์เลข 0 เกินไปหรือเปล่า?`);
+  }
+  const entryDate = new Date(entryForm.date+"T00:00:00");
+  const daysFromToday = Math.round((entryDate-new Date())/86400000);
+  if (daysFromToday > 90){
+    warnings.push(`วันที่ ${entryDate.toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})} อยู่ล่วงหน้าเกิน 90 วันจากวันนี้ — ใช่วันที่ที่ตั้งใจไหม?`);
+  }
+  const firstSaleDate = agent().competitions?.firstSaleDate;
+  if (firstSaleDate){
+    const fsd = new Date(firstSaleDate+"T00:00:00");
+    if (entryDate < fsd){
+      warnings.push(`วันที่นี้อยู่ก่อน "วันที่มีผลงานขึ้นแรก" ของตัวแทนคนนี้ (${fsd.toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})}) — ถ้าไม่ตรงกัน อาจกระทบการคำนวณ Joining Bonus/ค่าเสริมมือ`);
+    }
+  }
+  if (warnings.length){
+    const proceed = confirm(`⚠ พบข้อสังเกตก่อนบันทึก:\n\n${warnings.map(w=>"· "+w).join("\n\n")}\n\nยืนยันจะบันทึกต่อไหม?`);
+    if (!proceed) return;
+  }
+
   const schedule = buildInstallmentSchedule(entryForm.billing, perInstallmentFyc);
   const n = schedule.length;
   const baseNote = entryForm.note.trim();
