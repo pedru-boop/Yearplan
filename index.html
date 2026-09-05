@@ -144,7 +144,7 @@
   .cal-grid button.day.empty{color:transparent; cursor:default;}
   .backup-row{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
   footer.bottom{text-align:center; padding:18px 0 34px; color:var(--muted); font-size:17.25px;}
-  #toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--navy-deep); color:#fff; padding:10px 18px; border-radius:8px; font-size:21px; display:none; z-index:100;}
+  #toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--navy-deep); color:#fff; padding:10px 18px; border-radius:8px; font-size:21px; display:none; align-items:center; z-index:100; max-width:90vw;}
   @media (max-width:640px){
     form.entry-form{grid-template-columns:1fr;}
     .qgrid{grid-template-columns:1fr;}
@@ -915,6 +915,58 @@ function renderTeamTab(){
         </div>
       </div>
 
+      ${(()=>{
+        const now7 = new Date();
+        const curQ7 = Math.floor(umViewAsOfMonth/3)+1;
+        const qEndDate7 = new Date(selYear, curQ7*3, 0);
+        const daysLeftInQ7 = Math.ceil((qEndDate7-now7)/86400000);
+        const isUrgent7 = daysLeftInQ7<=7 && daysLeftInQ7>=0;
+        const items = [];
+
+        // ข้อ 6 (DPO ทีม) — เฉพาะไตรมาสปัจจุบัน
+        const q6Months = [(curQ7-1)*3,(curQ7-1)*3+1,(curQ7-1)*3+2];
+        const q6DirectFyc = q6Months.reduce((s,m)=>s+monthlyDirectAgentFYC[m],0);
+        const q6Threshold = SALES_COMP_QUARTERLY_THRESHOLD[selectedPosition.value];
+        if (q6DirectFyc < q6Threshold){
+          items.push({ urgent:isUrgent7, text: `💰 ข้อ 6 (DPO ทีม) ไตรมาส ${curQ7}: ขาดอีก ${THB(q6Threshold-q6DirectFyc)} ถึงจะเข้าเกณฑ์ขั้นแรก (20%)` });
+        }
+
+        // ข้อ 7 (รายบุคคล) — เฉพาะไตรมาสปัจจุบัน
+        names.forEach(name=>{
+          const ag = state.agents[name];
+          const qEntries = ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && q6Months.includes(d.getMonth()); });
+          const newCases = qEntries.filter(isOrigin).length;
+          const qFyc = qEntries.reduce((s,e)=>s+e.fyc,0);
+          const tier = TEAM_BUILDING_TIERS.find(t=>qFyc>=t.minFyc);
+          const alreadyQualifies = newCases>=2 && tier;
+          const hasSomeActivity = newCases>0 || qFyc>0;
+          if (alreadyQualifies || !hasSomeActivity) return;
+          const casesShort = Math.max(0, 2-newCases);
+          const fycShort = newCases>=2 ? Math.max(0, 15000-qFyc) : 0;
+          items.push({ urgent:isUrgent7, text: `👤 ข้อ 7 — ${esc(name)}: ขาดอีก ${casesShort>0?`${casesShort} ราย `:''}${fycShort>0?`FYC ${THB(fycShort)} `:''}ถึงจะได้รับ` });
+        });
+
+        // ข้อ 4 (ค่าเสริมมือ) — ตัวแทนที่ตั้งวันขึ้นแรกไว้ แต่หน้าต่าง 12 เดือนกำลังจะหมด (≤60 วัน) และยังมี FYC สะสมน้อย
+        names.forEach(name=>{
+          const ag = state.agents[name];
+          const sd = ag.competitions?.firstSaleDate;
+          if (!sd) return;
+          const windowEnd = addMonths(sd, 12);
+          const daysToWindowEnd = Math.ceil((windowEnd-now7)/86400000);
+          if (daysToWindowEnd<0 || daysToWindowEnd>60) return;
+          const eligibleFYC = ag.entries.filter(e=>{ const d=new Date(e.date); return d>=new Date(sd+"T00:00:00") && d<=windowEnd; }).reduce((s,e)=>s+e.fyc,0);
+          if (eligibleFYC>=100000) return; // ถือว่าทำไปพอสมควรแล้ว ไม่ต้องเตือน
+          items.push({ urgent: daysToWindowEnd<=14, text: `🆕 ข้อ 4 — ${esc(name)}: เหลืออีก ${daysToWindowEnd} วันจะครบ 12 เดือน (ตอนนี้มี FYC สะสม ${THB(eligibleFYC)} เท่านั้น)` });
+        });
+
+        if (!items.length) return '';
+        return `<div class="card">
+          <h3>🎯 โอกาสที่กำลังจะพลาด</h3>
+          <p class="sub">รวมทุกข้อที่ยังทันเวลาทำเพิ่ม (ข้อ 4, 6, 7) — สีแดงหมายถึงเหลือเวลาน้อยมากแล้ว</p>
+          ${items.map(it=>`<div style="padding:8px 10px;margin-bottom:6px;border-radius:6px;background:${it.urgent?'#FBEEEC':'#FBF6E8'};border:1px solid ${it.urgent?'var(--bad)':'var(--gold)'};font-size:15px;color:${it.urgent?'var(--bad)':'var(--navy-deep)'};font-weight:${it.urgent?700:500};">${it.urgent?'🔴 ':''}${it.text}</div>`).join("")}
+        </div>`;
+      })()}
+
       `;
     })():''}
 
@@ -1387,9 +1439,42 @@ function saveState(){
 }
 function showToast(msg){
   const t=document.getElementById("toast");
-  t.textContent=msg; t.style.display="block";
+  t.innerHTML = esc(msg);
+  t.style.display="flex";
   clearTimeout(showToast._h);
   showToast._h=setTimeout(()=>{t.style.display="none";},2600);
+}
+let pendingUndo = null; // { commit, restore, timeoutId }
+function showUndoToast(message, commitFn, restoreFn){
+  // ถ้ามีรายการที่รอ undo ค้างอยู่ก่อนหน้า ให้ commit อันเก่าไปก่อน (ยืนยันการลบเดิม) แล้วค่อยเริ่มรายการใหม่
+  if (pendingUndo){ clearTimeout(pendingUndo.timeoutId); pendingUndo.commit(); }
+  const t = document.getElementById("toast");
+  let secondsLeft = 5;
+  const redrawToast = ()=>{
+    t.innerHTML = `<span>${esc(message)} (${secondsLeft})</span><button id="toast-undo-btn" style="margin-left:12px;background:var(--gold);border:none;color:#fff;padding:4px 12px;border-radius:6px;font-size:17px;cursor:pointer;">เลิกทำ</button>`;
+    const btn = document.getElementById("toast-undo-btn");
+    if (btn) btn.onclick = ()=>{
+      clearInterval(tickId);
+      clearTimeout(timeoutId);
+      t.style.display = "none";
+      pendingUndo = null;
+      restoreFn();
+      render();
+    };
+  };
+  t.style.display="flex";
+  redrawToast();
+  const tickId = setInterval(()=>{
+    secondsLeft -= 1;
+    if (secondsLeft>0) redrawToast();
+  }, 1000);
+  const timeoutId = setTimeout(()=>{
+    clearInterval(tickId);
+    t.style.display="none";
+    pendingUndo = null;
+    commitFn();
+  }, 5000);
+  pendingUndo = { commit: ()=>{ clearInterval(tickId); clearTimeout(timeoutId); t.style.display="none"; commitFn(); }, restore: restoreFn, timeoutId };
 }
 function formatThousands(raw){
   if (raw === "") return "";
@@ -2340,6 +2425,10 @@ function bindEvents(){
   document.querySelectorAll("[data-remove-training]").forEach(el=>{
     el.onclick = ()=>{
       const idx = Number(el.dataset.removeTraining);
+      const t = agent().license.trainings[idx];
+      if (!t) return;
+      const ok = confirm(`ลบประวัติการอบรม "${t.courseName}" ใช่ไหม?`);
+      if (!ok) return;
       agent().license.trainings.splice(idx,1);
       saveState(); render();
     };
@@ -2552,37 +2641,47 @@ function bindEvents(){
   });
   document.querySelectorAll('[data-edit-field="note"]').forEach(inp=>{ inp.oninput=(e)=>{editDraft.note=e.target.value;}; inp.onfocus=(e)=>e.target.select(); });
   document.querySelectorAll('[data-edit-field="fyc"]').forEach(inp=>{ inp.oninput=(e)=>{editDraft.fyc=formatThousands(stripCommas(e.target.value)); e.target.value=editDraft.fyc;}; inp.onfocus=(e)=>e.target.select(); });
+  function checkClearRelatedFields(agentName){
+    const ag = state.agents[agentName];
+    if (!ag || ag.entries.length>0) return;
+    const hasFirstSaleDate = !!ag.competitions?.firstSaleDate;
+    const hasPremium = state.umGoal?.newAgentPremiums?.[agentName]?.some(p=>p.amount);
+    if (!hasFirstSaleDate && !hasPremium) return;
+    const clear = confirm(`ตัวแทน "${agentName}" ไม่มีผลงานเหลือแล้ว แต่ยังมี${hasFirstSaleDate?' "วันที่มีผลงานขึ้นแรก"':''}${hasFirstSaleDate&&hasPremium?' และ':''}${hasPremium?' เบี้ยประกันที่คีย์ไว้ใน UM':''} ผูกอยู่ ต้องการล้างข้อมูลเหล่านี้ด้วยไหม? (จะทำให้หายจากกล่องแข่งขันตัวแทนใหม่)`);
+    if (clear){
+      if (hasFirstSaleDate) ag.competitions.firstSaleDate = "";
+      if (hasPremium && state.umGoal?.newAgentPremiums) delete state.umGoal.newAgentPremiums[agentName];
+      saveState(); render();
+    }
+  }
   document.querySelectorAll("[data-remove]").forEach(btn=>{
     btn.onclick = ()=>{
       const id = Number(btn.dataset.remove);
-      const target = agent().entries.find(e=>e.id===id);
+      const targetAgentName = state.currentAgent;
+      const entriesArr = state.agents[targetAgentName].entries;
+      const target = entriesArr.find(e=>e.id===id);
       if (!target) return;
       const isOriginInstallment = (target.installmentIndex ?? 0) === 0;
       const hasSiblings = (target.installmentTotal ?? 1) > 1;
       if (isOriginInstallment && hasSiblings){
-        const siblingCount = agent().entries.filter(e=>e.policyId===target.policyId).length;
-        const ok = confirm(`รายการนี้เป็นงวดแรกของแผนผ่อนชำระ ${siblingCount} งวด ถ้าลบจะลบงวดที่เหลือทั้งหมดไปด้วย (ไม่งั้นงวดหลังจะค้างอยู่โดยไม่มีต้นฉบับ) ต้องการลบทั้งชุดใช่ไหม?`);
-        if (!ok) return;
-        agent().entries = agent().entries.filter(e=>e.policyId!==target.policyId);
+        const removed = entriesArr
+          .map((e,i)=>({e,i}))
+          .filter(x=>x.e.policyId===target.policyId);
+        state.agents[targetAgentName].entries = entriesArr.filter(e=>e.policyId!==target.policyId);
+        render();
+        showUndoToast(`ลบแผนผ่อนชำระ ${removed.length} งวดแล้ว`,
+          ()=>{ checkClearRelatedFields(targetAgentName); saveState(); render(); },
+          ()=>{ const arr = state.agents[targetAgentName].entries; removed.forEach(r=>arr.splice(r.i,0,r.e)); }
+        );
       } else {
-        const ok = confirm(`ลบรายการผลงานวันที่ ${target.date} จำนวน ${THB(target.fyc)} บาท ใช่ไหม? (ลบแล้วกู้คืนไม่ได้ นอกจากนำเข้าไฟล์แบ็กอัพ)`);
-        if (!ok) return;
-        agent().entries = agent().entries.filter(e=>e.id!==id);
+        const idx = entriesArr.indexOf(target);
+        state.agents[targetAgentName].entries = entriesArr.filter(e=>e.id!==id);
+        render();
+        showUndoToast(`ลบรายการวันที่ ${target.date} จำนวน ${THB(target.fyc)} แล้ว`,
+          ()=>{ checkClearRelatedFields(targetAgentName); saveState(); render(); },
+          ()=>{ state.agents[targetAgentName].entries.splice(idx,0,target); }
+        );
       }
-      // ถ้าลบจนไม่เหลือผลงานเลย แต่ยังมี "วันที่มีผลงานขึ้นแรก" หรือเบี้ยประกัน (UM) ผูกอยู่ ถามว่าจะล้างด้วยไหม เพราะ 2 อย่างนี้ไม่ได้ผูกกับ entries โดยตรง จึงไม่หายไปเองอัตโนมัติ
-      if (agent().entries.length===0){
-        const hasFirstSaleDate = !!agent().competitions?.firstSaleDate;
-        const premiumKey = state.currentAgent;
-        const hasPremium = state.umGoal?.newAgentPremiums?.[premiumKey]?.some(p=>p.amount);
-        if (hasFirstSaleDate || hasPremium){
-          const clear = confirm(`ตัวแทน "${state.currentAgent}" ไม่มีผลงานเหลือแล้ว แต่ยังมี${hasFirstSaleDate?' "วันที่มีผลงานขึ้นแรก"':''}${hasFirstSaleDate&&hasPremium?' และ':''}${hasPremium?' เบี้ยประกันที่คีย์ไว้ใน UM':''} ผูกอยู่ ต้องการล้างข้อมูลเหล่านี้ด้วยไหม? (จะทำให้หายจากกล่องแข่งขันตัวแทนใหม่)`);
-          if (clear){
-            if (hasFirstSaleDate) agent().competitions.firstSaleDate = "";
-            if (hasPremium && state.umGoal?.newAgentPremiums) delete state.umGoal.newAgentPremiums[premiumKey];
-          }
-        }
-      }
-      saveState(); render();
     };
   });
 
