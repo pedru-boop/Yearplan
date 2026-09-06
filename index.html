@@ -340,6 +340,11 @@ const TEAM_BUILDING_TIERS = [
   { level: "ระดับ 3", minFyc: 22000, reward: 1050 },
   { level: "ระดับ 4", minFyc: 15000, reward: 700 },
 ];
+function todayIso(){
+  // ห้ามใช้ toISOString() ตรงๆ กับเวลาปัจจุบัน เพราะจะแปลงเป็น UTC ทำให้ก่อน 7 โมงเช้า (เวลาไทย) วันที่เพี้ยนไปเป็นเมื่อวาน
+  const t = new Date();
+  return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`;
+}
 function addMonths(dateStr, n){
   const d = new Date(dateStr+"T00:00:00");
   d.setMonth(d.getMonth()+n);
@@ -1146,7 +1151,7 @@ function renderTeamTab(){
     </div>
 
     ${(()=>{
-      const curQInfo = getQuarter(today.toISOString());
+      const curQInfo = getQuarter(todayIso());
       const agentAlerts = names.map(name=>{
         const ag = state.agents[name];
         const alerts = [];
@@ -1476,7 +1481,7 @@ function addMonthsToDate(dateStr, n){
   d.setMonth(d.getMonth()+n);
   const lastDay = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
   d.setDate(Math.min(day, lastDay));
-  return d.toISOString().slice(0,10);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
 function buildInstallmentSchedule(modeValue, perInstallmentFyc){
@@ -1562,7 +1567,7 @@ let state = loadState();
 let activeTab = "goals";
 let activeSection = "um"; // "um" หรือ "agent" — แถบใหญ่บนสุด, ต้องจิ้มเข้า "ตัวแทน" ก่อนถึงจะเห็นแท็บย่อย
 let selYear = new Date().getFullYear();
-let entryForm = { date: new Date().toISOString().slice(0,10), fyc: "", note: "", billing: "" };
+let entryForm = { date: todayIso(), fyc: "", note: "", billing: "" };
 let editingId = null;
 let editDraft = { date:"", fyc:"", note:"" };
 let newTrainingDraft = { courseName: "", date: "" };
@@ -1590,7 +1595,7 @@ function syncAgentFormState(){
   // ไม่งั้นช่องกรอกเป้าหมาย/ฟอร์มบันทึกผลงานจะค้างค่าของตัวแทนคนก่อนหน้าไว้
   goalsFycInput = formatThousands(String(agent().goals.targetFYC ?? 300000));
   annualGoalsFycInput = formatThousands(String(agent().goals.annualTargetFYC ?? 0));
-  entryForm = { date: new Date().toISOString().slice(0,10), fyc: "", note: "", billing: "" };
+  entryForm = { date: todayIso(), fyc: "", note: "", billing: "" };
   editingId = null;
   editDraft = { date:"", fyc:"", note:"" };
   newTrainingDraft = { courseName: "", date: "" };
@@ -1800,14 +1805,15 @@ function renderDateInput(id, isoValue, compact){
       const isToday = vy===t.getFullYear() && vm===t.getMonth() && d===t.getDate();
       cells += `<button type="button" class="day${isSel?' selected':''}${isToday&&!isSel?' today':''}" data-pick-day="${id}|${d}">${d}</button>`;
     }
-    const yearOptions = Array.from({length:9},(_,i)=>new Date().getFullYear()-6+i)
+    const yearOptions = Array.from({length:14},(_,i)=>new Date().getFullYear()-5+i)
       .map(y=>`<option value="${y}" ${y===vy?"selected":""}>${toBE(y)}</option>`).join("");
+    const monthOptions = THAI_MONTH_NAMES.map((mn,mi)=>`<option value="${mi}" ${mi===vm?"selected":""}>${mn}</option>`).join("");
     popHtml = `
       <div class="calendar-pop" data-cal-pop="${id}">
         <div class="cal-head">
           <button type="button" data-shift-month="${id}|-1">‹</button>
           <div class="mid">
-            <span>${THAI_MONTH_NAMES[vm]}</span>
+            <select data-month-select-cal="${id}">${monthOptions}</select>
             <select data-year-select-cal="${id}">${yearOptions}</select>
           </div>
           <button type="button" data-shift-month="${id}|1">›</button>
@@ -2189,7 +2195,7 @@ function renderCompetitionsTab(){
   const hasTrophy = achievedLevel>0;
 
   const now = new Date();
-  const currentActual = getQuarter(now.toISOString().slice(0,10));
+  const currentActual = getQuarter(todayIso());
   const isCurrentYear = selYear===currentActual.year;
   const currentMonthIdx = now.getMonth();
 
@@ -2912,7 +2918,7 @@ function bindEvents(){
     const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href=url; a.download=`ped-dashboard-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.href=url; a.download=`ped-dashboard-backup-${todayIso()}.json`;
     a.click(); URL.revokeObjectURL(url);
   };
   const importBtn = document.getElementById("btn-import-header");
@@ -3063,6 +3069,14 @@ function bindEvents(){
       e.stopPropagation();
       const id = sel.dataset.yearSelectCal;
       calState(id).viewYear = Number(sel.value);
+      render();
+    };
+  });
+  document.querySelectorAll("[data-month-select-cal]").forEach(sel=>{
+    sel.onchange = (e)=>{
+      e.stopPropagation();
+      const id = sel.dataset.monthSelectCal;
+      calState(id).viewMonth = Number(sel.value);
       render();
     };
   });
