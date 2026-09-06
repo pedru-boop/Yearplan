@@ -928,11 +928,19 @@ function renderTeamTab(){
         const q6DirectFyc = q6Months.reduce((s,m)=>s+monthlyDirectAgentFYC[m],0);
         const q6Threshold = SALES_COMP_QUARTERLY_THRESHOLD[selectedPosition.value];
         if (q6DirectFyc < q6Threshold){
+          // แสดงทุกขั้นที่ไปถึงได้ เรียงจากขั้นต่ำสุด เพื่อเป็นแรงจูงใจว่ายิ่งทำเพิ่ม ยิ่งได้มากขึ้น ไม่ใช่หยุดแค่ขั้นแรก
+          const tiersAsc = [...SALES_COMP_RATE_TIERS].sort((a,b)=>a.minMultiplier-b.minMultiplier);
+          const ladder = tiersAsc.map(t=>{
+            const fycNeeded = t.minMultiplier * q6Threshold;
+            const reward = (fycNeeded * t.rate)/100;
+            return `${Math.round(t.minMultiplier*100)}% (FYC ${THB(fycNeeded)}) → ${t.rate}% = ${THB(reward)}`;
+          }).join(" · ");
           sections.push({
             title: `💰 ข้อ 6 — ค่าตอบแทนขายเองและตัวแทนตรง (DPO) — ไตรมาส ${curQ7}`,
             urgent: isUrgent7,
             rows: [{ name: "ทีม (รวม)", fycOk:false, fycGot:q6DirectFyc, fycNeed:q6Threshold }],
-            cols: ["fyc"]
+            cols: ["fyc"],
+            estimateNote: `ยิ่งทำได้มาก ยิ่งได้อัตราสูงขึ้น: ${ladder}`
           });
         }
 
@@ -947,10 +955,18 @@ function renderTeamTab(){
           const alreadyQualifies = newCases>=2 && tier;
           const hasSomeActivity = newCases>0 || qFyc>0;
           if (alreadyQualifies || !hasSomeActivity) return;
-          item7Rows.push({ name, casesOk:newCases>=2, casesGot:newCases, casesNeed:2, fycOk:qFyc>=15000, fycGot:qFyc, fycNeed:15000, fycNA:false });
+          // รางวัลที่จะได้ ถ้าครบจำนวนราย ขึ้นอยู่กับ FYC ปัจจุบันของแต่ละคน — ยิ่ง FYC สูง ยิ่งได้รางวัลขั้นที่สูงขึ้น ไม่ใช่ค่าคงที่เดียวกันทุกคน
+          const estTier = TEAM_BUILDING_TIERS.find(t=>qFyc>=t.minFyc) || TEAM_BUILDING_TIERS[TEAM_BUILDING_TIERS.length-1];
+          item7Rows.push({ name, casesOk:newCases>=2, casesGot:newCases, casesNeed:2, fycOk:qFyc>=15000, fycGot:qFyc, fycNeed:15000, fycNA:false, estReward: estTier.reward, estLevel: estTier.level });
         });
         if (item7Rows.length){
-          sections.push({ title: `👤 ข้อ 7 — ค่าสร้างและรักษาตัวแทน — ไตรมาส ${curQ7}`, urgent: isUrgent7, rows: item7Rows, cols: ["cases","fyc"] });
+          sections.push({
+            title: `👤 ข้อ 7 — ค่าสร้างและรักษาตัวแทน — ไตรมาส ${curQ7}`,
+            urgent: isUrgent7,
+            rows: item7Rows,
+            cols: ["cases","fyc","reward"],
+            estimateNote: `ถ้าครบจำนวนราย รางวัลจะขึ้นอยู่กับ FYC ของแต่ละคน (ระดับ 4 ที่ 15,000 = 700 บาท ไปจนถึงระดับสตาร์ที่ 60,000 = 3,500 บาท)`
+          });
         }
 
         // ข้อ 4 (ค่าเสริมมือ) — ตัวแทนที่ตั้งวันขึ้นแรกไว้ แต่หน้าต่าง 12 เดือนกำลังจะหมด (≤60 วัน) และยังมี FYC สะสมน้อย
@@ -967,7 +983,14 @@ function renderTeamTab(){
           item4Rows.push({ name, daysLeft: daysToWindowEnd, fycGot: eligibleFYC, urgent: daysToWindowEnd<=14 });
         });
         if (item4Rows.length){
-          sections.push({ title: `🆕 ข้อ 4 — ค่าเสริมมือ (หน้าต่าง 12 เดือนใกล้หมด)`, urgent: item4Rows.some(r=>r.urgent), rows: item4Rows, cols: ["days","fycOnly"] });
+          const item4CurrentTotal = item4Rows.reduce((s,r)=>s+r.fycGot*0.3,0);
+          sections.push({
+            title: `🆕 ข้อ 4 — ค่าเสริมมือ (หน้าต่าง 12 เดือนใกล้หมด)`,
+            urgent: item4Rows.some(r=>r.urgent),
+            rows: item4Rows,
+            cols: ["days","fycOnly"],
+            estimateNote: `ค่าเสริมมือ = 30% ของ FYC ที่ทำได้ (ไม่มีขั้นต่ำ) — ถ้าหยุดทำตอนนี้ UM จะได้รับรวมประมาณ ${THB(item4CurrentTotal)}`
+          });
         }
 
         if (!sections.length) return '';
@@ -987,6 +1010,9 @@ function renderTeamTab(){
           if (cols.includes("fycOnly")){
             cells.push(`<td class="r" style="color:var(--navy-deep);">${THB(r.fycGot)}</td>`);
           }
+          if (cols.includes("reward")){
+            cells.push(`<td class="r" style="color:var(--good);font-weight:700;">${THB(r.estReward)}<div style="font-size:12px;color:var(--muted);font-weight:400;">(${r.estLevel})</div></td>`);
+          }
           return `<tr>${cells.join("")}</tr>`;
         };
         const colHeaders = (cols)=>{
@@ -995,6 +1021,7 @@ function renderTeamTab(){
           if (cols.includes("fyc")) h.push("FYC (ได้/ต้องทำ)");
           if (cols.includes("days")) h.push("เวลาเหลือ");
           if (cols.includes("fycOnly")) h.push("FYC สะสม");
+          if (cols.includes("reward")) h.push("ถ้าผ่านจะได้รับ");
           return `<tr>${h.map((x,i)=>i===0?`<th>${x}</th>`:`<th class="r">${x}</th>`).join("")}</tr>`;
         };
         return `<div class="card">
@@ -1003,6 +1030,7 @@ function renderTeamTab(){
           ${sections.map(sec=>`<div style="margin-bottom:16px;">
             <div style="font-weight:700;color:${sec.urgent?'var(--bad)':'var(--navy-deep)'};margin-bottom:6px;">${sec.urgent?'🔴 ':''}${sec.title}</div>
             <div style="overflow-x:auto"><table class="qtable"><thead>${colHeaders(sec.cols)}</thead><tbody>${sec.rows.map(r=>renderRow(r, sec.cols)).join("")}</tbody></table></div>
+            ${sec.estimateNote?`<div style="font-size:14px;color:var(--good);font-weight:600;margin-top:6px;padding:6px 10px;background:#F1F8F3;border-radius:6px;">💡 ${sec.estimateNote}</div>`:''}
           </div>`).join("")}
         </div>`;
       })()}
