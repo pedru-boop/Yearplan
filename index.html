@@ -899,7 +899,7 @@ function renderTeamTab(){
           </div>`:`<div class="alert-box" style="background:#F1F8F3;border-color:var(--good);margin-bottom:10px;"><div class="line" style="color:var(--good);font-weight:700;">🏆 อยู่ขั้นสูงสุดแล้ว (เกินโควตา 200%+) ประมาณการ: ${THB(previewBonusIfToday)}</div></div>`}
           <div style="background:#F5F8FC;border:1px dashed #123F6B33;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
             <div style="font-size:14px;color:var(--navy-deep);font-weight:600;margin-bottom:6px;">🧪 ลองสมมติ: ถ้า CFYC เพิ่มขึ้นอีก</div>
-            <input type="text" inputmode="decimal" id="item3-hypothetical-input" data-current-cfyc="${teamCFYCForItem3}" data-quota3="${quota3}" data-position="${selectedPosition.value}" placeholder="0" style="width:140px;padding:5px 8px;font-size:18px;text-align:center;margin-bottom:6px;">
+            <input type="text" inputmode="decimal" id="item3-hypothetical-input" data-current-cfyc="${teamCFYCForItem3}" data-quota3="${quota3}" data-position="${selectedPosition.value}" data-interim-paid="${interimBonus6mo}" placeholder="0" style="width:140px;padding:5px 8px;font-size:18px;text-align:center;margin-bottom:6px;">
             <div id="item3-hypothetical-result" style="font-size:14px;color:var(--muted);"></div>
           </div>
           <div class="tech-row"><span class="lab">4. ค่าเสริมมือ</span><span class="val good">${THB(serviceFee)}</span></div>
@@ -2890,7 +2890,14 @@ function bindEvents(){
   const importBtn = document.getElementById("btn-import-header");
   const fileInput = document.getElementById("file-import-header");
   if (importBtn && fileInput){
-    importBtn.onclick = ()=>fileInput.click();
+    importBtn.onclick = ()=>{
+      const hasExistingData = Object.values(state.agents).some(ag=>ag.entries.length>0);
+      if (hasExistingData){
+        const ok = confirm("การนำเข้าไฟล์จะทับข้อมูลปัจจุบันทั้งหมด (ของทุกตัวแทน) ย้อนกลับไม่ได้ นอกจากมีไฟล์แบ็กอัพเก่าเก็บไว้ ต้องการดำเนินการต่อไหม?");
+        if (!ok) return;
+      }
+      fileInput.click();
+    };
     fileInput.onchange = (e)=>{
       const file = e.target.files[0];
       if (!file) return;
@@ -2901,7 +2908,16 @@ function bindEvents(){
           state = normalizeState(imported);
           syncAgentFormState();
           saveState(); render();
-          showToast("นำเข้าข้อมูลสำเร็จ");
+          // เช็คว่ามีรายการ FYC ผิดปกติ (0 หรือติดลบ) หลุดมาจากไฟล์ไหม — ปกติแล้วกรอกผ่านฟอร์มจะกันไว้แล้ว แต่ไฟล์ภายนอกอาจมีข้อมูลแบบนี้ปนมาได้
+          const badEntries = [];
+          Object.entries(state.agents).forEach(([name, ag])=>{
+            ag.entries.forEach(en=>{ if ((en.fyc??0)<=0) badEntries.push({ name, date: en.date, fyc: en.fyc }); });
+          });
+          if (badEntries.length){
+            showToast(`นำเข้าสำเร็จ — แต่พบ ${badEntries.length} รายการที่ FYC เป็น 0 หรือติดลบ ควรตรวจสอบ`);
+          } else {
+            showToast("นำเข้าข้อมูลสำเร็จ");
+          }
         }catch(err){ showToast("ไฟล์ไม่ถูกต้อง นำเข้าไม่สำเร็จ"); }
       };
       reader.readAsText(file);
@@ -2926,6 +2942,7 @@ function bindEvents(){
       const curCfyc = Number(item3HypInput.dataset.currentCfyc);
       const quota3v = Number(item3HypInput.dataset.quota3);
       const posValue = item3HypInput.dataset.position;
+      const interimPaid = Number(item3HypInput.dataset.interimPaid) || 0;
       const table = NEW_AGENT_PROFIT_TABLE[posValue];
       if (raw<=0){ resultEl.innerHTML = ''; return; }
       const hypTotal = curCfyc + raw;
@@ -2938,7 +2955,9 @@ function bindEvents(){
       }
       const hypRate = table.rates[hypBandIdx];
       const hypFlat = table.amounts ? table.amounts[hypBandIdx] : 0;
-      const hypBonus = (hypExcess*hypRate/100) + hypFlat;
+      const hypBonusGross = (hypExcess*hypRate/100) + hypFlat;
+      // หักงวดแรก (มิถุนา) ที่ได้รับไปแล้วออก ไม่งั้นตัวเลขจะสูงเกินจริง (นับซ้ำกับที่จ่ายไปแล้ว)
+      const hypBonusNet = Math.max(0, hypBonusGross - interimPaid);
       const nextIdx = hypBandIdx+1;
       let nextNote = 'อยู่ขั้นสูงสุดแล้ว';
       if (nextIdx < NEW_AGENT_PROFIT_BAND_MIN_PCT.length){
@@ -2947,10 +2966,12 @@ function bindEvents(){
         const shortfall = Math.max(0, nextExcessNeeded - hypExcess);
         const nextRate = table.rates[nextIdx];
         const nextFlat = table.amounts ? table.amounts[nextIdx] : 0;
-        const nextBonus = (nextExcessNeeded*nextRate/100) + nextFlat;
-        nextNote = `ขาดอีก ${formatThousands(String(Math.round(shortfall)))} จะขยับเป็นอัตรา ${nextRate}% (ได้เพิ่มเป็น ${formatThousands(String(Math.round(nextBonus)))})`;
+        const nextBonusGross = (nextExcessNeeded*nextRate/100) + nextFlat;
+        const nextBonusNet = Math.max(0, nextBonusGross - interimPaid);
+        nextNote = `ขาดอีก ${formatThousands(String(Math.round(shortfall)))} จะขยับเป็นอัตรา ${nextRate}% (ได้เพิ่มเป็น ${formatThousands(String(Math.round(nextBonusNet)))} สุทธิ)`;
       }
-      resultEl.innerHTML = `<div style="color:var(--navy);">ถ้าเพิ่ม ${formatThousands(String(raw))} (รวมเป็น ${formatThousands(String(hypTotal))}) → โบนัสประมาณ <b style="color:var(--good);">${formatThousands(String(Math.round(hypBonus)))}</b> (อัตรา ${hypRate}%)</div><div style="color:var(--gold);font-weight:600;margin-top:2px;">🎯 ${nextNote}</div>`;
+      const interimLine = interimPaid>0 ? `<div style="color:var(--muted);margin-top:2px;">ได้รับงวดแรก (มิถุนา) ไปแล้ว ${formatThousands(String(Math.round(interimPaid)))} → จะได้รับจริงเพิ่มอีก <b style="color:var(--good);">${formatThousands(String(Math.round(hypBonusNet)))}</b></div>` : '';
+      resultEl.innerHTML = `<div style="color:var(--navy);">ถ้าเพิ่ม ${formatThousands(String(raw))} (รวมเป็น ${formatThousands(String(hypTotal))}) → โบนัสรวมทั้งปีประมาณ <b style="color:var(--good);">${formatThousands(String(Math.round(hypBonusGross)))}</b> (อัตรา ${hypRate}%)</div>${interimLine}<div style="color:var(--gold);font-weight:600;margin-top:2px;">🎯 ${nextNote}</div>`;
     };
     item3HypInput.oninput = (e)=>{ e.target.value = formatThousands(stripCommas(e.target.value)); recompute(); };
     item3HypInput.onfocus = (e)=>e.target.select();
