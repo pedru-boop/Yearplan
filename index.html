@@ -468,11 +468,11 @@ function renderManageAgentsTab(){
     const yearFyc = ag.entries.filter(e=>new Date(e.date).getFullYear()===selYear).reduce((s,e)=>s+e.fyc,0);
     const originCount = ag.entries.filter(e=>new Date(e.date).getFullYear()===selYear && isOrigin(e)).length;
     return { name, yearFyc, originCount, isCurrent: name===state.currentAgent };
-  });
+  }).sort((a,b)=>b.yearFyc-a.yearFyc);
   return `
     <div class="card">
       <h3>👥 จัดการตัวแทน</h3>
-      <p class="sub">เพิ่ม เปลี่ยนชื่อ หรือลบตัวแทน — ดูข้อมูลรายวันไปที่แท็บ "ตัวแทน" แทน</p>
+      <p class="sub">เพิ่ม เปลี่ยนชื่อ หรือลบตัวแทน — เรียงตามผลงาน FYC มากไปน้อย — ดูข้อมูลรายวันไปที่แท็บ "ตัวแทน" แทน</p>
       ${rows.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #123F6B0D;">
         <div data-switch-agent="${esc(r.name)}" style="cursor:pointer;flex:1;">
           <div style="font-weight:700;color:${r.isCurrent?'var(--gold-soft)':'var(--navy)'};font-size:19px;">${r.isCurrent?'▶ ':''}${esc(r.name)}</div>
@@ -483,13 +483,11 @@ function renderManageAgentsTab(){
           ${names.length>1?`<button class="icon-btn" data-delete-agent="${esc(r.name)}" title="ลบตัวแทนนี้">🗑</button>`:''}
         </div>
       </div>`).join("")}
-      <div style="margin-top:14px;">
-        ${addAgentMode?`<div class="add-agent-form">
-          <input type="text" id="new-agent-name" placeholder="ชื่อตัวแทนใหม่" value="${esc(newAgentNameInput)}" style="max-width:220px;">
-          <button class="btn-primary" id="btn-confirm-add-agent">เพิ่ม</button>
-          <button class="btn-ghost" id="btn-cancel-add-agent">ยกเลิก</button>
-        </div>`:`<button class="btn-ghost" id="btn-toggle-add-agent">+ เพิ่มตัวแทน</button>`}
-      </div>
+      ${addAgentMode?`<div class="add-agent-form" style="margin-top:14px;">
+        <input type="text" id="new-agent-name" placeholder="ชื่อตัวแทนใหม่" value="${esc(newAgentNameInput)}" style="max-width:220px;">
+        <button class="btn-primary" id="btn-confirm-add-agent">เพิ่ม</button>
+        <button class="btn-ghost" id="btn-cancel-add-agent">ยกเลิก</button>
+      </div>`:''}
     </div>
   `;
 }
@@ -876,7 +874,11 @@ function renderTeamTab(){
       </div>
 
       <div class="card">
-        <h3>📖 อธิบายผลประโยชน์ UM ตามตำแหน่ง (${selectedPosition.label})</h3>
+        <h3 data-toggle-box="explain" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+          <span>📖 อธิบายผลประโยชน์ UM ตามตำแหน่ง (${selectedPosition.label})</span>
+          <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.explain?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
+        </h3>
+        ${collapsedBoxes.explain?'':`
         <p class="sub">อธิบายเงื่อนไขแต่ละข้อเท่านั้น ไม่มีตัวเลขคำนวณจริง (ดูผลคำนวณจริงที่การ์ดถัดไป)</p>
         <div class="tech-row"><span class="lab">1. เงินเดือน</span><span class="val">${THB(selectedPosition.salary)}/เดือน</span></div>
         <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: CFYC สะสมเต็มโควตา (${THB(selectedPosition.cfycMonth)}) ครบ 1 เดือน = รับเงินเดือน 1 เดือน</div>
@@ -894,10 +896,15 @@ function renderTeamTab(){
         <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: ตัวแทน (เก่าหรือใหม่) มีเคสใหม่ ≥2 รายในไตรมาสนั้น จ่ายตามระดับ FYC/ไตรมาส/คน (สตาร์ 3,500 / ระดับ1 2,000 / ระดับ2 1,500 / ระดับ3 1,050 / ระดับ4 700)</div>
         <div class="tech-row"><span class="lab">8. ค่าส่งเสริมความคงอยู่ของเบี้ย</span></div>
         <div style="font-size:14px;color:var(--muted);margin:-4px 0;">เงื่อนไข: อิงอัตราความคงอยู่ของเบี้ยปีที่ 2 (70-90%+) จ่ายเป็น % ของผลประโยชน์ค่าขายหน้าปีที่ 2-6 (ยังไม่คำนวณให้ เพราะแอปนี้ไม่มีข้อมูลเบี้ยปีต่อ)</div>
+        `}
       </div>
 
       <div class="card">
-        <h3>🧮 คำนวณผลประโยชน์ UM รายเดือน (${selectedPosition.label})</h3>
+        <h3 data-toggle-box="monthlyCalc" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+          <span>🧮 คำนวณผลประโยชน์ UM รายเดือน (${selectedPosition.label})</span>
+          <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.monthlyCalc?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
+        </h3>
+        ${collapsedBoxes.monthlyCalc?'':`
         <p class="sub">แสดงที่มาของตัวเลขแต่ละข้อ แยกรายเดือน พร้อมสรุปสะสมถึงเดือนปัจจุบัน</p>
         ${(()=>{
           const monthRows = [];
@@ -950,6 +957,7 @@ function renderTeamTab(){
           <span style="font-weight:700;color:var(--navy);">สรุปรวมสะสม (ไม่รวมข้อ 4) ถึงเดือน${THAI_MONTH_NAMES[umViewAsOfMonth]}</span>
           <span style="font-weight:800;font-size:23px;color:var(--good);">${THB(Math.min(umViewAsOfMonth+1, Math.floor(cumulativeTeamCFYC/selectedPosition.cfycMonth))*selectedPosition.salary + monthlyTeamCFYC.slice(0,umViewAsOfMonth+1).reduce((s,v)=>s+v*selectedPosition.tenurePct/100,0) + profitBonus + salesCompReward + teamBuildingReward)}</span>
         </div>
+        `}
       </div>
 
       ${(()=>{
@@ -1078,7 +1086,11 @@ function renderTeamTab(){
 
 
     <div class="card">
-      <h3>🆕 ตัวแทนใหม่ พ.ศ. ${toBE(selYear)}</h3>
+      <h3 data-toggle-box="newAgent" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+        <span>🆕 ตัวแทนใหม่ พ.ศ. ${toBE(selYear)}</span>
+        <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.newAgent?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
+      </h3>
+      ${collapsedBoxes.newAgent?'':`
       <p class="sub">นับจากวันที่มีผลงานขึ้นแรก (Joining Bonus) ที่ตกอยู่ในปีนี้ — คีย์เบี้ยประกันแต่ละงวดพร้อมวันที่รับเบี้ย เพื่อให้กรองตามช่วงเวลาการแข่งขันได้ถูกต้อง</p>
       ${(()=>{
         const newAgentsThisYear = names.filter(name=>{
@@ -1105,6 +1117,7 @@ function renderTeamTab(){
           </div>`;
         }).join("");
       })()}
+      `}
     </div>
 
     <div class="card">
@@ -1257,7 +1270,11 @@ function renderTeamTab(){
     </div>
 
     <div class="card">
-      <h3>⚖️ เปรียบเทียบตำแหน่ง</h3>
+      <h3 data-toggle-box="compare" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+        <span>⚖️ เปรียบเทียบตำแหน่ง</span>
+        <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.compare?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
+      </h3>
+      ${collapsedBoxes.compare?'':`
       <p class="sub">ใช้ผลงานทีมชุดเดียวกัน (ที่คีย์ไว้อยู่แล้ว) คำนวณรายได้ถ้าอยู่ตำแหน่งต่างกัน ช่วยตัดสินใจเรื่องการเลื่อนตำแหน่ง</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
         <label class="field" style="flex:1;min-width:150px;"><span>ตำแหน่ง A</span>
@@ -1334,6 +1351,7 @@ function renderTeamTab(){
         </div>`:''}
         <p class="foot-note" style="margin-top:8px;">* ข้อ 7 ไม่ขึ้นกับตำแหน่ง (เกณฑ์เดียวกันทุกตำแหน่ง) จึงเท่ากันทั้งสองฝั่งเสมอ · ข้อ 4 (ค่าเสริมมือ) ก็ไม่ขึ้นกับตำแหน่งเช่นกัน จึงไม่ต้องเทียบ</p>`;
       })()}
+      `}
     </div>
   `;
 }
@@ -1616,6 +1634,7 @@ let calendars = {}; // id -> {open, viewYear, viewMonth}
 let newAgentNameInput = "";
 let entrySearchQuery = "";
 let addAgentMode = false;
+let collapsedBoxes = { explain:true, monthlyCalc:true, newAgent:true, compare:true }; // ย่อไว้ตั้งแต่แรก กดหัวข้อเพื่อขยายดูรายละเอียด
 
 function agent(){
   if (!state.agents[state.currentAgent]){
@@ -1790,9 +1809,16 @@ function getYears(){
 }
 function renderYearPicker(){
   const years = getYears();
-  document.getElementById("year-picker").innerHTML =
-    `<span>ปีที่ดู:</span><select id="year-select">${years.map(y=>
+  const yearSelectHtml = `<span>ปีที่ดู:</span><select id="year-select">${years.map(y=>
       `<option value="${y}" ${y===selYear?"selected":""}>พ.ศ. ${toBE(y)}</option>`).join("")}</select>`;
+  if (activeSection==="manage"){
+    document.getElementById("year-picker").style.justifyContent = "space-between";
+    document.getElementById("year-picker").innerHTML = `<div style="display:flex;align-items:center;gap:10px;">${yearSelectHtml}</div>
+      ${addAgentMode?'':'<button class="btn-ghost" id="btn-toggle-add-agent">+ เพิ่มตัวแทน</button>'}`;
+  } else {
+    document.getElementById("year-picker").style.justifyContent = "";
+    document.getElementById("year-picker").innerHTML = yearSelectHtml;
+  }
 }
 function getYearEntries(){ return agent().entries.filter(e=>new Date(e.date).getFullYear()===selYear); }
 function getQuarterBuckets(){
@@ -2604,6 +2630,13 @@ function bindEvents(){
   // Agent picker
   const agentSelect = document.getElementById("agent-select");
   if (agentSelect) agentSelect.onchange = ()=>{ state.currentAgent = agentSelect.value; syncAgentFormState(); saveState(); render(); };
+  document.querySelectorAll("[data-toggle-box]").forEach(el=>{
+    el.onclick = ()=>{
+      const key = el.dataset.toggleBox;
+      collapsedBoxes[key] = !collapsedBoxes[key];
+      render();
+    };
+  });
   document.querySelectorAll("[data-rename-agent]").forEach(btn=>{
     btn.onclick = ()=>{
       const oldName = btn.dataset.renameAgent;
