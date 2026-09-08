@@ -492,7 +492,7 @@ function renderManageAgentsTab(){
   `;
 }
 function renderTeamTab(){
-  const names = Object.keys(state.agents);
+  const names = Object.keys(state.agents).sort((a,b)=>getAgentYearFyc(b,selYear)-getAgentYearFyc(a,selYear));
   const umGoal = state.umGoal ?? { targetFYC:0, startMonth:0, endMonth:11, position:"" };
   const umStartMonth = umGoal.startMonth ?? 0;
   const umEndMonth = umGoal.endMonth ?? 11;
@@ -1528,6 +1528,11 @@ const toBE = y => y + 543;
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 function isOrigin(e){ return (e.installmentIndex ?? 0) === 0; }
+function getAgentYearFyc(name, year){
+  const ag = state.agents[name];
+  if (!ag) return 0;
+  return ag.entries.filter(e=>new Date(e.date).getFullYear()===year).reduce((s,e)=>s+e.fyc,0);
+}
 
 function addMonthsToDate(dateStr, n){
   const d = new Date(dateStr + "T00:00:00");
@@ -1780,7 +1785,7 @@ function renderAgentPicker(){
   const container = document.getElementById("agent-picker");
   if (activeSection!=="agent"){ container.style.display = "none"; container.innerHTML = ""; return; }
   container.style.display = "";
-  const names = Object.keys(state.agents);
+  const names = Object.keys(state.agents).sort((a,b)=>getAgentYearFyc(b,selYear)-getAgentYearFyc(a,selYear));
   const options = names.map(n=>`<option value="${esc(n)}" ${n===state.currentAgent?"selected":""}>${esc(n)}</option>`).join("");
   const startDate = agent().competitions?.firstSaleDate || "";
   const startDateLabel = startDate ? new Date(startDate+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"}) : "ยังไม่ระบุ (ตั้งได้ที่แท็บผลงาน → Joining Bonus)";
