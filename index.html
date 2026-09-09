@@ -280,6 +280,7 @@ const SALES_COMP_QUARTERLY_THRESHOLD = {
   region2: 60000, region1: 60000,
   director: 70000, "director-s": 70000,
 };
+const PROMO_YEAR_NEW_AGENT = 2026; // แคมเปญ "แข่งขันตัวแทนใหม่" (พ.ค.-พ.ย. และ ม.ค.-เม.ย.) เป็นโปรโมชั่นที่บริษัทประกาศเฉพาะปีนี้ปีเดียว ไม่ใช่โปรโมชั่นวนซ้ำทุกปี — ถ้าปีหน้ามีโปรโมชั่นใหม่ ต้องมาปรับปีนี้ (และรายละเอียดเงื่อนไข) ใหม่ตามประกาศจริง
 const SALES_COMP_RATE_TIERS = [
   { minMultiplier: 2.5, rate: 25 },
   { minMultiplier: 1.75, rate: 22 },
@@ -1121,12 +1122,13 @@ function renderTeamTab(){
       `}
     </div>
 
+    ${selYear!==PROMO_YEAR_NEW_AGENT?'':`
     <div class="card">
       <h3>🏆 แข่งขันตัวแทนใหม่ สำหรับ UM — รุ่น พ.ค.-พ.ย. (ขยายเวลา)</h3>
-      <p class="sub">ตัวแทนที่ออกบัตรตัวแทน พ.ค.–พ.ย. ${toBE(selYear)} และมีเบี้ยประกันที่รับจริงในช่วง พ.ค.–พ.ย. รวม ≥50,000 (นับเฉพาะงวดที่มีวันที่อยู่ในช่วงนี้) — ถ้ามีครบ 2 คนขึ้นไป UM ได้รางวัลคนละ 10,000 และทุกๆ 5 คน รับเพิ่มอีก 30,000</p>
+      <p class="sub">โปรโมชั่นเฉพาะ พ.ศ. ${toBE(PROMO_YEAR_NEW_AGENT)} — ตัวแทนที่ออกบัตรตัวแทน พ.ค.–พ.ย. ${toBE(PROMO_YEAR_NEW_AGENT)} และมีเบี้ยประกันที่รับจริงในช่วง พ.ค.–พ.ย. รวม ≥50,000 (นับเฉพาะงวดที่มีวันที่อยู่ในช่วงนี้) — ถ้ามีครบ 2 คนขึ้นไป UM ได้รางวัลคนละ 10,000 และทุกๆ 5 คน รับเพิ่มอีก 30,000</p>
       ${(()=>{
-        const rangeStart = new Date(selYear, 4, 1); // 1 พ.ค.
-        const rangeEnd = new Date(selYear, 10, 30, 23, 59, 59); // 30 พ.ย.
+        const rangeStart = new Date(PROMO_YEAR_NEW_AGENT, 4, 1); // 1 พ.ค.
+        const rangeEnd = new Date(PROMO_YEAR_NEW_AGENT, 10, 30, 23, 59, 59); // 30 พ.ย.
         const candidates = names.filter(name=>{
           const cd = state.agents[name].license?.cardIssueDate;
           if (!cd) return false;
@@ -1151,7 +1153,7 @@ function renderTeamTab(){
         const bonusReward = bonusTiers*30000;
         const totalReward = baseReward + bonusReward;
         return `
-          ${candidates.length?rowsHtml:`<div class="empty">ยังไม่มีตัวแทนที่ออกบัตรตัวแทนในช่วง พ.ค.–พ.ย. ${toBE(selYear)} (ตั้งวันที่ออกบัตรได้ที่แท็บเป้าหมาย → ข้อมูลบัตรตัวแทน)</div>`}
+          ${candidates.length?rowsHtml:`<div class="empty">ยังไม่มีตัวแทนที่ออกบัตรตัวแทนในช่วง พ.ค.–พ.ย. ${toBE(PROMO_YEAR_NEW_AGENT)} (ตั้งวันที่ออกบัตรได้ที่แท็บเป้าหมาย → ข้อมูลบัตรตัวแทน)</div>`}
           <div style="margin-top:10px;padding-top:10px;border-top:2px solid #123F6B22;display:flex;justify-content:space-between;align-items:center;">
             <span style="font-weight:700;color:var(--navy);">ผ่านเกณฑ์ ${qualified.length} คน${qualified.length>=2?' (ครบ 2 คนขึ้นไป)':qualified.length===1?' — ยังขาดอีก 1 คนถึงจะได้รางวัล':''}</span>
             <span style="font-weight:800;font-size:23px;color:${totalReward>0?'var(--good)':'var(--muted)'};">${THB(totalReward)}</span>
@@ -1162,15 +1164,17 @@ function renderTeamTab(){
         `;
       })()}
     </div>
+    `}
 
+    ${selYear!==PROMO_YEAR_NEW_AGENT?'':`
     <div class="card">
       <h3>🏆 แข่งขันตัวแทนใหม่ สำหรับ UM — รุ่น ม.ค.-เม.ย.</h3>
-      <p class="sub">ตัวแทนที่ออกบัตรตัวแทน ม.ค.–เม.ย. ${toBE(selYear)} และมีเบี้ยประกันที่รับจริงในช่วง พ.ค.–พ.ย. ${toBE(selYear)} (ขยายเวลา) รวม ≥100,000 (นับเฉพาะงวดที่มีวันที่อยู่ในช่วงนี้) — UM ได้รางวัลคนละ 10,000</p>
+      <p class="sub">โปรโมชั่นเฉพาะ พ.ศ. ${toBE(PROMO_YEAR_NEW_AGENT)} — ตัวแทนที่ออกบัตรตัวแทน ม.ค.–เม.ย. ${toBE(PROMO_YEAR_NEW_AGENT)} และมีเบี้ยประกันที่รับจริงในช่วง พ.ค.–พ.ย. ${toBE(PROMO_YEAR_NEW_AGENT)} (ขยายเวลา) รวม ≥100,000 (นับเฉพาะงวดที่มีวันที่อยู่ในช่วงนี้) — UM ได้รางวัลคนละ 10,000</p>
       ${(()=>{
-        const codeStart = new Date(selYear, 0, 1); // 1 ม.ค.
-        const codeEnd = new Date(selYear, 3, 30, 23, 59, 59); // 30 เม.ย.
-        const workStart = new Date(selYear, 4, 1); // 1 พ.ค.
-        const workEnd = new Date(selYear, 10, 30, 23, 59, 59); // 30 พ.ย. (ขยายเวลาจากเดิม 31 ส.ค.)
+        const codeStart = new Date(PROMO_YEAR_NEW_AGENT, 0, 1); // 1 ม.ค.
+        const codeEnd = new Date(PROMO_YEAR_NEW_AGENT, 3, 30, 23, 59, 59); // 30 เม.ย.
+        const workStart = new Date(PROMO_YEAR_NEW_AGENT, 4, 1); // 1 พ.ค.
+        const workEnd = new Date(PROMO_YEAR_NEW_AGENT, 10, 30, 23, 59, 59); // 30 พ.ย. (ขยายเวลาจากเดิม 31 ส.ค.)
         const candidates = names.filter(name=>{
           const cd = state.agents[name].license?.cardIssueDate;
           if (!cd) return false;
@@ -1192,7 +1196,7 @@ function renderTeamTab(){
         </div>`).join("");
         const totalReward = qualified.length*10000;
         return `
-          ${candidates.length?rowsHtml:`<div class="empty">ยังไม่มีตัวแทนที่ออกบัตรตัวแทนในช่วง ม.ค.–เม.ย. ${toBE(selYear)} (ตั้งวันที่ออกบัตรได้ที่แท็บเป้าหมาย → ข้อมูลบัตรตัวแทน)</div>`}
+          ${candidates.length?rowsHtml:`<div class="empty">ยังไม่มีตัวแทนที่ออกบัตรตัวแทนในช่วง ม.ค.–เม.ย. ${toBE(PROMO_YEAR_NEW_AGENT)} (ตั้งวันที่ออกบัตรได้ที่แท็บเป้าหมาย → ข้อมูลบัตรตัวแทน)</div>`}
           <div style="margin-top:10px;padding-top:10px;border-top:2px solid #123F6B22;display:flex;justify-content:space-between;align-items:center;">
             <span style="font-weight:700;color:var(--navy);">ผ่านเกณฑ์ ${qualified.length} คน</span>
             <span style="font-weight:800;font-size:23px;color:${totalReward>0?'var(--good)':'var(--muted)'};">${THB(totalReward)}</span>
@@ -1200,6 +1204,7 @@ function renderTeamTab(){
         `;
       })()}
     </div>
+    `}
 
     ${(()=>{
       const curQInfo = getQuarter(todayIso());
