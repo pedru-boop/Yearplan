@@ -492,6 +492,7 @@ function renderManageAgentsTab(){
   `;
 }
 function renderTeamTab(){
+  let explainAndCalcHtml = ""; // เก็บ HTML ของกล่อง 2+3 ไว้ตรงนี้ แล้วค่อยไปแทรกก่อนกล่อง 10 (ย้ายตำแหน่งแสดงผล แต่ยังคำนวณอยู่ใน scope เดิม กันตัวแปรหลุด)
   const names = Object.keys(state.agents).sort((a,b)=>getAgentYearFyc(b,selYear)-getAgentYearFyc(a,selYear));
   const umGoal = state.umGoal ?? { targetFYC:0, startMonth:0, endMonth:11, position:"" };
   const umStartMonth = umGoal.startMonth ?? 0;
@@ -790,7 +791,7 @@ function renderTeamTab(){
       const monthOverrides = state.umGoal.monthOverrides || {};
       const directOverrides = state.umGoal.directOverrides || {};
 
-      return `
+      const boxABeforeExplain = `
       <h3 style="margin:4px 0 4px;">🎯 ควบคุมผลงานเพื่อผลตอบแทนข้อ 6 (DPO) (${selectedPosition.label})</h3>
       <p class="sub" style="margin-top:0;">DPO คำนวณจากตัวแทนตรงเท่านั้น เทียบกับเกณฑ์ขั้นต่ำ ${THB(salesCompThreshold)}/ไตรมาส — คอลัมน์เป้าใช้โควตา/เดือนของตำแหน่ง คอลัมน์ CFYC และตัวแทนตรงแก้ไขเองได้ ค่าเริ่มต้นดึงจากผลงานที่คีย์ไว้จริง</p>
       <div class="qgrid">
@@ -872,7 +873,8 @@ function renderTeamTab(){
           </div>`;
         }).join("")}
       </div>
-
+      `;
+      explainAndCalcHtml = `
       <div class="card">
         <h3 data-toggle-box="explain" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
           <span>📖 อธิบายผลประโยชน์ UM ตามตำแหน่ง (${selectedPosition.label})</span>
@@ -959,8 +961,9 @@ function renderTeamTab(){
         </div>
         `}
       </div>
+      `;
 
-      ${(()=>{
+      return boxABeforeExplain + (()=>{
         const now7 = new Date();
         const curQ7 = Math.floor(umViewAsOfMonth/3)+1;
         const qEndDate7 = new Date(selYear, curQ7*3, 0);
@@ -1078,9 +1081,7 @@ function renderTeamTab(){
             ${sec.estimateNote?`<div style="font-size:14px;color:var(--good);font-weight:600;margin-top:6px;padding:6px 10px;background:#F1F8F3;border-radius:6px;">💡 ${sec.estimateNote}</div>`:''}
           </div>`).join("")}
         </div>`;
-      })()}
-
-      `;
+      })();
     })():''}
 
 
@@ -1264,10 +1265,17 @@ function renderTeamTab(){
     })()}
 
     <div class="card">
-      <h3>📊 เทียบผลงานแต่ละคน</h3>
+      <h3 data-toggle-box="compareBars" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+        <span>📊 เทียบผลงานแต่ละคน</span>
+        <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.compareBars?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
+      </h3>
+      ${collapsedBoxes.compareBars?'':`
       <p class="sub">FYC สะสมทั้งปี ${toBE(selYear)}</p>
       ${rows.length?barsHtml:'<div class="empty">ยังไม่มีตัวแทนในระบบ</div>'}
+      `}
     </div>
+
+    ${explainAndCalcHtml}
 
     <div class="card">
       <h3 data-toggle-box="compare" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
@@ -1639,7 +1647,7 @@ let calendars = {}; // id -> {open, viewYear, viewMonth}
 let newAgentNameInput = "";
 let entrySearchQuery = "";
 let addAgentMode = false;
-let collapsedBoxes = { explain:true, monthlyCalc:true, newAgent:true, compare:true }; // ย่อไว้ตั้งแต่แรก กดหัวข้อเพื่อขยายดูรายละเอียด
+let collapsedBoxes = { explain:true, monthlyCalc:true, newAgent:true, compare:true, compareBars:true }; // ย่อไว้ตั้งแต่แรก กดหัวข้อเพื่อขยายดูรายละเอียด
 
 function agent(){
   if (!state.agents[state.currentAgent]){
