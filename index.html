@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-4</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-6</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -2276,7 +2276,7 @@ function renderEntryTab(){
   const previewHtml = renderBillingPreviewHtml();
 
   const colTotals = { annual:0, semiannual:0, quarterly:0, monthly:0 };
-  entries.forEach(e=>{ colTotals[billingModeOf(e)] += e.fyc; });
+  effEntries.forEach(e=>{ colTotals[billingModeOf(e)] += e.fyc; });
 
   // ค้นหาจากหมายเหตุ ไม่กระทบยอดรวมทั้งปีด้านบน (แค่กรองแถวที่แสดง)
   const q = entrySearchQuery.trim().toLowerCase();
@@ -2320,13 +2320,14 @@ function renderEntryTab(){
         const cell = (match) => match===bMode ? `<td class="num">${THB(e.fyc)}</td>` : `<td class="num" style="color:var(--muted);">—</td>`;
         const origin = isOrigin(e);
         const effPending = effectivePendingOf(e);
+        if (!origin && effPending) return ''; // งวดต่อเนื่อง ยังไม่โผล่ในตารางเลยจนกว่าต้นฉบับจะอนุมัติ
         return `<tr style="${effPending?'background:#FBF6E844;':''}">
           <td style="${origin?'color:var(--navy);font-weight:600;':''}${effPending?'opacity:0.7;':''}">${new Date(e.date).toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})}</td>
           <td style="color:var(--muted)">${esc(e.note)||"—"}</td>
           ${cell("annual")}${cell("semiannual")}${cell("quarterly")}${cell("monthly")}
           <td style="text-align:center;">
             ${!origin
-              ? `<span style="color:var(--muted);font-size:16px;" title="งวดต่อเนื่อง — อิงสถานะตามงวดต้นฉบับ ไม่ต้องอนุมัติแยก">${effPending?'⋯':'—'}</span>`
+              ? `<span style="color:var(--muted);font-size:16px;" title="งวดต่อเนื่อง">—</span>`
               : e.pending
                 ? `<button class="icon-btn" data-approve-entry="${e.id}" title="แตะเพื่ออนุมัติ (จะตั้งวันที่เป็นวันนี้ = วันที่อนุมัติ)" style="color:var(--muted);font-size:20px;">⭕</button>`
                 : `<button class="icon-btn" data-cancel-approve="${e.id}" title="อนุมัติแล้ว — แตะเพื่อยกเลิก (กลับเป็นรอพิจารณา คืนวันที่เดิม)" style="color:var(--good);font-size:20px;">✅</button>`}
@@ -3471,13 +3472,15 @@ function submitEntry(){
   const n = schedule.length;
   const baseNote = entryForm.note.trim();
   const policyId = `p_${Date.now()}`;
+  // วันที่ก่อนเดือนกันยา 2569 ถือเป็นการคีย์ย้อนหลัง (ผลงานเก่าที่เกิดขึ้นจริงไปแล้ว) จึงถือว่าอนุมัติอัตโนมัติ ไม่ต้องรอพิจารณา
+  const isBackfill = entryForm.date < "2026-09-01";
   const list = schedule.map((s,i)=>({
     id: Date.now()+i,
     date: addMonthsToDate(entryForm.date, s.offset),
     fyc: s.amount,
     note: n>1 ? `${baseNote}${baseNote?" ":""}(${installmentLabel(entryForm.billing, i, n)})` : baseNote,
     policyId, installmentIndex:i, installmentTotal:n, billingMode: entryForm.billing,
-    ...(i===0 ? { pending: true } : {}), // เฉพาะงวดต้นฉบับที่มีสถานะรอพิจารณาของตัวเอง งวดต่อเนื่องอื่นๆ อิงตามงวดต้นฉบับเสมอ ไม่มีสถานะแยกของตัวเอง
+    ...(i===0 && !isBackfill ? { pending: true } : {}), // เฉพาะงวดต้นฉบับที่มีสถานะรอพิจารณาของตัวเอง งวดต่อเนื่องอื่นๆ อิงตามงวดต้นฉบับเสมอ ไม่มีสถานะแยกของตัวเอง
   }));
   agent().entries.push(...list);
   saveState();
