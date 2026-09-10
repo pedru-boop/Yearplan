@@ -531,7 +531,7 @@ function renderTeamTab(){
     const ag = state.agents[name];
     const yEntries = ag.entries.filter(e=>new Date(e.date).getFullYear()===selYear);
     const achieved = yEntries.reduce((s,e)=>s+e.fyc,0);
-    const goalFYC = ag.goals?.targetFYC ?? 0;
+    const goalFYC = getAgentTargetFYC(selYear, ag);
     const pct = goalFYC>0 ? (achieved/goalFYC*100) : 0;
     // เช็คว่า "งานหาย" ไหม: ดูแค่เดือนที่กำลังดูอยู่ (umViewAsOfMonth) — มีงานเดือนนี้ = ไม่ต้องจับตา ไม่สนเดือนก่อนหน้าหรือแนวโน้ม
     const hasWorkThisMonth = ag.entries.some(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===umViewAsOfMonth; });
@@ -547,7 +547,7 @@ function renderTeamTab(){
   const teamAchievedAllYear = rows.reduce((s,r)=>s+r.achieved,0);
   const teamGoalSum = rows.reduce((s,r)=>s+r.goalFYC,0);
 
-  const umGoalFYC = umGoal.targetFYC ?? 0;
+  const umGoalFYC = getUmTargetFYC();
   const umRemaining = Math.max(0, umGoalFYC-teamAchievedInUmPeriod);
   const umProgressPct = umGoalFYC>0 ? Math.max(0,Math.min(100,(teamAchievedInUmPeriod/umGoalFYC)*100)) : 0;
   const ringR = 44, ringC = 2*Math.PI*ringR;
@@ -675,6 +675,7 @@ function renderTeamTab(){
 
       // ข้อ 4: ค่าเสริมมือ 30% ของ FYC จากผลงานตัวแทนที่สร้างใหม่ ช่วง 12 เดือนแรกนับจากวันที่มีผลงานขึ้นแรก
       // ค่าเสริมมือ: FYC ของตัวแทนใหม่ (ตั้งวันที่มีผลงานขึ้นแรกไว้) ในช่วง 12 เดือนแรก ไม่มีเกณฑ์ขั้นต่ำ กี่รายคอมเท่าไหร่ก็นับ
+      // แสดงเฉพาะส่วนที่ตกอยู่ในปีที่กำลังดู (selYear) — ถ้าหน้าต่าง 12 เดือนคาบเกี่ยว 2 ปี จะเห็นแค่ส่วนของปีนั้นๆ แยกกัน
       let serviceFee = 0;
       const serviceFeeDetail = [];
       names.forEach(name=>{
@@ -682,7 +683,7 @@ function renderTeamTab(){
         const startDate = ag.competitions?.firstSaleDate;
         if (!startDate) return;
         const windowEnd = addMonths(startDate, 12);
-        const eligibleFYC = ag.entries.filter(e=>{ const d=new Date(e.date); return d>=new Date(startDate+"T00:00:00") && d<=windowEnd; }).reduce((s,e)=>s+e.fyc,0);
+        const eligibleFYC = ag.entries.filter(e=>{ const d=new Date(e.date); return d>=new Date(startDate+"T00:00:00") && d<=windowEnd && d.getFullYear()===selYear; }).reduce((s,e)=>s+e.fyc,0);
         if (eligibleFYC>0){ serviceFee += eligibleFYC*0.3; serviceFeeDetail.push({name, eligibleFYC}); }
       });
 
@@ -1213,6 +1214,11 @@ function renderTeamTab(){
         const alerts = [];
         const r = rows.find(rr=>rr.name===name);
         if (r && r.isQuiet) alerts.push(`😴 ไม่มีผลงานเดือน${THAI_MONTH_NAMES[umViewAsOfMonth]}`);
+        const pendingEntries = ag.entries.filter(e=>e.pending);
+        if (pendingEntries.length){
+          const pendingFyc = pendingEntries.reduce((s,e)=>s+e.fyc,0);
+          alerts.push(`⏳ รอพิจารณา ${pendingEntries.length} รายการ (FYC รวม ${THB(pendingFyc)}) — ยังไม่อนุมัติ`);
+        }
         const exp = ag.license?.cardExpiryDate;
         if (exp){
           const expDate = new Date(exp+"T00:00:00");
@@ -1491,7 +1497,12 @@ function generatePrintReport(){
 
 function renderSpecialEventsSection(entries){
   const thDate = (iso)=> new Date(iso+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
-  const cards = SPECIAL_EVENTS.map(ev=>{
+  const eventsThisYear = SPECIAL_EVENTS.filter(ev=>{
+    const s = new Date(ev.start+"T00:00:00"), e = new Date(ev.end+"T00:00:00");
+    return s.getFullYear()===selYear || e.getFullYear()===selYear;
+  });
+  if (!eventsThisYear.length) return '';
+  const cards = eventsThisYear.map(ev=>{
     const achieved = eventAchieved(entries, ev);
     const reachedCount = ev.tiers.filter(t=>achieved>=t).length;
     const nextTier = ev.tiers[reachedCount];
@@ -1518,7 +1529,7 @@ function renderSpecialEventsSection(entries){
   }).join("");
   return `
     <h3 style="margin:4px 0 4px;">🏁 การแข่งขันพิเศษ</h3>
-    <p class="sub" style="margin-top:0;">คำนวณจากผลงาน FYC ที่บันทึกในช่วงวันที่แข่งขันเท่านั้น (ไม่เกี่ยวกับปีที่เลือกดูด้านบน)</p>
+    <p class="sub" style="margin-top:0;">คำนวณจากผลงาน FYC ที่บันทึกในช่วงวันที่แข่งขันเท่านั้น — แสดงเฉพาะรายการที่ตกอยู่ในปีที่กำลังดู</p>
     ${cards}
   `;
 }
@@ -1541,6 +1552,45 @@ const toBE = y => y + 543;
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 function isOrigin(e){ return (e.installmentIndex ?? 0) === 0; }
+function getUmTargetFYC(year){
+  year = year ?? selYear;
+  const g = state.umGoal;
+  if (g.targetFYCByYear && g.targetFYCByYear[year]!==undefined) return g.targetFYCByYear[year];
+  // ข้อมูลเก่าก่อนแยกเป้าหมายรายปี เก็บเป็นค่าเดียว ไม่ผูกปี — ใช้เป็นค่าของปีปัจจุบันจริงเท่านั้น (ปีอื่นเริ่มจาก 0 เสมอ)
+  if (!g.targetFYCByYear && g.targetFYC && year===new Date().getFullYear()) return g.targetFYC;
+  return 0;
+}
+function setUmTargetFYC(value, year){
+  year = year ?? selYear;
+  if (!state.umGoal.targetFYCByYear) state.umGoal.targetFYCByYear = {};
+  state.umGoal.targetFYCByYear[year] = value;
+}
+function getAgentTargetFYC(year, agObj){
+  year = year ?? selYear;
+  const g = (agObj || agent()).goals;
+  if (g.targetFYCByYear && g.targetFYCByYear[year]!==undefined) return g.targetFYCByYear[year];
+  if (!g.targetFYCByYear && g.targetFYC && year===new Date().getFullYear()) return g.targetFYC;
+  return 300000; // ค่าเริ่มต้นกลางๆ สำหรับปีที่ยังไม่เคยตั้งเป้า (ไม่ใช่การดึงเป้าปีอื่นมาใช้ แค่ตัวเลขเริ่มต้นเดียวกันทุกปีที่ว่างอยู่)
+}
+function setAgentTargetFYC(value, year){
+  year = year ?? selYear;
+  const g = agent().goals;
+  if (!g.targetFYCByYear) g.targetFYCByYear = {};
+  g.targetFYCByYear[year] = value;
+}
+function getAgentAnnualTargetFYC(year, agObj){
+  year = year ?? selYear;
+  const g = (agObj || agent()).goals;
+  if (g.annualTargetFYCByYear && g.annualTargetFYCByYear[year]!==undefined) return g.annualTargetFYCByYear[year];
+  if (!g.annualTargetFYCByYear && g.annualTargetFYC && year===new Date().getFullYear()) return g.annualTargetFYC;
+  return 0;
+}
+function setAgentAnnualTargetFYC(value, year){
+  year = year ?? selYear;
+  const g = agent().goals;
+  if (!g.annualTargetFYCByYear) g.annualTargetFYCByYear = {};
+  g.annualTargetFYCByYear[year] = value;
+}
 function getAgentYearFyc(name, year){
   const ag = state.agents[name];
   if (!ag) return 0;
@@ -1645,9 +1695,9 @@ let editingId = null;
 let editDraft = { date:"", fyc:"", note:"" };
 let newTrainingDraft = { courseName: "", date: "" };
 let trainingSectionOpen = false;
-let goalsFycInput = formatThousands(String(agent().goals.targetFYC ?? 300000));
-let annualGoalsFycInput = formatThousands(String(agent().goals.annualTargetFYC ?? 0));
-let umGoalsFycInput = formatThousands(String(state.umGoal?.targetFYC ?? 0));
+let goalsFycInput = formatThousands(String(getAgentTargetFYC()));
+let annualGoalsFycInput = formatThousands(String(getAgentAnnualTargetFYC()));
+let umGoalsFycInput = formatThousands(String(getUmTargetFYC()));
 let calendars = {}; // id -> {open, viewYear, viewMonth}
 let newAgentNameInput = "";
 let entrySearchQuery = "";
@@ -1667,8 +1717,8 @@ function agent(){
 function syncAgentFormState(){
   // ทุกครั้งที่สลับตัวแทน ต้องรีเซ็ตค่าที่ค้างอยู่ในช่องกรอก (ซึ่งเก็บแยกจาก agent data)
   // ไม่งั้นช่องกรอกเป้าหมาย/ฟอร์มบันทึกผลงานจะค้างค่าของตัวแทนคนก่อนหน้าไว้
-  goalsFycInput = formatThousands(String(agent().goals.targetFYC ?? 300000));
-  annualGoalsFycInput = formatThousands(String(agent().goals.annualTargetFYC ?? 0));
+  goalsFycInput = formatThousands(String(getAgentTargetFYC()));
+  annualGoalsFycInput = formatThousands(String(getAgentAnnualTargetFYC()));
   entryForm = { date: todayIso(), fyc: "", note: "", billing: "" };
   editingId = null;
   editDraft = { date:"", fyc:"", note:"" };
@@ -1906,10 +1956,10 @@ function renderDateInput(id, isoValue, compact){
 
 /* ================= GOALS TAB ================= */
 function renderGoalsTab(){
-  const goalFYC = agent().goals.targetFYC ?? 0;
+  const goalFYC = getAgentTargetFYC();
   const startMonth = agent().goals.startMonth ?? 0;
   const endMonth = agent().goals.endMonth ?? 11;
-  const annualGoalFYC = agent().goals.annualTargetFYC ?? 0;
+  const annualGoalFYC = getAgentAnnualTargetFYC();
   const now = new Date();
   const isCurrentYear = selYear === now.getFullYear();
   const currentMonthIdx = now.getMonth();
@@ -2193,11 +2243,12 @@ function renderEntryTab(){
         const bMode = billingModeOf(e);
         const cell = (match) => match===bMode ? `<td class="num">${THB(e.fyc)}</td>` : `<td class="num" style="color:var(--muted);">—</td>`;
         const origin = isOrigin(e);
-        return `<tr>
-          <td style="${origin?'color:var(--navy);font-weight:600;':''}">${new Date(e.date).toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})}</td>
-          <td style="color:var(--muted)">${esc(e.note)||"—"}</td>
+        return `<tr style="${e.pending?'background:#FBF6E844;':''}">
+          <td style="${origin?'color:var(--navy);font-weight:600;':''}${e.pending?'opacity:0.7;':''}">${new Date(e.date).toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})}</td>
+          <td style="color:var(--muted)">${esc(e.note)||"—"}${e.pending?' <span style="color:var(--gold);font-size:12px;font-weight:700;white-space:nowrap;">⏳ รอพิจารณา</span>':''}</td>
           ${cell("annual")}${cell("semiannual")}${cell("quarterly")}${cell("monthly")}
           <td style="text-align:right;white-space:nowrap;">
+            <button class="icon-btn" data-toggle-pending="${e.id}" title="${e.pending?'ทำเครื่องหมายว่าอนุมัติแล้ว':'ทำเครื่องหมายว่ารอพิจารณา'}">${e.pending?'✅':'⏳'}</button>
             <button class="icon-btn" data-start-edit="${e.id}" title="แก้ไข">✏️</button>
             <button class="icon-btn" data-remove="${e.id}" title="ลบ">🗑</button>
           </td>
@@ -2271,7 +2322,7 @@ function renderCompetitionsTab(){
   const isCurrentYear = selYear===currentActual.year;
   const currentMonthIdx = now.getMonth();
 
-  const goalFYC = agent().goals.targetFYC ?? 0;
+  const goalFYC = getAgentTargetFYC();
   const goalStartMonth = agent().goals.startMonth ?? 0;
   const goalEndMonth = agent().goals.endMonth ?? 11;
   const pacing = goalFYC>0 ? computeMonthlyPacing(entries, selYear, goalFYC, goalStartMonth, goalEndMonth) : null;
@@ -2611,7 +2662,9 @@ function renderCompetitionsTab(){
       <h3>Joining Bonus (ตัวแทนใหม่)</h3>
       <p class="sub">จ่ายให้ตัวแทนใหม่ที่เข้าร่วมงานครั้งแรกเท่านั้น ภายใน 4 เดือนแรกนับจากเดือนที่มีผลงานขึ้นแรก (รบข. 4/2564)</p>
       <label class="field full"><span>เดือนที่มีผลงานขึ้นแรก (เดือนเริ่มงาน)</span>${renderDateInput('joining', startDate, false)}</label>
-      ${!startDate ? `<div class="empty">กรอกเดือนที่เริ่มมีผลงานครั้งแรก เพื่อคำนวณ Joining Bonus</div>` : `
+      ${!startDate ? `<div class="empty">กรอกเดือนที่เริ่มมีผลงานครั้งแรก เพื่อคำนวณ Joining Bonus</div>`
+        : !joiningMonths.some(m=>m.y===selYear) ? `<div class="empty">ช่วง 4 เดือนของ Joining Bonus (${THAI_MONTH_SHORT[joiningMonths[0].m]} ${toBE(joiningMonths[0].y)} – ${THAI_MONTH_SHORT[joiningMonths[3].m]} ${toBE(joiningMonths[3].y)}) ไม่ตกอยู่ในปีที่กำลังดู (พ.ศ. ${toBE(selYear)}) จึงไม่มีผลในปีนี้</div>`
+        : `
         <div class="jbgrid">${jbCardsHtml}</div>
         <div class="annual-box" style="background:#FBF6E8;">
           <div class="mini-row"><span>ผลงานสะสม 4 เดือน</span><span class="v">${joiningCumCases} ราย · ${THB(joiningCumFYC)}</span></div>
@@ -2643,7 +2696,14 @@ function bindEvents(){
     btn.onclick = ()=>{ activeSection = btn.dataset.section; closeAllCalendars(); render(); };
   });
   const ys = document.getElementById("year-select");
-  if (ys) ys.onchange = ()=>{ selYear = Number(ys.value); render(); };
+  if (ys) ys.onchange = ()=>{
+    selYear = Number(ys.value);
+    // ปีเปลี่ยน เป้าหมายต้องรีเฟรชตามปีใหม่ทันที ไม่ให้ค้างค่าของปีก่อนหน้า
+    umGoalsFycInput = formatThousands(String(getUmTargetFYC()));
+    goalsFycInput = formatThousands(String(getAgentTargetFYC()));
+    annualGoalsFycInput = formatThousands(String(getAgentAnnualTargetFYC()));
+    render();
+  };
 
   // Agent picker
   const agentSelect = document.getElementById("agent-select");
@@ -2709,7 +2769,7 @@ function bindEvents(){
     goalInput.onfocus = (e)=>e.target.select();
     goalInput.onblur = ()=>{
       const raw = Number(stripCommas(goalsFycInput));
-      if (!isNaN(raw) && raw>=0){ agent().goals.targetFYC = raw; saveState(); }
+      if (!isNaN(raw) && raw>=0){ setAgentTargetFYC(raw); saveState(); }
       render();
     };
     goalInput.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
@@ -2758,7 +2818,7 @@ function bindEvents(){
     annualGoalInput.onfocus = (e)=>e.target.select();
     annualGoalInput.onblur = ()=>{
       const raw = Number(stripCommas(annualGoalsFycInput));
-      if (!isNaN(raw) && raw>=0){ agent().goals.annualTargetFYC = raw; saveState(); }
+      if (!isNaN(raw) && raw>=0){ setAgentAnnualTargetFYC(raw); saveState(); }
       render();
     };
     annualGoalInput.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
@@ -2788,7 +2848,7 @@ function bindEvents(){
       state.umGoal.position = posValue;
       const pos = UM_POSITIONS.find(p=>p.value===posValue);
       if (pos){
-        state.umGoal.targetFYC = pos.cfycYear;
+        setUmTargetFYC(pos.cfycYear);
         umGoalsFycInput = formatThousands(String(pos.cfycYear));
       }
       saveState(); render();
@@ -2856,7 +2916,7 @@ function bindEvents(){
     umGoalInput.onfocus = (e)=>e.target.select();
     umGoalInput.onblur = ()=>{
       const raw = Number(stripCommas(umGoalsFycInput));
-      if (!isNaN(raw) && raw>=0){ state.umGoal.targetFYC = raw; saveState(); }
+      if (!isNaN(raw) && raw>=0){ setUmTargetFYC(raw); saveState(); }
       render();
     };
     umGoalInput.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
@@ -2912,6 +2972,15 @@ function bindEvents(){
   const submitBtn = document.getElementById("btn-submit-entry");
   if (submitBtn) submitBtn.onclick = submitEntry;
 
+  document.querySelectorAll("[data-toggle-pending]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = Number(btn.dataset.togglePending);
+      const e = agent().entries.find(x=>x.id===id);
+      if (!e) return;
+      e.pending = !e.pending;
+      saveState(); render();
+    };
+  });
   document.querySelectorAll("[data-start-edit]").forEach(btn=>{
     btn.onclick = ()=>{
       const id = Number(btn.dataset.startEdit);
