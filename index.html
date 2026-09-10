@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-6</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-7</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -545,22 +545,33 @@ function renderTeamTab(){
 
   // ผลงานรวมทั้งทีม (CFYC จากกล่องควบคุมผลงาน/DPO) นับเฉพาะถึงเดือนปัจจุบันจริง แม้เป้าจะตั้งถึงเดือนหลังจากนี้
   const umEffectiveEndMonth = Math.min(umEndMonth, umViewAsOfMonth);
-  // แยก 2 ยอดจากข้อมูลจริงตรงๆ (ไม่ผ่านค่าที่ UM แก้ไขเอง เพราะค่าที่แก้เองไม่มีสถานะอนุมัติ/รอพิจารณาให้แยก): อนุมัติแล้ว และ รอพิจารณา
-  const teamAchievedApproved = names.reduce((sum,name)=>{
+  // เดือนที่ผ่านมาแล้ว (ก่อนเดือนที่กำลังดู) ถือว่าผ่านการตรวจสอบตามเวลาไปแล้ว จึงนับยอดรวมทั้งหมด ไม่แยกอนุมัติ/รอพิจารณา
+  // ส่วนเดือนปัจจุบันที่กำลังดูอยู่ ยังอาจมีรายการค้างตรวจ จึงแยกนับเฉพาะที่อนุมัติแล้วออกจากที่ยังรอ
+  const pastMonthsEnd = umEffectiveEndMonth - 1;
+  const pastMonthsTotal = umStartMonth<=pastMonthsEnd ? names.reduce((sum,name)=>{
+    const ag = state.agents[name];
+    return sum + ag.entries.filter(e=>{
+      const d = new Date(e.date);
+      return d.getFullYear()===selYear && d.getMonth()>=umStartMonth && d.getMonth()<=pastMonthsEnd;
+    }).reduce((s,e)=>s+e.fyc,0);
+  },0) : 0;
+  const currentMonthApproved = names.reduce((sum,name)=>{
     const ag = state.agents[name];
     return sum + effectiveEntries(ag.entries).filter(e=>{
       const d = new Date(e.date);
-      return d.getFullYear()===selYear && d.getMonth()>=umStartMonth && d.getMonth()<=umEffectiveEndMonth;
+      return d.getFullYear()===selYear && d.getMonth()===umEffectiveEndMonth;
     }).reduce((s,e)=>s+e.fyc,0);
   },0);
-  const teamAchievedPending = names.reduce((sum,name)=>{
+  const currentMonthPending = names.reduce((sum,name)=>{
     const ag = state.agents[name];
     const effectiveIds = new Set(effectiveEntries(ag.entries).map(e=>e.id));
     return sum + ag.entries.filter(e=>{
       const d = new Date(e.date);
-      return d.getFullYear()===selYear && d.getMonth()>=umStartMonth && d.getMonth()<=umEffectiveEndMonth && !effectiveIds.has(e.id);
+      return d.getFullYear()===selYear && d.getMonth()===umEffectiveEndMonth && !effectiveIds.has(e.id);
     }).reduce((s,e)=>s+e.fyc,0);
   },0);
+  const teamAchievedApproved = pastMonthsTotal + currentMonthApproved;
+  const teamAchievedPending = currentMonthPending;
   const teamAchievedInUmPeriod = teamAchievedApproved + teamAchievedPending;
   const teamAchievedAllYear = rows.reduce((s,r)=>s+r.achieved,0);
   const teamGoalSum = rows.reduce((s,r)=>s+r.goalFYC,0);
@@ -674,8 +685,8 @@ function renderTeamTab(){
                 ${THAI_MONTH_NAMES.map((name,i)=>`<option value="${i}" ${i===umViewAsOfMonth?"selected":""}>${name}</option>`).join("")}
               </select>
             </div>
-            <div class="tech-row"><span class="lab">อนุมัติแล้ว (มีผลจริง ถึงเดือน${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val good">${THB(teamAchievedApproved)}${umGoalFYC>0?` (${Math.round(Math.max(0,(teamAchievedApproved/umGoalFYC)*100))}%)`:''}</span></div>
-            <div class="tech-row"><span class="lab" style="color:var(--gold);">รอพิจารณา (ยังไม่มีผล)</span><span class="val" style="color:var(--gold);">${THB(teamAchievedPending)}${umGoalFYC>0?` (${Math.round(Math.max(0,(teamAchievedPending/umGoalFYC)*100))}%)`:''}</span></div>
+            <div class="tech-row"><span class="lab">ทำได้แล้ว (เดือนก่อนหน้า + อนุมัติแล้วเดือน${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val good">${THB(teamAchievedApproved)}${umGoalFYC>0?` (${Math.round(Math.max(0,(teamAchievedApproved/umGoalFYC)*100))}%)`:''}</span></div>
+            <div class="tech-row"><span class="lab" style="color:var(--gold);">รอพิจารณา (เฉพาะเดือน${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val" style="color:var(--gold);">${THB(teamAchievedPending)}${umGoalFYC>0?` (${Math.round(Math.max(0,(teamAchievedPending/umGoalFYC)*100))}%)`:''}</span></div>
             <div class="tech-row" style="border-top:1px dashed #123F6B22;padding-top:6px;"><span class="lab" style="font-weight:700;">รวมทั้งหมด</span><span class="val" style="font-weight:700;">${THB(teamAchievedInUmPeriod)}${umGoalFYC>0?` (${Math.round(umProgressPct)}%)`:''}</span></div>
             <div class="tech-row"><span class="lab">ยังขาดอีก</span><span class="val ${umRemaining>0?'warn':''}">${THB(umRemaining)}</span></div>
           </div>
