@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-3</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-4</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -467,8 +467,9 @@ function renderManageAgentsTab(){
   const names = Object.keys(state.agents);
   const rows = names.map(name=>{
     const ag = state.agents[name];
-    const yearFyc = ag.entries.filter(e=>new Date(e.date).getFullYear()===selYear).reduce((s,e)=>s+e.fyc,0);
-    const originCount = ag.entries.filter(e=>new Date(e.date).getFullYear()===selYear && isOrigin(e)).length;
+    const effEntries = effectiveEntries(ag.entries);
+    const yearFyc = effEntries.filter(e=>new Date(e.date).getFullYear()===selYear).reduce((s,e)=>s+e.fyc,0);
+    const originCount = effEntries.filter(e=>new Date(e.date).getFullYear()===selYear && isOrigin(e)).length;
     return { name, yearFyc, originCount, isCurrent: name===state.currentAgent };
   }).sort((a,b)=>b.yearFyc-a.yearFyc);
   return `
@@ -514,7 +515,7 @@ function renderTeamTab(){
   const monthlyDirectAgentFYC = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>{
     const auto = names.reduce((sum,name)=>{
       const ag = state.agents[name];
-      return sum + ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; }).reduce((s,e)=>s+e.fyc,0);
+      return sum + effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; }).reduce((s,e)=>s+e.fyc,0);
     },0);
     const dov = umDirectOverrides[`${selYear}-${m}`];
     return (dov!==undefined && dov!==null) ? dov : auto;
@@ -530,7 +531,7 @@ function renderTeamTab(){
 
   const rows = names.map(name=>{
     const ag = state.agents[name];
-    const yEntries = ag.entries.filter(e=>new Date(e.date).getFullYear()===selYear);
+    const yEntries = effectiveEntries(ag.entries).filter(e=>new Date(e.date).getFullYear()===selYear);
     const achieved = yEntries.reduce((s,e)=>s+e.fyc,0);
     const goalFYC = getAgentTargetFYC(selYear, ag);
     const pct = goalFYC>0 ? (achieved/goalFYC*100) : 0;
@@ -544,23 +545,32 @@ function renderTeamTab(){
 
   // ผลงานรวมทั้งทีม (CFYC จากกล่องควบคุมผลงาน/DPO) นับเฉพาะถึงเดือนปัจจุบันจริง แม้เป้าจะตั้งถึงเดือนหลังจากนี้
   const umEffectiveEndMonth = Math.min(umEndMonth, umViewAsOfMonth);
-  const teamAchievedInUmPeriod = umStartMonth<=umEffectiveEndMonth ? monthlyTeamCFYC.slice(umStartMonth, umEffectiveEndMonth+1).reduce((a,b)=>a+b,0) : 0;
-  // ผลงานที่หักรายการ "รอพิจารณา" ออก — คำนวณตรงจากผลงานจริง (ไม่ผ่านค่าที่ UM แก้ไขเอง เพราะค่าที่แก้เองไม่มีสถานะรอพิจารณาให้แยก)
-  const teamAchievedExcludingPending = names.reduce((sum,name)=>{
+  // แยก 2 ยอดจากข้อมูลจริงตรงๆ (ไม่ผ่านค่าที่ UM แก้ไขเอง เพราะค่าที่แก้เองไม่มีสถานะอนุมัติ/รอพิจารณาให้แยก): อนุมัติแล้ว และ รอพิจารณา
+  const teamAchievedApproved = names.reduce((sum,name)=>{
     const ag = state.agents[name];
-    return sum + ag.entries.filter(e=>{
+    return sum + effectiveEntries(ag.entries).filter(e=>{
       const d = new Date(e.date);
-      return d.getFullYear()===selYear && d.getMonth()>=umStartMonth && d.getMonth()<=umEffectiveEndMonth && !e.pending;
+      return d.getFullYear()===selYear && d.getMonth()>=umStartMonth && d.getMonth()<=umEffectiveEndMonth;
     }).reduce((s,e)=>s+e.fyc,0);
   },0);
+  const teamAchievedPending = names.reduce((sum,name)=>{
+    const ag = state.agents[name];
+    const effectiveIds = new Set(effectiveEntries(ag.entries).map(e=>e.id));
+    return sum + ag.entries.filter(e=>{
+      const d = new Date(e.date);
+      return d.getFullYear()===selYear && d.getMonth()>=umStartMonth && d.getMonth()<=umEffectiveEndMonth && !effectiveIds.has(e.id);
+    }).reduce((s,e)=>s+e.fyc,0);
+  },0);
+  const teamAchievedInUmPeriod = teamAchievedApproved + teamAchievedPending;
   const teamAchievedAllYear = rows.reduce((s,r)=>s+r.achieved,0);
   const teamGoalSum = rows.reduce((s,r)=>s+r.goalFYC,0);
 
   const umGoalFYC = getUmTargetFYC();
   const umRemaining = Math.max(0, umGoalFYC-teamAchievedInUmPeriod);
-  const umProgressPct = umGoalFYC>0 ? Math.max(0,Math.min(100,(teamAchievedInUmPeriod/umGoalFYC)*100)) : 0;
+  const umProgressPct = umGoalFYC>0 ? Math.max(0,(teamAchievedInUmPeriod/umGoalFYC)*100) : 0; // ตัวเลขจริง ไม่ตัดเพดานที่ 100% เกินเป้าต้องโชว์เกิน 100% ได้
+  const umProgressPctForRing = Math.min(100, umProgressPct); // ใช้คำนวณวงแหวนภาพเท่านั้น กันวงแหวนวาดเกินรอบ
   const ringR = 44, ringC = 2*Math.PI*ringR;
-  const ringOffset = ringC - (umProgressPct/100)*ringC;
+  const ringOffset = ringC - (umProgressPctForRing/100)*ringC;
 
   const startMonthOptions = THAI_MONTH_NAMES.map((name,i)=>`<option value="${i}" ${i===umStartMonth?"selected":""}>${name}</option>`).join("");
   const endMonthOptions = THAI_MONTH_NAMES.map((name,i)=>`<option value="${i}" ${i===umEndMonth?"selected":""} ${i<umStartMonth?"disabled":""}>${name}</option>`).join("");
@@ -664,8 +674,9 @@ function renderTeamTab(){
                 ${THAI_MONTH_NAMES.map((name,i)=>`<option value="${i}" ${i===umViewAsOfMonth?"selected":""}>${name}</option>`).join("")}
               </select>
             </div>
-            <div class="tech-row"><span class="lab">ทีมทำได้แล้ว (รวมทั้งหมด ถึงเดือน${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val good">${THB(teamAchievedInUmPeriod)}${umGoalFYC>0?` (${Math.round(umProgressPct)}%)`:''}</span></div>
-            <div class="tech-row"><span class="lab" style="color:var(--muted);">— หักรายการรอพิจารณาออก</span><span class="val" style="color:var(--muted);">${THB(teamAchievedExcludingPending)}${umGoalFYC>0?` (${Math.round(Math.max(0,Math.min(100,(teamAchievedExcludingPending/umGoalFYC)*100)))}%)`:''}</span></div>
+            <div class="tech-row"><span class="lab">อนุมัติแล้ว (มีผลจริง ถึงเดือน${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val good">${THB(teamAchievedApproved)}${umGoalFYC>0?` (${Math.round(Math.max(0,(teamAchievedApproved/umGoalFYC)*100))}%)`:''}</span></div>
+            <div class="tech-row"><span class="lab" style="color:var(--gold);">รอพิจารณา (ยังไม่มีผล)</span><span class="val" style="color:var(--gold);">${THB(teamAchievedPending)}${umGoalFYC>0?` (${Math.round(Math.max(0,(teamAchievedPending/umGoalFYC)*100))}%)`:''}</span></div>
+            <div class="tech-row" style="border-top:1px dashed #123F6B22;padding-top:6px;"><span class="lab" style="font-weight:700;">รวมทั้งหมด</span><span class="val" style="font-weight:700;">${THB(teamAchievedInUmPeriod)}${umGoalFYC>0?` (${Math.round(umProgressPct)}%)`:''}</span></div>
             <div class="tech-row"><span class="lab">ยังขาดอีก</span><span class="val ${umRemaining>0?'warn':''}">${THB(umRemaining)}</span></div>
           </div>
         </div>
@@ -693,7 +704,7 @@ function renderTeamTab(){
         const startDate = ag.competitions?.firstSaleDate;
         if (!startDate) return;
         const windowEnd = addMonths(startDate, 12);
-        const eligibleFYC = ag.entries.filter(e=>{ const d=new Date(e.date); return d>=new Date(startDate+"T00:00:00") && d<=windowEnd && d.getFullYear()===selYear; }).reduce((s,e)=>s+e.fyc,0);
+        const eligibleFYC = effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d>=new Date(startDate+"T00:00:00") && d<=windowEnd && d.getFullYear()===selYear; }).reduce((s,e)=>s+e.fyc,0);
         if (eligibleFYC>0){ serviceFee += eligibleFYC*0.3; serviceFeeDetail.push({name, eligibleFYC}); }
       });
 
@@ -705,7 +716,7 @@ function renderTeamTab(){
         const ag = state.agents[name];
         for (let q=1; q<=4; q++){
           const qMonths = [ (q-1)*3, (q-1)*3+1, (q-1)*3+2 ];
-          const qEntries = ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && qMonths.includes(d.getMonth()); });
+          const qEntries = effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && qMonths.includes(d.getMonth()); });
           const newCases = qEntries.filter(isOrigin).length;
           const qFyc = qEntries.reduce((s,e)=>s+e.fyc,0);
           if (newCases>=2){
@@ -812,7 +823,7 @@ function renderTeamTab(){
           const monthlyFycThisQ = qMonths.map(m=>{
             const auto = Math.round(names.reduce((sum,name)=>{
               const ag = state.agents[name];
-              return sum + ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; }).reduce((s,e)=>s+e.fyc,0);
+              return sum + effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; }).reduce((s,e)=>s+e.fyc,0);
             },0));
             const directKey = `${selYear}-${m}`;
             const dov = directOverrides[directKey];
@@ -1008,7 +1019,7 @@ function renderTeamTab(){
         const item7Rows = [];
         names.forEach(name=>{
           const ag = state.agents[name];
-          const qEntries = ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && q6Months.includes(d.getMonth()); });
+          const qEntries = effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && q6Months.includes(d.getMonth()); });
           const newCases = qEntries.filter(isOrigin).length;
           const qFyc = qEntries.reduce((s,e)=>s+e.fyc,0);
           const tier = TEAM_BUILDING_TIERS.find(t=>qFyc>=t.minFyc);
@@ -1038,7 +1049,7 @@ function renderTeamTab(){
           const windowEnd = addMonths(sd, 12);
           const daysToWindowEnd = Math.ceil((windowEnd-now7)/86400000);
           if (daysToWindowEnd<0 || daysToWindowEnd>60) return;
-          const eligibleFYC = ag.entries.filter(e=>{ const d=new Date(e.date); return d>=new Date(sd+"T00:00:00") && d<=windowEnd; }).reduce((s,e)=>s+e.fyc,0);
+          const eligibleFYC = effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d>=new Date(sd+"T00:00:00") && d<=windowEnd; }).reduce((s,e)=>s+e.fyc,0);
           if (eligibleFYC>=100000) return; // ถือว่าทำไปพอสมควรแล้ว ไม่ต้องเตือน
           item4Rows.push({ name, daysLeft: daysToWindowEnd, fycGot: eligibleFYC, urgent: daysToWindowEnd<=14 });
         });
@@ -1224,7 +1235,7 @@ function renderTeamTab(){
         const alerts = [];
         const r = rows.find(rr=>rr.name===name);
         if (r && r.isQuiet) alerts.push(`😴 ไม่มีผลงานเดือน${THAI_MONTH_NAMES[umViewAsOfMonth]}`);
-        const pendingEntries = ag.entries.filter(e=>e.pending);
+        const pendingEntries = ag.entries.filter(e=>e.pending && isOrigin(e));
         if (pendingEntries.length){
           const pendingFyc = pendingEntries.reduce((s,e)=>s+e.fyc,0);
           alerts.push(`⏳ รอพิจารณา ${pendingEntries.length} รายการ (FYC รวม ${THB(pendingFyc)}) — ยังไม่อนุมัติ`);
@@ -1238,7 +1249,7 @@ function renderTeamTab(){
         }
         // ภาพรวมสถานการณ์ของตัวแทนคนนี้: ยังต้องทำอีกเท่าไหร่ถึงเป้า/ขั้นถัดไป (เฉพาะปีที่กำลังดูอยู่)
         if (curQInfo.year===selYear){
-          const qResultsA = quarterlyQualifyResults(ag.entries, selYear);
+          const qResultsA = quarterlyQualifyResults(effectiveEntries(ag.entries), selYear);
           const curQResultA = qResultsA.find(qr=>qr.q===curQInfo.quarter);
           if (curQResultA && !curQResultA.qualifies){
             const casesShort = Math.max(0, QUALIFY_MIN_CASES-curQResultA.count);
@@ -1259,7 +1270,7 @@ function renderTeamTab(){
               if (nextTierA) alerts.push(`💰 โบนัสไตรมาสนี้: ขาดอีก FYC ${THB(nextTierA.min-curQResultA.fyc)} จะขยับเป็นอัตรา ${nextTierA.pct}%`);
             }
           }
-          const yearEntriesA = ag.entries.filter(e=>new Date(e.date).getFullYear()===selYear);
+          const yearEntriesA = effectiveEntries(ag.entries).filter(e=>new Date(e.date).getFullYear()===selYear);
           const annualCasesA = yearEntriesA.filter(isOrigin).length;
           const annualFycA = yearEntriesA.reduce((s,e)=>s+e.fyc,0);
           const annualBonusGateA = annualCasesA>=ANNUAL_BONUS_GATE_CASES && annualFycA>=ANNUAL_BONUS_GATE_FYC;
@@ -1288,7 +1299,7 @@ function renderTeamTab(){
     ${(()=>{
       const pendingByAgent = names.map(name=>{
         const ag = state.agents[name];
-        const pendingEntries = ag.entries.filter(e=>e.pending && new Date(e.date).getFullYear()===selYear)
+        const pendingEntries = ag.entries.filter(e=>e.pending && isOrigin(e) && new Date(e.date).getFullYear()===selYear)
           .sort((a,b)=>new Date(b.date)-new Date(a.date));
         const totalFyc = pendingEntries.reduce((s,e)=>s+e.fyc,0);
         return { name, pendingEntries, totalFyc };
@@ -1356,7 +1367,7 @@ function renderTeamTab(){
           const ag = state.agents[name];
           for (let q=1;q<=4;q++){
             const qMonths=[(q-1)*3,(q-1)*3+1,(q-1)*3+2];
-            const qEntries = ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && qMonths.includes(d.getMonth()); });
+            const qEntries = effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && qMonths.includes(d.getMonth()); });
             const newCases = qEntries.filter(isOrigin).length;
             const qFyc = qEntries.reduce((s,e)=>s+e.fyc,0);
             if (newCases>=2){
@@ -1417,8 +1428,8 @@ function renderTeamTab(){
 function generatePrintReport(){
   const name = state.currentAgent;
   const ag = agent();
-  const entries = ag.entries;
-  const yearEntries = getYearEntries();
+  const entries = effectiveEntries(ag.entries);
+  const yearEntries = entries.filter(e=>new Date(e.date).getFullYear()===selYear);
   const qResults = quarterlyQualifyResults(entries, selYear);
   const streak = longestConsecutiveStreak(qResults);
   const annualCases = yearEntries.filter(isOrigin).length;
@@ -1592,6 +1603,19 @@ const toBE = y => y + 543;
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 function isOrigin(e){ return (e.installmentIndex ?? 0) === 0; }
+function effectiveEntries(entries){
+  // เอนทรีนับผลได้จริง ก็ต่อเมื่อ "งวดต้นฉบับ" ของกรมธรรม์เดียวกัน ไม่ได้ค้างสถานะรอพิจารณาอยู่
+  // ถ้าต้นฉบับยังไม่อนุมัติ งวดต่อเนื่องอื่นๆ ในกรมธรรม์เดียวกัน (แม้จะยังไม่ถึงกำหนดหรือถึงกำหนดแล้ว) ก็ยังไม่นับผลด้วย ไม่ว่าจะตั้ง pending ของตัวเองไว้อย่างไร
+  const originPendingMap = {};
+  entries.forEach(e=>{
+    if (isOrigin(e)) originPendingMap[e.policyId] = !!e.pending;
+  });
+  return entries.filter(e=>{
+    const key = e.policyId;
+    if (key===undefined || !(key in originPendingMap)) return !e.pending; // ข้อมูลเก่าไม่มี policyId ให้ใช้สถานะของตัวเองแทน
+    return !originPendingMap[key];
+  });
+}
 function getUmTargetFYC(year){
   year = year ?? selYear;
   const g = state.umGoal;
@@ -1634,7 +1658,7 @@ function setAgentAnnualTargetFYC(value, year){
 function getAgentYearFyc(name, year){
   const ag = state.agents[name];
   if (!ag) return 0;
-  return ag.entries.filter(e=>new Date(e.date).getFullYear()===year).reduce((s,e)=>s+e.fyc,0);
+  return effectiveEntries(ag.entries).filter(e=>new Date(e.date).getFullYear()===year).reduce((s,e)=>s+e.fyc,0);
 }
 
 function addMonthsToDate(dateStr, n){
@@ -2006,15 +2030,17 @@ function renderGoalsTab(){
   const now = new Date();
   const isCurrentYear = selYear === now.getFullYear();
   const currentMonthIdx = now.getMonth();
-  const pacing = (goalFYC>0 || annualGoalFYC>0) ? computeMonthlyPacing(agent().entries, selYear, goalFYC, startMonth, endMonth, annualGoalFYC) : null;
-  const yearEntries = getYearEntries().filter(e => { const m = new Date(e.date).getMonth(); return m >= startMonth && m <= endMonth; });
+  const pacing = (goalFYC>0 || annualGoalFYC>0) ? computeMonthlyPacing(effectiveEntries(agent().entries), selYear, goalFYC, startMonth, endMonth, annualGoalFYC) : null;
+  const yearEntries = effectiveEntries(getYearEntries()).filter(e => { const m = new Date(e.date).getMonth(); return m >= startMonth && m <= endMonth; });
   const achieved = yearEntries.reduce((s,e)=>s+e.fyc,0);
   const remaining = Math.max(0, goalFYC-achieved);
-  const progressPct = goalFYC>0 ? Math.max(0,Math.min(100,(achieved/goalFYC)*100)) : 0;
+  const progressPct = goalFYC>0 ? Math.max(0,(achieved/goalFYC)*100) : 0; // ไม่ตัดเพดาน 100% เกินเป้าต้องโชว์เกินได้
+  const progressPctForRing = Math.min(100, progressPct);
   // ผลงานทั้งปี (ม.ค.-ธ.ค. เสมอ) แยกจากผลงานช่วงเป้าหมายพิเศษด้านบน เพื่อไม่ให้สับสนว่าเลขไหนคือขอบเขตไหน
-  const achievedFullYear = getYearEntries().reduce((s,e)=>s+e.fyc,0);
+  const achievedFullYear = effectiveEntries(getYearEntries()).reduce((s,e)=>s+e.fyc,0);
   const annualRemaining = Math.max(0, annualGoalFYC-achievedFullYear);
-  const annualProgressPct = annualGoalFYC>0 ? Math.max(0,Math.min(100,(achievedFullYear/annualGoalFYC)*100)) : 0;
+  const annualProgressPct = annualGoalFYC>0 ? Math.max(0,(achievedFullYear/annualGoalFYC)*100) : 0; // ไม่ตัดเพดาน 100%
+  const annualProgressPctForRing = Math.min(100, annualProgressPct);
   // "จากนี้" อ้างอิงปฏิทินจริงเสมอ: ถ้าดูปีปัจจุบัน ใช้เดือนปัจจุบันจริง (แต่ไม่เกินเดือนสิ้นสุดแผน), ปีอื่นไม่มี "จากนี้" ที่มีความหมาย
   const effectiveMonthIdx = isCurrentYear ? Math.max(currentMonthIdx, startMonth) : null;
   const planEnded = effectiveMonthIdx !== null && effectiveMonthIdx > endMonth;
@@ -2022,8 +2048,8 @@ function renderGoalsTab(){
   const avgMonthlyTargetNow = monthsLeftFromNow>0 ? remaining/monthsLeftFromNow : 0;
 
   const ringR = 44, ringC = 2*Math.PI*ringR;
-  const ringOffset = ringC - (progressPct/100)*ringC;
-  const annualRingOffset = ringC - (annualProgressPct/100)*ringC;
+  const ringOffset = ringC - (progressPctForRing/100)*ringC;
+  const annualRingOffset = ringC - (annualProgressPctForRing/100)*ringC;
 
   let monthRows = "";
   if (pacing){
@@ -2241,10 +2267,11 @@ function billingModeOf(e){
   return "annual";
 }
 function renderEntryTab(){
-  const entries = getYearEntries();
+  const entries = getYearEntries(); // ทั้งหมด รวมที่รอพิจารณาด้วย — ใช้แสดงตารางครบทุกแถว
+  const effEntries = effectiveEntries(entries); // เฉพาะที่นับผลจริงแล้ว — ใช้สรุปยอดด้านบน
   const sorted = [...entries].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const totalFYC = entries.reduce((s,e)=>s+e.fyc,0);
-  const originCount = entries.filter(isOrigin).length;
+  const totalFYC = effEntries.reduce((s,e)=>s+e.fyc,0);
+  const originCount = effEntries.filter(isOrigin).length;
 
   const previewHtml = renderBillingPreviewHtml();
 
@@ -2270,6 +2297,10 @@ function renderEntryTab(){
       <td></td>
       <td></td>
     </tr>`;
+    // เช็คสถานะ "รอพิจารณา" ที่แท้จริงของแต่ละงวด — งวดต่อเนื่องอิงตามงวดต้นฉบับเสมอ (ไม่มีสถานะของตัวเอง)
+    const originPendingLookup = {};
+    agent().entries.forEach(en=>{ if (isOrigin(en)) originPendingLookup[en.policyId] = !!en.pending; });
+    const effectivePendingOf = (en)=> (en.policyId in originPendingLookup) ? originPendingLookup[en.policyId] : !!en.pending;
     rows = `<div style="overflow-x:auto"><table>
       <thead><tr><th>วันที่</th><th>หมายเหตุ</th><th style="text-align:right">รายปี</th><th style="text-align:right">ราย 6 เดือน</th><th style="text-align:right">ราย 3 เดือน</th><th style="text-align:right">รายเดือน</th><th style="text-align:center">อนุมัติ</th><th></th></tr></thead>
       <tbody>${filtered.map(e=>{
@@ -2288,14 +2319,17 @@ function renderEntryTab(){
         const bMode = billingModeOf(e);
         const cell = (match) => match===bMode ? `<td class="num">${THB(e.fyc)}</td>` : `<td class="num" style="color:var(--muted);">—</td>`;
         const origin = isOrigin(e);
-        return `<tr style="${e.pending?'background:#FBF6E844;':''}">
-          <td style="${origin?'color:var(--navy);font-weight:600;':''}${e.pending?'opacity:0.7;':''}">${new Date(e.date).toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})}</td>
+        const effPending = effectivePendingOf(e);
+        return `<tr style="${effPending?'background:#FBF6E844;':''}">
+          <td style="${origin?'color:var(--navy);font-weight:600;':''}${effPending?'opacity:0.7;':''}">${new Date(e.date).toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})}</td>
           <td style="color:var(--muted)">${esc(e.note)||"—"}</td>
           ${cell("annual")}${cell("semiannual")}${cell("quarterly")}${cell("monthly")}
           <td style="text-align:center;">
-            ${e.pending
-              ? `<button class="icon-btn" data-approve-entry="${e.id}" title="แตะเพื่ออนุมัติ (จะตั้งวันที่เป็นวันนี้ = วันที่อนุมัติ)" style="color:var(--muted);font-size:20px;">⭕</button>`
-              : `<button class="icon-btn" data-cancel-approve="${e.id}" title="อนุมัติแล้ว — แตะเพื่อยกเลิก (กลับเป็นรอพิจารณา คืนวันที่เดิม)" style="color:var(--good);font-size:20px;">✅</button>`}
+            ${!origin
+              ? `<span style="color:var(--muted);font-size:16px;" title="งวดต่อเนื่อง — อิงสถานะตามงวดต้นฉบับ ไม่ต้องอนุมัติแยก">${effPending?'⋯':'—'}</span>`
+              : e.pending
+                ? `<button class="icon-btn" data-approve-entry="${e.id}" title="แตะเพื่ออนุมัติ (จะตั้งวันที่เป็นวันนี้ = วันที่อนุมัติ)" style="color:var(--muted);font-size:20px;">⭕</button>`
+                : `<button class="icon-btn" data-cancel-approve="${e.id}" title="อนุมัติแล้ว — แตะเพื่อยกเลิก (กลับเป็นรอพิจารณา คืนวันที่เดิม)" style="color:var(--good);font-size:20px;">✅</button>`}
           </td>
           <td style="text-align:right;white-space:nowrap;">
             <button class="icon-btn" data-start-edit="${e.id}" title="แก้ไข">✏️</button>
@@ -2354,8 +2388,8 @@ function renderEntryTab(){
 
 /* ================= COMPETITIONS TAB ================= */
 function renderCompetitionsTab(){
-  const entries = agent().entries;
-  const yearEntries = getYearEntries();
+  const entries = effectiveEntries(agent().entries);
+  const yearEntries = entries.filter(e=>new Date(e.date).getFullYear()===selYear);
   const qResults = quarterlyQualifyResults(entries, selYear);
   const streak = longestConsecutiveStreak(qResults);
   const annualCases = yearEntries.filter(isOrigin).length;
@@ -3443,7 +3477,7 @@ function submitEntry(){
     fyc: s.amount,
     note: n>1 ? `${baseNote}${baseNote?" ":""}(${installmentLabel(entryForm.billing, i, n)})` : baseNote,
     policyId, installmentIndex:i, installmentTotal:n, billingMode: entryForm.billing,
-    pending: true, // ทุกรายการที่คีย์ใหม่ ขึ้นเป็น "รอพิจารณา" อัตโนมัติเสมอ จนกว่าจะกดอนุมัติ
+    ...(i===0 ? { pending: true } : {}), // เฉพาะงวดต้นฉบับที่มีสถานะรอพิจารณาของตัวเอง งวดต่อเนื่องอื่นๆ อิงตามงวดต้นฉบับเสมอ ไม่มีสถานะแยกของตัวเอง
   }));
   agent().entries.push(...list);
   saveState();
