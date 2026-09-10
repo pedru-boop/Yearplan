@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-8</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-9</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -545,20 +545,12 @@ function renderTeamTab(){
 
   // ผลงานรวมทั้งทีม (CFYC จากกล่องควบคุมผลงาน/DPO) นับเฉพาะถึงเดือนปัจจุบันจริง แม้เป้าจะตั้งถึงเดือนหลังจากนี้
   const umEffectiveEndMonth = Math.min(umEndMonth, umViewAsOfMonth);
-  // เดือนที่ผ่านมาแล้ว (ก่อนเดือนที่กำลังดู) ถือว่าผ่านการตรวจสอบตามเวลาไปแล้ว จึงนับยอดรวมทั้งหมด (รวมที่ยังรอพิจารณาด้วย) ไม่ใช่ CFYC ปกติที่ใช้ข้อ 1/2/3/6 (ซึ่งตัดรายการรอพิจารณาออกเสมอ) — จุดนี้ตั้งใจนับต่างออกไปตามที่ตกลงกันไว้
-  // ถ้า UM แก้ไขตัวเลขเดือนที่ผ่านมาเองในกล่องควบคุมผลงาน ให้ใช้ค่าที่แก้เองแทน (ถือว่ายืนยันแล้ว)
-  // ส่วนเดือนปัจจุบันที่กำลังดูอยู่ ยังอาจมีรายการค้างตรวจ จึงแยกนับเฉพาะที่อนุมัติแล้วออกจากที่ยังรอ (เว้นแต่ UM แก้ไขตัวเลขเดือนนี้เองแล้ว ก็ถือว่ายืนยันครบ ไม่ต้องแยก)
+  // เดือนที่ผ่านมาแล้ว (ก่อนเดือนที่กำลังดู) ใช้ค่า CFYC จากตารางควบคุมผลงาน (ข้อ 6) ตรงๆ เป๊ะ — ไม่ว่าจะเป็นค่าที่ UM คีย์แก้ไขเอง หรือค่าอัตโนมัติ เพราะถือว่าเดือนที่ผ่านมาต้องตรวจสอบ/คีย์ยืนยันแล้วในตารางนั้นเสมอ (monthlyTeamCFYC คือค่าเดียวกับที่ตารางแสดงเป๊ะ)
+  // ส่วนเดือนปัจจุบันที่กำลังดูอยู่ ยังอาจมีรายการค้างตรวจ จึงแยกนับเฉพาะที่อนุมัติแล้วออกจากที่ยังรอ (เว้นแต่ UM คีย์ CFYC ของเดือนนี้เองในตารางแล้ว ก็ถือว่ายืนยันครบ ไม่ต้องแยก)
   const pastMonthsEnd = umEffectiveEndMonth - 1;
-  const pastMonthsTotal = umStartMonth<=pastMonthsEnd ? [...Array(pastMonthsEnd-umStartMonth+1).keys()].map(i=>umStartMonth+i).reduce((sum,m)=>{
-    const ov = umDirectOverrides[`${selYear}-${m}`];
-    if (ov!==undefined && ov!==null) return sum + ov;
-    return sum + names.reduce((s,name)=>{
-      const ag = state.agents[name];
-      return s + ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; }).reduce((ss,e)=>ss+e.fyc,0);
-    },0);
-  },0) : 0;
+  const pastMonthsTotal = umStartMonth<=pastMonthsEnd ? monthlyTeamCFYC.slice(umStartMonth, pastMonthsEnd+1).reduce((a,b)=>a+b,0) : 0;
   const currentMonthOverrideKey = `${selYear}-${umEffectiveEndMonth}`;
-  const currentMonthOverride = umDirectOverrides[currentMonthOverrideKey];
+  const currentMonthOverride = umMonthOverrides[currentMonthOverrideKey];
   const currentMonthHasOverride = currentMonthOverride!==undefined && currentMonthOverride!==null;
   const currentMonthApproved = currentMonthHasOverride ? currentMonthOverride : names.reduce((sum,name)=>{
     const ag = state.agents[name];
