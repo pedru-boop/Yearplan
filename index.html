@@ -162,6 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-1</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -2225,15 +2226,17 @@ function renderEntryTab(){
       <td class="num" style="color:var(--navy);">${THB(colTotals.quarterly)}</td>
       <td class="num" style="color:var(--navy);">${THB(colTotals.monthly)}</td>
       <td></td>
+      <td></td>
     </tr>`;
     rows = `<div style="overflow-x:auto"><table>
-      <thead><tr><th>วันที่</th><th>หมายเหตุ</th><th style="text-align:right">รายปี</th><th style="text-align:right">ราย 6 เดือน</th><th style="text-align:right">ราย 3 เดือน</th><th style="text-align:right">รายเดือน</th><th></th></tr></thead>
+      <thead><tr><th>วันที่</th><th>หมายเหตุ</th><th style="text-align:right">รายปี</th><th style="text-align:right">ราย 6 เดือน</th><th style="text-align:right">ราย 3 เดือน</th><th style="text-align:right">รายเดือน</th><th style="text-align:center">อนุมัติ</th><th></th></tr></thead>
       <tbody>${filtered.map(e=>{
         if (editingId===e.id){
           return `<tr style="background:#4FAE7414;">
             <td>${renderDateInput('edit', editDraft.date, true)}</td>
             <td><input type="text" data-edit-field="note" value="${esc(editDraft.note)}" style="padding:5px 7px;font-size:18.75px;width:100%;"></td>
             <td colspan="4" style="text-align:right"><input type="text" inputmode="decimal" data-edit-field="fyc" value="${esc(editDraft.fyc)}" style="padding:5px 7px;font-size:18.75px;text-align:right;width:110px;"></td>
+            <td></td>
             <td style="text-align:right;white-space:nowrap;">
               <button class="icon-btn" data-save-edit="${e.id}" title="บันทึก">✔</button>
               <button class="icon-btn" data-cancel-edit="1" title="ยกเลิก">✕</button>
@@ -2245,10 +2248,14 @@ function renderEntryTab(){
         const origin = isOrigin(e);
         return `<tr style="${e.pending?'background:#FBF6E844;':''}">
           <td style="${origin?'color:var(--navy);font-weight:600;':''}${e.pending?'opacity:0.7;':''}">${new Date(e.date).toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})}</td>
-          <td style="color:var(--muted)">${esc(e.note)||"—"}${e.pending?' <span style="color:var(--gold);font-size:12px;font-weight:700;white-space:nowrap;">⏳ รอพิจารณา</span>':''}</td>
+          <td style="color:var(--muted)">${esc(e.note)||"—"}</td>
           ${cell("annual")}${cell("semiannual")}${cell("quarterly")}${cell("monthly")}
+          <td style="text-align:center;">
+            ${e.pending
+              ? `<button class="icon-btn" data-approve-entry="${e.id}" title="แตะเพื่ออนุมัติ (จะตั้งวันที่เป็นวันนี้ = วันที่อนุมัติ)" style="color:var(--muted);font-size:20px;">⭕</button>`
+              : `<span title="อนุมัติแล้ว" style="color:var(--good);font-size:20px;">✅</span>`}
+          </td>
           <td style="text-align:right;white-space:nowrap;">
-            <button class="icon-btn" data-toggle-pending="${e.id}" title="${e.pending?'ทำเครื่องหมายว่าอนุมัติแล้ว':'ทำเครื่องหมายว่ารอพิจารณา'}">${e.pending?'✅':'⏳'}</button>
             <button class="icon-btn" data-start-edit="${e.id}" title="แก้ไข">✏️</button>
             <button class="icon-btn" data-remove="${e.id}" title="ลบ">🗑</button>
           </td>
@@ -2972,12 +2979,26 @@ function bindEvents(){
   const submitBtn = document.getElementById("btn-submit-entry");
   if (submitBtn) submitBtn.onclick = submitEntry;
 
-  document.querySelectorAll("[data-toggle-pending]").forEach(btn=>{
+  document.querySelectorAll("[data-approve-entry]").forEach(btn=>{
     btn.onclick = ()=>{
-      const id = Number(btn.dataset.togglePending);
-      const e = agent().entries.find(x=>x.id===id);
-      if (!e) return;
-      e.pending = !e.pending;
+      const id = Number(btn.dataset.approveEntry);
+      const idx = agent().entries.findIndex(x=>x.id===id);
+      if (idx<0) return;
+      const original = agent().entries[idx];
+      const approvalDate = todayIso();
+      agent().entries[idx] = { ...original, pending: false, date: approvalDate };
+      // ถ้าเป็นงวดแรก (ต้นฉบับ) ของแผนผ่อนชำระหลายงวด งวดที่เหลือต้องขยับวันที่ตามวันอนุมัติใหม่ด้วย ไม่งั้นวันที่จะไม่ต่อเนื่องกัน
+      const isOriginInstallment = (original.installmentIndex ?? 0) === 0;
+      const hasSiblings = (original.installmentTotal ?? 1) > 1;
+      if (isOriginInstallment && hasSiblings){
+        const schedule = buildInstallmentSchedule(original.billingMode, original.fyc);
+        agent().entries.forEach((e,i)=>{
+          if (e.policyId===original.policyId && (e.installmentIndex ?? 0) > 0){
+            const s = schedule[e.installmentIndex];
+            if (s) agent().entries[i] = { ...e, date: addMonthsToDate(approvalDate, s.offset) };
+          }
+        });
+      }
       saveState(); render();
     };
   });
@@ -3354,6 +3375,7 @@ function submitEntry(){
     fyc: s.amount,
     note: n>1 ? `${baseNote}${baseNote?" ":""}(${installmentLabel(entryForm.billing, i, n)})` : baseNote,
     policyId, installmentIndex:i, installmentTotal:n, billingMode: entryForm.billing,
+    pending: true, // ทุกรายการที่คีย์ใหม่ ขึ้นเป็น "รอพิจารณา" อัตโนมัติเสมอ จนกว่าจะกดอนุมัติ
   }));
   agent().entries.push(...list);
   saveState();
