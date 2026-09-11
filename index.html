@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-12</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-13</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -3184,12 +3184,16 @@ function bindEvents(){
         // ถ้าแก้ไขรายการต้นฉบับ (งวดแรก) ของแผนผ่อนชำระหลายงวด ต้องคำนวณงวดถัดๆ ไปใหม่ให้สอดคล้องกัน ไม่งั้นงวดหลังจะค้างเลขเดิม/วันเดิมที่ผิดไป
         const isOriginInstallment = (original.installmentIndex ?? 0) === 0;
         const hasSiblings = (original.installmentTotal ?? 1) > 1;
-        if (isOriginInstallment && hasSiblings && (fycChanged || dateChanged)){
+        const noteChanged = editDraft.note.trim() !== (original.note||"");
+        if (isOriginInstallment && hasSiblings && (fycChanged || dateChanged || noteChanged)){
           const schedule = buildInstallmentSchedule(original.billingMode, newFyc);
+          const newBaseNote = editDraft.note.trim();
           agent().entries.forEach((e,i)=>{
             if (e.policyId===original.policyId && (e.installmentIndex ?? 0) > 0){
               const s = schedule[e.installmentIndex];
-              if (s) agent().entries[i] = { ...e, fyc: s.amount, date: addMonthsToDate(editDraft.date, s.offset) };
+              const eIdx = e.installmentIndex ?? 0;
+              const newNote = `${newBaseNote}${newBaseNote?" ":""}(${installmentLabel(original.billingMode, eIdx, original.installmentTotal)})`;
+              if (s) agent().entries[i] = { ...e, fyc: s.amount, date: addMonthsToDate(editDraft.date, s.offset), note: newNote };
             }
           });
         }
@@ -3228,6 +3232,18 @@ function bindEvents(){
         state.agents[targetAgentName].entries = entriesArr.filter(e=>e.policyId!==target.policyId);
         render();
         showUndoToast(`ลบแผนผ่อนชำระ ${removed.length} งวดแล้ว`,
+          ()=>{ checkClearRelatedFields(targetAgentName); saveState(); render(); },
+          ()=>{ const arr = state.agents[targetAgentName].entries; removed.forEach(r=>arr.splice(r.i,0,r.e)); }
+        );
+      } else if (hasSiblings) {
+        // ลบงวดกลาง/งวดท้าย — ลบงวดนี้พร้อมงวดถัดๆ ไปทั้งหมดในกรมธรรม์เดียวกัน (งวดก่อนหน้ายังอยู่เหมือนเดิม)
+        const targetIndex = target.installmentIndex ?? 0;
+        const removed = entriesArr
+          .map((e,i)=>({e,i}))
+          .filter(x=>x.e.policyId===target.policyId && (x.e.installmentIndex ?? 0)>=targetIndex);
+        state.agents[targetAgentName].entries = entriesArr.filter(e=>!(e.policyId===target.policyId && (e.installmentIndex ?? 0)>=targetIndex));
+        render();
+        showUndoToast(`ลบงวดที่ ${targetIndex+1} เป็นต้นไป (${removed.length} งวด) แล้ว`,
           ()=>{ checkClearRelatedFields(targetAgentName); saveState(); render(); },
           ()=>{ const arr = state.agents[targetAgentName].entries; removed.forEach(r=>arr.splice(r.i,0,r.e)); }
         );
