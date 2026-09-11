@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-9</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-10</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -693,6 +693,36 @@ function renderTeamTab(){
       </div>
     </div>
 
+    ${(()=>{
+      const pendingByAgent = names.map(name=>{
+        const ag = state.agents[name];
+        const pendingEntries = ag.entries.filter(e=>e.pending && isOrigin(e) && new Date(e.date).getFullYear()===selYear)
+          .sort((a,b)=>new Date(b.date)-new Date(a.date));
+        const totalFyc = pendingEntries.reduce((s,e)=>s+e.fyc,0);
+        return { name, pendingEntries, totalFyc };
+      }).filter(a=>a.pendingEntries.length>0);
+      if (!pendingByAgent.length) return '';
+      const grandTotal = pendingByAgent.reduce((s,a)=>s+a.totalFyc,0);
+      const grandCount = pendingByAgent.reduce((s,a)=>s+a.pendingEntries.length,0);
+      return `<div class="card">
+        <h3 data-toggle-box="pendingReport" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+          <span>📋 รายงานผลงานที่รอพิจารณา</span>
+          <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.pendingReport?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
+        </h3>
+        <p class="sub">รวม ${grandCount} รายการ · FYC ${THB(grandTotal)} — ยังไม่อนุมัติ (พ.ศ. ${toBE(selYear)})</p>
+        ${collapsedBoxes.pendingReport?'':pendingByAgent.map(a=>`<div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #123F6B14;">
+          <div data-switch-agent="${esc(a.name)}" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:6px;">
+            <span style="font-weight:700;color:var(--navy);font-size:18px;">${esc(a.name)}</span>
+            <span style="color:var(--gold);font-weight:700;">${a.pendingEntries.length} รายการ · ${THB(a.totalFyc)}</span>
+          </div>
+          ${a.pendingEntries.map(e=>`<div style="display:flex;justify-content:space-between;padding:5px 0 5px 8px;font-size:17px;">
+            <span style="color:var(--muted);">${new Date(e.date).toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"})}${e.note?` — ${esc(e.note)}`:''}</span>
+            <span style="color:var(--navy-deep);font-weight:600;">${THB(e.fyc)}</span>
+          </div>`).join("")}
+        </div>`).join("")}
+      </div>`;
+    })()}
+
     ${selectedPosition?(()=>{
       const now = new Date();
       const isCurrentYearView = selYear === now.getFullYear();
@@ -1002,6 +1032,19 @@ function renderTeamTab(){
         const isUrgent7 = daysLeftInQ7<=7 && daysLeftInQ7>=0;
         const sections = [];
 
+        // ข้อ 3 (โบนัสส่วนเกินโควตาของ UM เอง) — แจ้งถ้ายังไม่ถึงขั้นสูงสุด ว่าขาดอีกเท่าไหร่จะขยับขั้น
+        if (nextBand3Info){
+          sections.push({
+            title: `💎 ข้อ 3 — โบนัสส่วนเกินโควตาของ UM เอง`,
+            urgent: false,
+            rows: [{ name: notYetQualified3?"ยังไม่เข้าเกณฑ์":"ทีม (รวม)", fycOk:false, fycGot:teamCFYCForItem3, fycNeed:teamCFYCForItem3+nextBand3Info.shortfall }],
+            cols: ["fyc"],
+            estimateNote: notYetQualified3
+              ? `ขาดอีก ${THB(nextBand3Info.shortfall)} จะเริ่มได้รับโบนัสข้อนี้ ประมาณ ${THB(nextBand3Info.previewBonus)} (อัตรา ${nextBand3Info.nextRate}%)`
+              : `ขาดอีก ${THB(nextBand3Info.shortfall)} จะขยับขั้น ได้เพิ่มอีกประมาณ ${THB(nextBand3Info.increase)} (อัตราใหม่ ${nextBand3Info.nextRate}%)`
+          });
+        }
+
         // ข้อ 6 (DPO ทีม) — เฉพาะไตรมาสปัจจุบัน (ระดับทีม ไม่แยกรายคน)
         const q6Months = [(curQ7-1)*3,(curQ7-1)*3+1,(curQ7-1)*3+2];
         const q6DirectFyc = q6Months.reduce((s,m)=>s+monthlyDirectAgentFYC[m],0);
@@ -1105,11 +1148,11 @@ function renderTeamTab(){
         };
         return `<div class="card">
           <h3>🎯 โอกาสที่กำลังจะพลาด</h3>
-          <p class="sub">รวมทุกข้อที่ยังทันเวลาทำเพิ่ม (ข้อ 4, 6, 7) — สีแดงหมายถึงเหลือเวลาน้อยมากแล้ว</p>
+          <p class="sub">รวมทุกข้อที่ยังทันเวลาทำเพิ่ม (ข้อ 3, 4, 6, 7) — สีแดงหมายถึงเหลือเวลาน้อยมากแล้ว</p>
           ${sections.map(sec=>`<div style="margin-bottom:16px;">
             <div style="font-weight:700;color:${sec.urgent?'var(--bad)':'var(--navy-deep)'};margin-bottom:6px;">${sec.urgent?'🔴 ':''}${sec.title}</div>
             <div style="overflow-x:auto"><table class="qtable"><thead>${colHeaders(sec.cols)}</thead><tbody>${sec.rows.map(r=>renderRow(r, sec.cols)).join("")}</tbody></table></div>
-            ${sec.estimateNote?`<div style="font-size:14px;color:var(--good);font-weight:600;margin-top:6px;padding:6px 10px;background:#F1F8F3;border-radius:6px;">💡 ${sec.estimateNote}</div>`:''}
+            ${sec.estimateNote?`<div style="font-size:17px;color:var(--good);font-weight:700;margin-top:6px;padding:8px 10px;background:#F1F8F3;border-radius:6px;">💡 ${sec.estimateNote}</div>`:''}
           </div>`).join("")}
         </div>`;
       })();
@@ -1299,37 +1342,7 @@ function renderTeamTab(){
             <span style="font-weight:600;color:var(--navy);font-size:19px;">${esc(a.name)}</span>
             <span style="color:var(--muted);font-size:18px;">›</span>
           </div>
-          ${a.alerts.map(al=>`<div style="font-size:15px;color:var(--bad);margin-top:2px;">${al}</div>`).join("")}
-        </div>`).join("")}
-      </div>`;
-    })()}
-
-    ${(()=>{
-      const pendingByAgent = names.map(name=>{
-        const ag = state.agents[name];
-        const pendingEntries = ag.entries.filter(e=>e.pending && isOrigin(e) && new Date(e.date).getFullYear()===selYear)
-          .sort((a,b)=>new Date(b.date)-new Date(a.date));
-        const totalFyc = pendingEntries.reduce((s,e)=>s+e.fyc,0);
-        return { name, pendingEntries, totalFyc };
-      }).filter(a=>a.pendingEntries.length>0);
-      if (!pendingByAgent.length) return '';
-      const grandTotal = pendingByAgent.reduce((s,a)=>s+a.totalFyc,0);
-      const grandCount = pendingByAgent.reduce((s,a)=>s+a.pendingEntries.length,0);
-      return `<div class="card">
-        <h3 data-toggle-box="pendingReport" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-          <span>📋 รายงานผลงานที่รอพิจารณา</span>
-          <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.pendingReport?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
-        </h3>
-        <p class="sub">รวม ${grandCount} รายการ · FYC ${THB(grandTotal)} — ยังไม่อนุมัติ (พ.ศ. ${toBE(selYear)})</p>
-        ${collapsedBoxes.pendingReport?'':pendingByAgent.map(a=>`<div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #123F6B14;">
-          <div data-switch-agent="${esc(a.name)}" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:6px;">
-            <span style="font-weight:700;color:var(--navy);font-size:18px;">${esc(a.name)}</span>
-            <span style="color:var(--gold);font-weight:700;">${a.pendingEntries.length} รายการ · ${THB(a.totalFyc)}</span>
-          </div>
-          ${a.pendingEntries.map(e=>`<div style="display:flex;justify-content:space-between;padding:4px 0 4px 8px;font-size:15px;">
-            <span style="color:var(--muted);">${new Date(e.date).toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"})}${e.note?` — ${esc(e.note)}`:''}</span>
-            <span style="color:var(--navy-deep);font-weight:600;">${THB(e.fyc)}</span>
-          </div>`).join("")}
+          ${a.alerts.map(al=>`<div style="font-size:17px;font-weight:600;color:var(--bad);margin-top:4px;">${al}</div>`).join("")}
         </div>`).join("")}
       </div>`;
     })()}
