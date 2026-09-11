@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-13</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-14</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -573,11 +573,22 @@ function renderTeamTab(){
   const teamAchievedAllYear = rows.reduce((s,r)=>s+r.achieved,0);
   const teamGoalSum = rows.reduce((s,r)=>s+r.goalFYC,0);
 
+  // เป้าหมายทั้งปี (ม.ค.-ธ.ค. เสมอ) แยกจากเป้าหมายเฉพาะช่วงด้านบน ใช้ตรรกะเดียวกัน (เดือนที่ผ่านมา=ค่า CFYC จริง, เดือนนี้=แยกอนุมัติ/รอพิจารณา) แค่เริ่มนับจากเดือนมกราเสมอไม่ผูกกับ umStartMonth
+  const annualPastMonthsTotal = pastMonthsEnd>=0 ? monthlyTeamCFYC.slice(0, pastMonthsEnd+1).reduce((a,b)=>a+b,0) : 0;
+  const umAnnualAchievedApproved = annualPastMonthsTotal + currentMonthApproved;
+  const umAnnualAchievedPending = currentMonthPending;
+  const umAnnualAchievedTotal = umAnnualAchievedApproved + umAnnualAchievedPending;
+  const umAnnualGoalFYC = getUmAnnualTargetFYC();
+  const umAnnualRemaining = Math.max(0, umAnnualGoalFYC-umAnnualAchievedTotal);
+  const umAnnualProgressPct = umAnnualGoalFYC>0 ? Math.max(0,(umAnnualAchievedTotal/umAnnualGoalFYC)*100) : 0;
+  const umAnnualProgressPctForRing = Math.min(100, umAnnualProgressPct);
+
   const umGoalFYC = getUmTargetFYC();
   const umRemaining = Math.max(0, umGoalFYC-teamAchievedInUmPeriod);
   const umProgressPct = umGoalFYC>0 ? Math.max(0,(teamAchievedInUmPeriod/umGoalFYC)*100) : 0; // ตัวเลขจริง ไม่ตัดเพดานที่ 100% เกินเป้าต้องโชว์เกิน 100% ได้
   const umProgressPctForRing = Math.min(100, umProgressPct); // ใช้คำนวณวงแหวนภาพเท่านั้น กันวงแหวนวาดเกินรอบ
   const ringR = 44, ringC = 2*Math.PI*ringR;
+  const umAnnualRingOffset = ringC - (umAnnualProgressPctForRing/100)*ringC;
   const ringOffset = ringC - (umProgressPctForRing/100)*ringC;
 
   const startMonthOptions = THAI_MONTH_NAMES.map((name,i)=>`<option value="${i}" ${i===umStartMonth?"selected":""}>${name}</option>`).join("");
@@ -650,8 +661,36 @@ function renderTeamTab(){
           </label>
           ${selectedPosition?`<div style="font-size:16px;color:#B9C4D6;margin-top:6px;">เงินเดือน ${THB(selectedPosition.salary)}/เดือน · ค่าขยายงาน ${selectedPosition.tenurePct}% · CFYC ขั้นต่ำ ${THB(selectedPosition.cfycMonth)}/เดือน</div>`:''}
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
-          <label class="field dark" style="max-width:320px;flex:1;min-width:200px;"><span>เป้าหมาย CFYC ของ UM</span>
+
+        <div style="border-top:1px dashed #ffffff33;padding-top:14px;margin-bottom:6px;">
+          <label class="field dark" style="max-width:320px;margin-bottom:16px;"><span>1) เป้าหมาย CFYC ทั้งปี (ม.ค.-ธ.ค. เสมอ)</span>
+            <input type="text" inputmode="decimal" id="um-annual-goal-fyc-input" value="${esc(umAnnualGoalsFycInput)}"
+              style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;">
+          </label>
+          <div class="goal-flex" style="margin-bottom:14px;">
+            <div class="ring-wrap">
+              <svg width="108" height="108" style="transform:rotate(-90deg)">
+                <circle cx="54" cy="54" r="${ringR}" stroke="#ffffff22" stroke-width="10" fill="none"/>
+                <circle cx="54" cy="54" r="${ringR}" stroke="url(#ga2)" stroke-width="10" fill="none"
+                  stroke-dasharray="${ringC}" stroke-dashoffset="${umAnnualRingOffset}" stroke-linecap="round"/>
+                <defs><linearGradient id="ga2" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#9CE3B8"/><stop offset="100%" stop-color="#4FAE74"/>
+                </linearGradient></defs>
+              </svg>
+              <div class="center"><span class="pct">${Math.round(umAnnualProgressPct)}%</span><span class="lbl">ของเป้าทั้งปี</span></div>
+            </div>
+            <div style="flex:1;min-width:220px;">
+              <div class="tech-row"><span class="lab">เป้าหมายทั้งปี</span><span class="val">${THB(umAnnualGoalFYC)}</span></div>
+              <div class="tech-row"><span class="lab">อนุมัติแล้ว (ทั้งปี)</span><span class="val good">${THB(umAnnualAchievedApproved)}</span></div>
+              <div class="tech-row"><span class="lab" style="color:var(--gold);">รอพิจารณา (เฉพาะเดือน${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val" style="color:var(--gold);">${THB(umAnnualAchievedPending)}</span></div>
+              <div class="tech-row" style="border-top:1px dashed #ffffff33;padding-top:6px;"><span class="lab" style="font-weight:700;">รวมทั้งหมด (ทั้งปี)</span><span class="val" style="font-weight:700;">${THB(umAnnualAchievedTotal)}</span></div>
+              <div class="tech-row"><span class="lab">ยังขาดอีก (ทั้งปี)</span><span class="val ${umAnnualRemaining>0?'warn':''}">${THB(umAnnualRemaining)}</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;border-top:1px dashed #ffffff33;padding-top:14px;">
+          <label class="field dark" style="max-width:320px;flex:1;min-width:200px;"><span>2) เป้าหมาย CFYC เฉพาะช่วง</span>
             <input type="text" inputmode="decimal" id="um-goal-fyc-input" value="${esc(umGoalsFycInput)}"
               style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;">
           </label>
@@ -883,9 +922,13 @@ function renderTeamTab(){
           if (multiplier<1.0) nextTier = {mult:1.0, rate:20};
           else if (multiplier<1.75) nextTier = {mult:1.75, rate:22};
           else if (multiplier<2.5) nextTier = {mult:2.5, rate:25};
-          const monthRowsHtml = monthlyFycThisQ.map(x=>`<tr>
+          const monthRowsHtml = monthlyFycThisQ.map(x=>{
+            const inRange = x.month>=umStartMonth && x.month<=umEndMonth;
+            const monthsInPeriod = umEndMonth - umStartMonth + 1;
+            const monthTarget = inRange && monthsInPeriod>0 ? umGoalFYC/monthsInPeriod : 0;
+            return `<tr>
             <td style="color:var(--navy-deep);font-weight:600;vertical-align:top;padding-top:8px;">${THAI_MONTH_SHORT[x.month]}</td>
-            <td class="r" style="color:var(--navy-deep);vertical-align:top;padding-top:8px;">${THB(umGoalFYC/12)}</td>
+            <td class="r" style="color:${inRange?'var(--navy-deep)':'var(--muted)'};vertical-align:top;padding-top:8px;">${inRange?THB(monthTarget):'—'}</td>
             <td class="r" style="vertical-align:top;padding-top:0;">
               <input type="text" inputmode="decimal" data-qty-override="${x.cfycKey}" value="${esc(formatThousands(String(x.cfycValue)))}" style="width:98px;padding:4px 5px;font-size:21px;font-weight:700;font-family:'Space Grotesk',sans-serif;text-align:center;">
               <div style="font-size:12px;color:${x.cfycIsOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${x.cfycIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
@@ -894,7 +937,7 @@ function renderTeamTab(){
               <input type="text" inputmode="decimal" data-direct-override="${x.directKey}" value="${esc(formatThousands(String(x.directValue)))}" style="width:98px;padding:4px 5px;font-size:21px;font-weight:700;font-family:'Space Grotesk',sans-serif;text-align:center;">
               <div style="font-size:12px;color:${x.directIsOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${x.directIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
             </td>
-          </tr>`).join("");
+          </tr>`;}).join("");
           return `<div class="qcard" style="background:${NAVY_TINTS[q-1]};">
             ${isCurrentQ?`<div class="badge-current">ไตรมาสปัจจุบัน</div>`:''}
             <div class="head"><span>ไตรมาส ${q}</span><span>${isCurrentQ?'⏳':(rate>0?'✔':'✕')}</span></div>
@@ -1683,6 +1726,17 @@ function setUmTargetFYC(value, year){
   if (!state.umGoal.targetFYCByYear) state.umGoal.targetFYCByYear = {};
   state.umGoal.targetFYCByYear[year] = value;
 }
+function getUmAnnualTargetFYC(year){
+  year = year ?? selYear;
+  const g = state.umGoal;
+  if (g.annualTargetFYCByYear && g.annualTargetFYCByYear[year]!==undefined) return g.annualTargetFYCByYear[year];
+  return 0;
+}
+function setUmAnnualTargetFYC(value, year){
+  year = year ?? selYear;
+  if (!state.umGoal.annualTargetFYCByYear) state.umGoal.annualTargetFYCByYear = {};
+  state.umGoal.annualTargetFYCByYear[year] = value;
+}
 function getAgentTargetFYC(year, agObj){
   year = year ?? selYear;
   const g = (agObj || agent()).goals;
@@ -1816,6 +1870,7 @@ let trainingSectionOpen = false;
 let goalsFycInput = formatThousands(String(getAgentTargetFYC()));
 let annualGoalsFycInput = formatThousands(String(getAgentAnnualTargetFYC()));
 let umGoalsFycInput = formatThousands(String(getUmTargetFYC()));
+let umAnnualGoalsFycInput = formatThousands(String(getUmAnnualTargetFYC()));
 let calendars = {}; // id -> {open, viewYear, viewMonth}
 let newAgentNameInput = "";
 let entrySearchQuery = "";
@@ -2838,6 +2893,7 @@ function bindEvents(){
     selYear = Number(ys.value);
     // ปีเปลี่ยน เป้าหมายต้องรีเฟรชตามปีใหม่ทันที ไม่ให้ค้างค่าของปีก่อนหน้า
     umGoalsFycInput = formatThousands(String(getUmTargetFYC()));
+    umAnnualGoalsFycInput = formatThousands(String(getUmAnnualTargetFYC()));
     goalsFycInput = formatThousands(String(getAgentTargetFYC()));
     annualGoalsFycInput = formatThousands(String(getAgentAnnualTargetFYC()));
     render();
@@ -3058,6 +3114,17 @@ function bindEvents(){
       render();
     };
     umGoalInput.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
+  }
+  const umAnnualGoalInput = document.getElementById("um-annual-goal-fyc-input");
+  if (umAnnualGoalInput){
+    umAnnualGoalInput.oninput = (e)=>{ umAnnualGoalsFycInput = formatThousands(stripCommas(e.target.value)); e.target.value = umAnnualGoalsFycInput; };
+    umAnnualGoalInput.onfocus = (e)=>e.target.select();
+    umAnnualGoalInput.onblur = ()=>{
+      const raw = Number(stripCommas(umAnnualGoalsFycInput));
+      if (!isNaN(raw) && raw>=0){ setUmAnnualTargetFYC(raw); saveState(); }
+      render();
+    };
+    umAnnualGoalInput.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
   }
   const umGoalStartMonth = document.getElementById("um-goal-start-month");
   if (umGoalStartMonth){
