@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-15</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-16</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -538,7 +538,16 @@ function renderTeamTab(){
     // เช็คว่า "งานหาย" ไหม: ดูแค่เดือนที่กำลังดูอยู่ (umViewAsOfMonth) — มีงานเดือนนี้ = ไม่ต้องจับตา ไม่สนเดือนก่อนหน้าหรือแนวโน้ม
     const hasWorkThisMonth = ag.entries.some(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===umViewAsOfMonth; });
     const isQuiet = !hasWorkThisMonth;
-    return { name, achieved, goalFYC, pct, isQuiet, hasAnyEntry: yEntries.length>0 };
+    // ถ้าไม่มีงาน หาว่าเดือนล่าสุดที่มีงานคือเดือนไหน (ย้อนไปถึงต้นปีที่ดูอยู่) เพื่อบอกว่า "ไม่มีงานมาตั้งแต่เดือนไหน"
+    let quietSinceMonth = null;
+    if (isQuiet){
+      let lastWorkMonth = -1;
+      for (let m=0; m<=umViewAsOfMonth; m++){
+        if (ag.entries.some(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; })) lastWorkMonth = m;
+      }
+      quietSinceMonth = lastWorkMonth+1; // เดือนถัดจากเดือนล่าสุดที่มีงาน คือเดือนแรกที่เริ่มไม่มีงาน
+    }
+    return { name, achieved, goalFYC, pct, isQuiet, quietSinceMonth, hasAnyEntry: yEntries.length>0 };
   }).sort((a,b)=>b.pct-a.pct);
   const lowestPct = rows.length ? Math.min(...rows.map(r=>r.pct)) : 0;
   const maxAchieved = Math.max(1, ...rows.map(r=>r.achieved));
@@ -1060,6 +1069,16 @@ function renderTeamTab(){
           <div class="tech-row"><span class="lab">7. ค่าสร้างและรักษาตัวแทน</span><span class="val good">${THB(teamBuildingReward)}</span></div>
           ${teamBuildingDetail.length?`<table class="qtable" style="margin-bottom:8px;"><thead><tr><th>ตัวแทน</th><th>ไตรมาส</th><th>ระดับ</th><th class="r">ได้รับ</th></tr></thead><tbody>${teamBuildingDetail.map(d=>`<tr><td style="color:var(--navy-deep);">${esc(d.name)}</td><td>${d.q}</td><td>${d.level}</td><td class="r" style="color:var(--good);">${THB(d.reward)}</td></tr>`).join("")}</tbody></table>`:''}
         </div>
+        <div style="background:#F5F8FC;border:1px dashed #123F6B33;border-radius:8px;padding:10px 12px;margin-top:14px;">
+          <div style="font-size:14px;color:var(--navy-deep);font-weight:600;margin-bottom:6px;">🧪 ลองสมมติรวม: ถ้าทีมทำ CFYC เพิ่มขึ้นอีก (กระทบข้อ 2, 3, 6 พร้อมกัน — ข้อ 1 ไม่รวมเพราะขึ้นกับว่าเดือนไหนถึงโควตา ไม่ใช่ยอดสะสม)</div>
+          <input type="text" inputmode="decimal" id="combined-hypothetical-input"
+            data-current-cfyc="${teamCFYCForItem3}" data-quota3="${quota3}" data-position="${selectedPosition.value}" data-interim-paid="${interimBonus6mo}"
+            data-tenure-pct="${selectedPosition.tenurePct}"
+            data-cur-q-direct="${(()=>{ const curQMonths=[Math.floor(umViewAsOfMonth/3)*3,Math.floor(umViewAsOfMonth/3)*3+1,Math.floor(umViewAsOfMonth/3)*3+2]; return curQMonths.reduce((s,m)=>s+monthlyDirectAgentFYC[m],0); })()}"
+            data-threshold="${salesCompThreshold}"
+            placeholder="0" style="width:140px;padding:5px 8px;font-size:18px;text-align:center;margin-bottom:6px;">
+          <div id="combined-hypothetical-result" style="font-size:14px;color:var(--muted);"></div>
+        </div>
         <div style="margin-top:14px;padding-top:10px;border-top:2px solid #123F6B22;display:flex;justify-content:space-between;align-items:center;">
           <span style="font-weight:700;color:var(--navy);">สรุปรวมสะสม (ไม่รวมข้อ 4) ถึงเดือน${THAI_MONTH_NAMES[umViewAsOfMonth]}</span>
           <span style="font-weight:800;font-size:23px;color:var(--good);">${THB(Math.min(umViewAsOfMonth+1, Math.floor(cumulativeTeamCFYC/selectedPosition.cfycMonth))*selectedPosition.salary + monthlyTeamCFYC.slice(0,umViewAsOfMonth+1).reduce((s,v)=>s+v*selectedPosition.tenurePct/100,0) + profitBonus + salesCompReward + teamBuildingReward)}</span>
@@ -1141,14 +1160,18 @@ function renderTeamTab(){
           // ประมาณการรางวัล คิดจาก FYC รวมทั้งที่อนุมัติแล้วและรออนุมัติ เพื่อให้ UM เห็นว่าถ้าอนุมัติของที่ค้างอยู่ครบ จะขยับไปถึงระดับไหน
           const fycCombined = qFyc + fycPending;
           const estTier = TEAM_BUILDING_TIERS.find(t=>fycCombined>=t.minFyc) || TEAM_BUILDING_TIERS[TEAM_BUILDING_TIERS.length-1];
-          item7Rows.push({ name, casesOk:newCases>=2, casesGot:newCases, casesNeed:2, casesPending, fycOk:qFyc>=15000, fycGot:qFyc, fycNeed:15000, fycPending, fycNA:false, estReward: estTier.reward, estLevel: estTier.level });
+          // บอกชัดว่าแต่ละคนขาดอะไร — ขาดแค่ราย, ขาดแค่ FYC, หรือขาดทั้งสองอย่าง เพื่อให้ UM รู้ว่าจะช่วยผลักดันตรงไหน
+          const casesShort = !(newCases>=2);
+          const fycShort = !(qFyc>=15000);
+          const needType = casesShort && fycShort ? "ขาดทั้งราย+FYC" : casesShort ? "ขาดแค่ราย" : fycShort ? "ขาดแค่ FYC" : "";
+          item7Rows.push({ name, casesOk:newCases>=2, casesGot:newCases, casesNeed:2, casesPending, fycOk:qFyc>=15000, fycGot:qFyc, fycNeed:15000, fycPending, fycNA:false, estReward: estTier.reward, estLevel: estTier.level, needType });
         });
         if (item7Rows.length){
           sections.push({
             title: `👤 ข้อ 7 — ค่าสร้างและรักษาตัวแทน — ไตรมาส ${curQ7}`,
             urgent: isUrgent7,
             rows: item7Rows,
-            cols: ["cases","fyc","pending","reward"],
+            cols: ["need","cases","fyc","pending","reward"],
             estimateNote: `ถ้าครบจำนวนราย รางวัลจะขึ้นอยู่กับ FYC ของแต่ละคน (ระดับ 4 ที่ 15,000 = 700 บาท ไปจนถึงระดับสตาร์ที่ 60,000 = 3,500 บาท) — คอลัมน์ "ถ้าผ่านจะได้รับ" คิดรวมยอดรออนุมัติด้วย เผื่อดูว่าถ้าอนุมัติของที่ค้างอยู่ครบจะขยับไปถึงระดับไหน`
           });
         }
@@ -1180,6 +1203,12 @@ function renderTeamTab(){
         if (!sections.length) return '';
         const renderRow = (r, cols)=>{
           const cells = [`<td style="color:var(--navy-deep);font-weight:600;">${esc(r.name)}</td>`];
+          if (cols.includes("need")){
+            const needColor = r.needType==="ขาดทั้งราย+FYC" ? 'var(--bad)' : 'var(--gold)';
+            cells.push(r.needType
+              ? `<td class="r" style="color:${needColor};font-weight:700;font-size:15px;">${r.needType}</td>`
+              : `<td class="r"></td>`);
+          }
           if (cols.includes("cases")){
             cells.push(`<td class="r" style="color:${r.casesOk?'var(--good)':'var(--bad)'};font-weight:${r.casesOk?700:600};">${r.casesGot}/${r.casesNeed}</td>`);
           }
@@ -1207,6 +1236,7 @@ function renderTeamTab(){
         };
         const colHeaders = (cols)=>{
           const h = ["ชื่อ"];
+          if (cols.includes("need")) h.push("ต้องการ");
           if (cols.includes("cases")) h.push("ราย (ได้/ต้องทำ)");
           if (cols.includes("fyc")) h.push("FYC (ได้/ต้องทำ)");
           if (cols.includes("days")) h.push("เวลาเหลือ");
@@ -1362,7 +1392,7 @@ function renderTeamTab(){
         const ag = state.agents[name];
         const alerts = [];
         const r = rows.find(rr=>rr.name===name);
-        if (r && r.isQuiet) alerts.push(`😴 ไม่มีผลงานเดือน${THAI_MONTH_NAMES[umViewAsOfMonth]}`);
+        if (r && r.isQuiet) alerts.push(`😴 ไม่มีงานมาแล้วตั้งแต่เดือน${THAI_MONTH_NAMES[r.quietSinceMonth]}`);
         const pendingEntries = ag.entries.filter(e=>e.pending && isOrigin(e));
         if (pendingEntries.length){
           const pendingFyc = pendingEntries.reduce((s,e)=>s+e.fyc,0);
@@ -1421,6 +1451,80 @@ function renderTeamTab(){
           </div>
           ${a.alerts.map(al=>`<div style="font-size:17px;font-weight:600;color:var(--bad);margin-top:4px;">${al}</div>`).join("")}
         </div>`).join("")}
+      </div>`;
+    })()}
+
+    ${(()=>{
+      const now = new Date();
+      const cardList = names.map(name=>{
+        const ag = state.agents[name];
+        const exp = ag.license?.cardExpiryDate;
+        if (!exp) return null;
+        const expDate = new Date(exp+"T00:00:00");
+        const daysLeft = Math.ceil((expDate-now)/86400000);
+        return { name, expDate, daysLeft };
+      }).filter(x=>x).sort((a,b)=>a.daysLeft-b.daysLeft);
+      if (!cardList.length) return '';
+      return `<div class="card">
+        <h3 data-toggle-box="cardExpiry" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+          <span>🪪 บัตรตัวแทนทั้งทีม (เรียงตามความเร่งด่วน)</span>
+          <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.cardExpiry?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
+        </h3>
+        <p class="sub">บัตรหมดอายุ = ขายไม่ได้ กระทบ CFYC ทั้งทีมโดยตรง — ควรต่ออายุล่วงหน้าก่อนหมดเขต</p>
+        ${collapsedBoxes.cardExpiry?'':cardList.map(c=>{
+          const urgent = c.daysLeft<=30;
+          const expired = c.daysLeft<0;
+          const color = expired?'var(--bad)':urgent?'var(--bad)':c.daysLeft<=60?'var(--gold)':'var(--muted)';
+          return `<div data-switch-agent="${esc(c.name)}" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #123F6B0D;cursor:pointer;">
+            <span style="font-weight:600;color:var(--navy);font-size:18px;">${esc(c.name)}</span>
+            <span style="text-align:right;">
+              <div style="color:${color};font-weight:700;font-size:17px;">${expired?'❌ หมดอายุแล้ว':urgent?`🔴 เหลือ ${c.daysLeft} วัน`:`เหลือ ${c.daysLeft} วัน`}</div>
+              <div style="color:var(--muted);font-size:14px;">${c.expDate.toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"})}</div>
+            </span>
+          </div>`;
+        }).join("")}
+      </div>`;
+    })()}
+
+    ${(()=>{
+      const now = new Date();
+      const timelineList = names.map(name=>{
+        const ag = state.agents[name];
+        const sd = ag.competitions?.firstSaleDate;
+        if (!sd) return null;
+        const startDate = new Date(sd+"T00:00:00");
+        const windowEnd = addMonths(sd, 12);
+        const daysLeft = Math.ceil((windowEnd-now)/86400000);
+        if (daysLeft<0) return null; // หมดเขตไปแล้ว ไม่ต้องโชว์ในไทม์ไลน์
+        const eligibleFYC = effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d>=startDate && d<=windowEnd; }).reduce((s,e)=>s+e.fyc,0);
+        const totalDays = Math.ceil((windowEnd-startDate)/86400000);
+        const daysPassed = totalDays-daysLeft;
+        const pctPassed = totalDays>0 ? Math.min(100,Math.max(0,(daysPassed/totalDays)*100)) : 0;
+        return { name, startDate, windowEnd, daysLeft, eligibleFYC, pctPassed };
+      }).filter(x=>x).sort((a,b)=>a.daysLeft-b.daysLeft);
+      if (!timelineList.length) return '';
+      return `<div class="card">
+        <h3 data-toggle-box="serviceFeeTimeline" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+          <span>⏳ ไทม์ไลน์ค่าเสริมมือ (ข้อ 4) ทั้งทีม</span>
+          <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.serviceFeeTimeline?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
+        </h3>
+        <p class="sub">แสดงทุกคนตั้งแต่วันแรก ไม่ต้องรอใกล้หมดเขตถึงจะเห็น — ช่วยวางแผนดัน FYC ให้ตัวแทนใหม่แต่ละคนได้ล่วงหน้า (30% ของ FYC ในช่วง 12 เดือนแรก ไม่มีขั้นต่ำ)</p>
+        ${collapsedBoxes.serviceFeeTimeline?'':timelineList.map(t=>{
+          const urgent = t.daysLeft<=60;
+          return `<div data-switch-agent="${esc(t.name)}" style="padding:10px 0;border-bottom:1px solid #123F6B0D;cursor:pointer;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-weight:600;color:var(--navy);font-size:18px;">${esc(t.name)}</span>
+              <span style="color:${urgent?'var(--bad)':'var(--muted)'};font-weight:${urgent?700:500};font-size:16px;">${urgent?'🔴 ':''}เหลือ ${t.daysLeft} วัน</span>
+            </div>
+            <div style="background:#123F6B14;border-radius:6px;height:8px;overflow:hidden;margin-bottom:6px;">
+              <div style="background:${urgent?'var(--gold)':'var(--good)'};height:100%;width:${t.pctPassed}%;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:14px;color:var(--muted);">
+              <span>สะสม FYC ${THB(t.eligibleFYC)} (ค่าเสริมมือ ≈ ${THB(t.eligibleFYC*0.3)})</span>
+              <span>ครบเขต ${t.windowEnd.toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"})}</span>
+            </div>
+          </div>`;
+        }).join("")}
       </div>`;
     })()}
 
@@ -1876,7 +1980,7 @@ let calendars = {}; // id -> {open, viewYear, viewMonth}
 let newAgentNameInput = "";
 let entrySearchQuery = "";
 let addAgentMode = false;
-let collapsedBoxes = { explain:true, monthlyCalc:true, newAgent:true, compare:true, compareBars:true, pendingReport:false }; // ย่อไว้ตั้งแต่แรก กดหัวข้อเพื่อขยายดูรายละเอียด (pendingReport เปิดไว้ก่อน เพราะเป็นเรื่องที่ต้องรีบดู)
+let collapsedBoxes = { explain:true, monthlyCalc:true, newAgent:true, compare:true, compareBars:true, pendingReport:false, cardExpiry:false, serviceFeeTimeline:true }; // ย่อไว้ตั้งแต่แรก กดหัวข้อเพื่อขยายดูรายละเอียด (pendingReport, cardExpiry เปิดไว้ก่อน เพราะเป็นเรื่องที่ต้องรีบดู)
 
 function agent(){
   if (!state.agents[state.currentAgent]){
@@ -3423,6 +3527,57 @@ function bindEvents(){
     };
     item3HypInput.oninput = (e)=>{ e.target.value = formatThousands(stripCommas(e.target.value)); recompute(); };
     item3HypInput.onfocus = (e)=>e.target.select();
+  }
+  const combinedHypInput = document.getElementById("combined-hypothetical-input");
+  if (combinedHypInput){
+    const resultEl = document.getElementById("combined-hypothetical-result");
+    const recompute = ()=>{
+      const raw = Number(stripCommas(combinedHypInput.value)) || 0;
+      if (raw<=0){ resultEl.innerHTML = ''; return; }
+      const curCfyc = Number(combinedHypInput.dataset.currentCfyc);
+      const quota3v = Number(combinedHypInput.dataset.quota3);
+      const posValue = combinedHypInput.dataset.position;
+      const interimPaid = Number(combinedHypInput.dataset.interimPaid) || 0;
+      const tenurePct = Number(combinedHypInput.dataset.tenurePct);
+      const curQDirect = Number(combinedHypInput.dataset.curQDirect);
+      const threshold = Number(combinedHypInput.dataset.threshold);
+      const table = NEW_AGENT_PROFIT_TABLE[posValue];
+
+      // ข้อ 2: ค่าขยายงาน — สัดส่วนตรงตัวจาก CFYC ที่เพิ่ม
+      const item2Impact = raw * tenurePct / 100;
+
+      // ข้อ 3: โบนัสส่วนเกินโควตา — เทียบก่อน/หลังเพิ่ม
+      const curExcess = Math.max(0, curCfyc - quota3v);
+      const curPct = quota3v>0 ? (curExcess/quota3v)*100 : 0;
+      const curBandIdx = curExcess>0 ? newAgentProfitBandIndex(curPct) : -1;
+      const curBonus = curBandIdx>=0 ? (curExcess*table.rates[curBandIdx]/100) + (table.amounts?table.amounts[curBandIdx]:0) : 0;
+      const hypTotal = curCfyc + raw;
+      const hypExcess = Math.max(0, hypTotal - quota3v);
+      const hypPct = quota3v>0 ? (hypExcess/quota3v)*100 : 0;
+      const hypBandIdx = hypExcess>0 ? newAgentProfitBandIndex(hypPct) : -1;
+      const hypBonus = hypBandIdx>=0 ? (hypExcess*table.rates[hypBandIdx]/100) + (table.amounts?table.amounts[hypBandIdx]:0) : 0;
+      const item3Impact = Math.max(0, hypBonus - curBonus);
+
+      // ข้อ 6 (DPO): สมมติว่ายอดที่เพิ่มขึ้นนับเป็นตัวแทนตรงของไตรมาสนี้ด้วย เทียบอัตราก่อน/หลัง
+      const curRate = salesCompRate(curQDirect, threshold);
+      const hypQDirect = curQDirect + raw;
+      const hypRate6 = salesCompRate(hypQDirect, threshold);
+      const curReward6 = curQDirect * curRate / 100;
+      const hypReward6 = hypQDirect * hypRate6 / 100;
+      const item6Impact = Math.max(0, hypReward6 - curReward6);
+
+      const totalImpact = item2Impact + item3Impact + item6Impact;
+      resultEl.innerHTML = `<div style="color:var(--navy);">ถ้าทีมทำ CFYC เพิ่มอีก <b>${formatThousands(String(raw))}</b> จะได้เพิ่ม:</div>
+        <div style="padding-left:10px;margin-top:2px;">
+          <div>ข้อ 2 (ค่าขยายงาน): <b style="color:var(--good);">${THB(item2Impact)}</b></div>
+          <div>ข้อ 3 (โบนัสโควตา): <b style="color:var(--good);">${THB(item3Impact)}</b>${item3Impact>0 && hypBandIdx!==curBandIdx?' (ขยับขั้น)':''}</div>
+          <div>ข้อ 6 (DPO): <b style="color:var(--good);">${THB(item6Impact)}</b>${hypRate6!==curRate?` (อัตราขยับเป็น ${hypRate6}%)`:''}</div>
+        </div>
+        <div style="margin-top:4px;font-weight:700;color:var(--navy);">รวมเพิ่มขึ้นทั้งหมด: <span style="color:var(--good);font-size:17px;">${THB(totalImpact)}</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">*ข้อ 6 สมมติว่ายอดที่เพิ่มนับเป็นตัวแทนตรงของไตรมาสนี้ด้วย ถ้าเป็นผลงานทีมอื่นที่ไม่ใช่ตัวแทนตรง ข้อ 6 อาจไม่ได้เพิ่มตามนี้จริง</div>`;
+    };
+    combinedHypInput.oninput = (e)=>{ e.target.value = formatThousands(stripCommas(e.target.value)); recompute(); };
+    combinedHypInput.onfocus = (e)=>e.target.select();
   }
   document.querySelectorAll("[data-fyc-override]").forEach(inp=>{
     inp.oninput = (e)=>{ const f = formatThousands(stripCommas(e.target.value)); e.target.value = f; };
