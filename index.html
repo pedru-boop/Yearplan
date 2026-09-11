@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-16</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-17</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -2482,8 +2482,19 @@ function billingModeOf(e){
 }
 function renderEntryTab(){
   const entries = getYearEntries(); // ทั้งหมด รวมที่รอพิจารณาด้วย — ใช้แสดงตารางครบทุกแถว
-  const effEntries = effectiveEntries(entries); // เฉพาะที่นับผลจริงแล้ว — ใช้สรุปยอดด้านบน
   const sorted = [...entries].sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  // ค้นหาจากหมายเหตุ (ชื่อลูกค้า/เลขกรมธรรม์) หรือชื่อเดือน (ไทย เต็มหรือย่อ) — พิมพ์ชื่อเดือนจะกรองเฉพาะเดือนนั้น ไม่ใช่ค้นข้อความ
+  const q = entrySearchQuery.trim().toLowerCase();
+  const matchedMonth = q ? THAI_MONTH_NAMES.findIndex(m=>m.toLowerCase().includes(q)) : -1;
+  const matchedMonthShort = q ? THAI_MONTH_SHORT.findIndex(m=>m.toLowerCase().replace(/\./g,"").includes(q.replace(/\./g,""))) : -1;
+  const monthFilter = matchedMonth>=0 ? matchedMonth : matchedMonthShort;
+  const filtered = !q ? sorted
+    : monthFilter>=0 ? sorted.filter(e=>new Date(e.date).getMonth()===monthFilter)
+    : sorted.filter(e=>(e.note||"").toLowerCase().includes(q));
+
+  // ยอดรวมทุกตัว (ที่แสดงบนสุดและแถวรวมท้ายตาราง) คำนวณจากผลลัพธ์ที่ค้นหา/กรองอยู่ตอนนี้เท่านั้น ไม่ใช่ทั้งปีเสมอไป
+  const effEntries = effectiveEntries(filtered); // เฉพาะที่นับผลจริงแล้ว ภายในผลลัพธ์ที่กรองอยู่ — ใช้สรุปยอดด้านบน
   const totalFYC = effEntries.reduce((s,e)=>s+e.fyc,0);
   const originCount = effEntries.filter(isOrigin).length;
 
@@ -2491,10 +2502,6 @@ function renderEntryTab(){
 
   const colTotals = { annual:0, semiannual:0, quarterly:0, monthly:0 };
   effEntries.forEach(e=>{ colTotals[billingModeOf(e)] += e.fyc; });
-
-  // ค้นหาจากหมายเหตุ ไม่กระทบยอดรวมทั้งปีด้านบน (แค่กรองแถวที่แสดง)
-  const q = entrySearchQuery.trim().toLowerCase();
-  const filtered = q ? sorted.filter(e=>(e.note||"").toLowerCase().includes(q)) : sorted;
 
   let rows = "";
   if (sorted.length===0){
@@ -2591,9 +2598,10 @@ function renderEntryTab(){
         <h3>รายการผลงาน พ.ศ. ${toBE(selYear)}</h3>
         <span style="font-size:18.75px;color:var(--muted);">${originCount} ราย · FYC รวม <b style="color:var(--navy)">${THB(totalFYC)}</b></span>
       </div>
+      ${q?`<p style="font-size:14px;color:var(--gold);margin:-6px 0 4px;font-weight:600;">🔍 ยอดด้านบนเป็นยอดเฉพาะผลลัพธ์ที่ค้นหาอยู่ ไม่ใช่ทั้งปี</p>`:''}
       <p style="font-size:15px;color:var(--muted);margin:-4px 0 10px;">วันที่สีน้ำเงิน = วันที่ลูกค้าชำระเบี้ยจริง (งวดแรก) ส่วนงวดที่เข้าต่อเนื่องเป็นสีปกติ</p>
       ${sorted.length>0?`<div style="margin-bottom:10px;position:relative;">
-        <input type="text" id="entry-search" placeholder="🔍 ค้นหาจากหมายเหตุ (ชื่อลูกค้า/เลขกรมธรรม์)" value="${esc(entrySearchQuery)}" style="width:100%;box-sizing:border-box;padding:8px 34px 8px 12px;">
+        <input type="text" id="entry-search" placeholder="🔍 ค้นหาจากหมายเหตุ หรือชื่อเดือน (เช่น สิงหา)" value="${esc(entrySearchQuery)}" style="width:100%;box-sizing:border-box;padding:8px 34px 8px 12px;">
         ${entrySearchQuery?`<span id="entry-search-clear" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:18px;">✕</span>`:''}
       </div>`:''}
       ${rows}
