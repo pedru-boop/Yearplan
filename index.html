@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-17</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-18</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -1979,6 +1979,7 @@ let umAnnualGoalsFycInput = formatThousands(String(getUmAnnualTargetFYC()));
 let calendars = {}; // id -> {open, viewYear, viewMonth}
 let newAgentNameInput = "";
 let entrySearchQuery = "";
+let entrySearchDebounceTimer = null;
 let addAgentMode = false;
 let collapsedBoxes = { explain:true, monthlyCalc:true, newAgent:true, compare:true, compareBars:true, pendingReport:false, cardExpiry:false, serviceFeeTimeline:true }; // ย่อไว้ตั้งแต่แรก กดหัวข้อเพื่อขยายดูรายละเอียด (pendingReport, cardExpiry เปิดไว้ก่อน เพราะเป็นเรื่องที่ต้องรีบดู)
 
@@ -2494,7 +2495,10 @@ function renderEntryTab(){
     : sorted.filter(e=>(e.note||"").toLowerCase().includes(q));
 
   // ยอดรวมทุกตัว (ที่แสดงบนสุดและแถวรวมท้ายตาราง) คำนวณจากผลลัพธ์ที่ค้นหา/กรองอยู่ตอนนี้เท่านั้น ไม่ใช่ทั้งปีเสมอไป
-  const effEntries = effectiveEntries(filtered); // เฉพาะที่นับผลจริงแล้ว ภายในผลลัพธ์ที่กรองอยู่ — ใช้สรุปยอดด้านบน
+  // สำคัญ: ต้องเช็คสถานะอนุมัติจาก "ข้อมูลทั้งหมดของตัวแทน" ก่อน (เจอต้นฉบับแน่นอนไม่ว่าจะอยู่เดือนไหน) แล้วค่อยกรองลงมาเฉพาะผลค้นหาทีหลัง
+  // ถ้ากรองก่อนแล้วค่อยเช็ค (เหมือนที่เคยทำ) งวดต่อเนื่องที่ต้นฉบับอยู่คนละเดือนกับที่ค้นหา จะหาต้นฉบับไม่เจอ แล้วตกหล่นจากยอดรวมไปอย่างผิดๆ
+  const effectiveIdSet = new Set(effectiveEntries(agent().entries).map(e=>e.id));
+  const effEntries = filtered.filter(e=>effectiveIdSet.has(e.id)); // เฉพาะที่นับผลจริงแล้ว ภายในผลลัพธ์ที่กรองอยู่ — ใช้สรุปยอดด้านบน
   const totalFYC = effEntries.reduce((s,e)=>s+e.fyc,0);
   const originCount = effEntries.filter(isOrigin).length;
 
@@ -3268,10 +3272,19 @@ function bindEvents(){
   // Entry form
   const entrySearchInput = document.getElementById("entry-search");
   if (entrySearchInput){
-    entrySearchInput.oninput = (e)=>{ entrySearchQuery = e.target.value; render(); setTimeout(()=>{ const el=document.getElementById("entry-search"); if(el){ el.focus(); el.selectionStart=el.selectionEnd=el.value.length; } },0); };
+    entrySearchInput.oninput = (e)=>{
+      entrySearchQuery = e.target.value;
+      // หน่วงเวลาก่อนสร้างหน้าใหม่ รอจนพิมพ์หยุดสักครู่ ไม่ใช่สร้างใหม่ทุกตัวอักษร กันอาการกระพริบตอนพิมพ์เร็วๆ
+      clearTimeout(entrySearchDebounceTimer);
+      entrySearchDebounceTimer = setTimeout(()=>{
+        render();
+        const el = document.getElementById("entry-search");
+        if (el){ el.focus(); el.selectionStart = el.selectionEnd = el.value.length; }
+      }, 300);
+    };
   }
   const entrySearchClear = document.getElementById("entry-search-clear");
-  if (entrySearchClear) entrySearchClear.onclick = ()=>{ entrySearchQuery=""; render(); };
+  if (entrySearchClear) entrySearchClear.onclick = ()=>{ clearTimeout(entrySearchDebounceTimer); entrySearchQuery=""; render(); };
   const fFyc = document.getElementById("f-fyc");
   if (fFyc){
     fFyc.oninput = (e)=>{
