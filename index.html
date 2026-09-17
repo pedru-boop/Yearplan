@@ -18,7 +18,7 @@
 <style>
   :root{
     --navy:#0F56B2; --navy-deep:#082238; --gold:#4FAE74; --gold-soft:#9CE3B8;
-    --cream:#E7F2FB; --card:#FFFFFF; --ink:#1B2430; --muted:#6B7280;
+    --cream:#E7F2FB; --card:#FFFFFF; --ink:#1B2430; --muted:#000000;
     --good:#2F7A4F; --warn:#B8862E; --bad:#B4453B;
   }
   *{box-sizing:border-box;}
@@ -46,7 +46,7 @@
   main{max-width:1080px; margin:0 auto; padding:20px 20px 64px;}
   .year-picker{display:flex; align-items:center; gap:10px; margin:22px 0 8px;}
   .agent-picker{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:16px;}
-  .agent-picker span.lbl{font-size:19.5px; color:var(--muted); font-weight:600;}
+  .agent-picker span.lbl{font-size:19.5px; color:#6B7280; font-weight:600;}
   .agent-picker select{padding:6px 12px; color:var(--navy-deep); background:var(--card); font-weight:600;}
   .add-agent-form{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;}
   .year-picker span{font-size:19.5px; color:var(--muted); font-weight:600;}
@@ -64,7 +64,7 @@
   .card h3{font-size:27px; color:var(--navy); font-weight:600; margin-bottom:4px;}
   h3{color:var(--navy);}
   .card.dark h3{color:#fff;}
-  .card .sub{font-size:18.75px; color:var(--muted); margin-top:-4px; margin-bottom:14px;}
+  .card .sub{font-size:18.75px; color:#6B7280; margin-top:-4px; margin-bottom:14px;}
   .card.dark .sub{color:#B9C4D6;}
   .card.dark .tech-row .val.good{color:#7EE8A8;}
   .field{display:flex; flex-direction:column; gap:5px;}
@@ -81,7 +81,7 @@
   td{padding:9px 10px; border-bottom:1px solid #123F6B0D;}
   .num{text-align:right; font-weight:600; color:var(--navy-deep);}
   .icon-btn{background:transparent; border:none; cursor:pointer; padding:4px; font-size:18px;}
-  .empty{text-align:center; padding:36px 12px; color:var(--muted); font-size:20.25px;}
+  .empty{text-align:center; padding:36px 12px; color:#6B7280; font-size:20.25px;}
   .err-box{background:#FBEEEC; border:1px solid #B4453B55; color:var(--bad); border-radius:8px; padding:8px 12px; font-size:19.5px; margin-top:8px;}
   .ok-badge{display:inline-flex; align-items:center; gap:5px; color:var(--good); font-size:19.5px; font-weight:600;}
   .mini-row{display:flex; justify-content:space-between; align-items:center; padding:3px 0; font-size:18.75px; color:var(--muted);}
@@ -98,12 +98,12 @@
   .ring-wrap{position:relative; width:108px; height:108px; flex-shrink:0;}
   .ring-wrap .center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
   .ring-wrap .pct{font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; color:var(--gold);}
-  .ring-wrap .lbl{font-size:14px; color:var(--muted);}
+  .ring-wrap .lbl{font-size:14px; color:#6B7280;}
   .card.dark .ring-wrap .lbl{color:#B9C4D6;}
   .goal-flex{display:flex; flex-wrap:wrap; align-items:center; gap:24px;}
   .income-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:14px;}
   .income-chip{background:#FFFFFF14; border:1px solid #FFFFFF26; border-radius:10px; padding:10px 12px;}
-  .income-chip .lbl{font-size:17.25px; color:var(--muted); margin-bottom:3px;}
+  .income-chip .lbl{font-size:17.25px; color:#6B7280; margin-bottom:3px;}
   .card.dark .income-chip .lbl{color:#B9C4D6;}
   .income-chip .val{font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:700; color:#fff;}
   .qgrid{display:grid; grid-template-columns:repeat(2, minmax(150px,1fr)); gap:12px; margin-bottom:16px;}
@@ -128,7 +128,7 @@
   .jbcard{border-radius:12px; padding:12px;}
   .jbcard .head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-weight:700; font-size:19.5px; color:var(--navy-deep);}
   .annual-box{border-radius:12px; padding:16px; border:1.5px solid #4FAE74;}
-  .foot-note{font-size:17.25px; color:var(--muted); margin-top:10px;}
+  .foot-note{font-size:17.25px; color:#6B7280; margin-top:10px;}
   .date-btn{display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; cursor:pointer; background:#fff; text-align:left;}
   .date-wrap{position:relative;}
   .calendar-pop{position:fixed; z-index:50; background:#fff; border-radius:12px; border:1px solid #123F6B22; box-shadow:0 8px 28px rgba(8,27,51,0.22); padding:12px; width:280px;}
@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-18</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-19</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
