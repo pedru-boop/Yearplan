@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-19</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.10-20</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -462,6 +462,70 @@ function renderInsightsSection(entries, selYearArg, pacing){
 
   if (cards.length===0) return "";
   return `<h3 style="margin:4px 0 4px;">💡 สรุปและคำแนะนำ</h3>${cards.join("")}`;
+}
+function renderTeamUmTab(){
+  const names = Object.keys(state.teamUMs);
+  if (selectedTeamUm && !state.teamUMs[selectedTeamUm]) selectedTeamUm = null;
+  if (selectedTeamUm) return renderTeamUmDetail(selectedTeamUm);
+  return `
+    <div class="card">
+      <h3>🧑‍💼 ทีม UM</h3>
+      <p class="sub">ที่สำหรับติดตาม/บันทึกข้อมูล UM คนอื่นในทีมด้วยตัวเองล้วนๆ — ไม่ถูกดึงไปใช้คำนวณผลประโยชน์หรือเป้าหมายใดๆ ในแอปนี้ทั้งสิ้น</p>
+      ${names.length===0?`<div class="empty">ยังไม่มี UM ที่บันทึกไว้ — เพิ่มได้ด้านล่าง</div>`:names.map(name=>{
+        const u = state.teamUMs[name];
+        const pos = UM_POSITIONS.find(p=>p.value===u.position);
+        return `<div data-open-team-um="${esc(name)}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #123F6B0D;cursor:pointer;">
+          <div>
+            <div style="font-weight:700;color:var(--navy);font-size:18px;">${esc(name)}</div>
+            <div style="font-size:14px;color:#6B7280;">${pos?pos.label:'ยังไม่ระบุตำแหน่ง'}</div>
+          </div>
+          <span style="color:#6B7280;font-size:18px;">›</span>
+        </div>`;
+      }).join("")}
+      <div style="margin-top:14px;">
+        ${addTeamUmMode?`<div class="add-agent-form">
+          <input type="text" id="new-team-um-name" placeholder="ชื่อ UM" value="${esc(newTeamUmNameInput)}" style="max-width:220px;">
+          <button class="btn-primary" id="btn-confirm-add-team-um">เพิ่ม</button>
+          <button class="btn-ghost" id="btn-cancel-add-team-um">ยกเลิก</button>
+        </div>`:`<button class="btn-ghost" id="btn-toggle-add-team-um">+ เพิ่ม UM</button>`}
+      </div>
+    </div>
+  `;
+}
+function renderTeamUmDetail(name){
+  const u = state.teamUMs[name];
+  const posOptions = UM_POSITIONS.map(p=>`<option value="${p.value}" ${p.value===u.position?"selected":""}>${p.label}</option>`).join("");
+  const monthRows = THAI_MONTH_SHORT.map((m,i)=>{
+    const key = `${selYear}-${i}`;
+    const val = (u.monthlyCFYC && u.monthlyCFYC[key]) || "";
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;">
+      <span style="color:var(--navy-deep);font-weight:600;width:50px;">${m}</span>
+      <input type="text" inputmode="decimal" data-team-um-month="${key}" value="${esc(val?formatThousands(String(val)):"")}" placeholder="—" style="flex:1;max-width:160px;padding:5px 8px;text-align:right;">
+    </div>`;
+  }).join("");
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <button class="icon-btn" id="btn-back-team-um" title="กลับ">← กลับ</button>
+        <div style="display:flex;gap:4px;">
+          <button class="icon-btn" data-rename-team-um="${esc(name)}" title="เปลี่ยนชื่อ">✏️</button>
+          <button class="icon-btn" data-delete-team-um="${esc(name)}" title="ลบ">🗑</button>
+        </div>
+      </div>
+      <h3>${esc(name)}</h3>
+      <p class="sub">บันทึกด้วยมือล้วนๆ ไม่มีการคำนวณใดๆ — ใช้เพื่อติดตามภาพรวมเทียบกับ UM อื่นในทีมเท่านั้น</p>
+      <label class="field full"><span>ตำแหน่ง</span>
+        <select id="team-um-position">${posOptions}</select>
+      </label>
+      <label class="field full"><span>บันทึก/ข้อสังเกต</span>
+        <textarea id="team-um-notes" rows="3" style="width:100%;box-sizing:border-box;padding:8px;font-size:16px;">${esc(u.notes||"")}</textarea>
+      </label>
+      <div style="margin-top:14px;">
+        <div style="font-weight:700;color:var(--navy);margin-bottom:6px;">CFYC รายเดือน พ.ศ. ${toBE(selYear)} (กรอกเอง)</div>
+        ${monthRows}
+      </div>
+    </div>
+  `;
 }
 function renderManageAgentsTab(){
   const names = Object.keys(state.agents);
@@ -927,10 +991,9 @@ function renderTeamTab(){
           const multiplier = salesCompThreshold>0 ? (qDirectFyc/salesCompThreshold) : 0;
           const reward = qDirectFyc * rate / 100;
           const isCurrentQ = q===currentQ6;
-          let nextTier = null;
-          if (multiplier<1.0) nextTier = {mult:1.0, rate:20};
-          else if (multiplier<1.75) nextTier = {mult:1.75, rate:22};
-          else if (multiplier<2.5) nextTier = {mult:2.5, rate:25};
+          // ใช้บันไดอัตรากลางเดียวกับที่อื่น (SALES_COMP_RATE_TIERS) แทนตัวเลขคงที่ในนี้ กันหลุดไม่ตรงกันถ้าอัตราเปลี่ยนในอนาคต
+          const tiersAscQ = [...SALES_COMP_RATE_TIERS].sort((a,b)=>a.minMultiplier-b.minMultiplier);
+          const nextTierQ = tiersAscQ.find(t=>t.minMultiplier>multiplier);
           const monthRowsHtml = monthlyFycThisQ.map(x=>{
             const inPeriod = x.month>=umStartMonth && x.month<=umEndMonth;
             const monthsInPeriod = umEndMonth - umStartMonth + 1;
@@ -952,13 +1015,13 @@ function renderTeamTab(){
             ${isCurrentQ?`<div class="badge-current">ไตรมาสปัจจุบัน</div>`:''}
             <div class="head"><span>ไตรมาส ${q}</span><span>${isCurrentQ?'⏳':(rate>0?'✔':'✕')}</span></div>
             <div class="mini-row"><span>ตัวแทนตรงไตรมาสนี้ (ใช้คำนวณ DPO)</span><span class="v ${rate>0?'ok':''}">${THB(qDirectFyc)}</span></div>
-            <div class="mini-row"><span>CFYC ไตรมาสนี้ (อ้างอิง)</span><span class="v">${THB(qCFYC)}</span></div>
             <div class="mini-row"><span>เทียบเกณฑ์ (${Math.round(multiplier*100)}%)</span><span class="v">${rate>0?`อัตรา ${rate}%`:'ยังไม่ถึงเกณฑ์'}</span></div>
             <div class="mini-row"><span>ผลตอบแทนข้อ 6 (DPO)</span><span class="v ok" style="font-weight:700;">${THB(reward)}</span></div>
-            ${nextTier?`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);">
-              <div class="title" style="color:var(--navy);font-size:16px;">🎯 ขาดอีก ${THB(Math.max(0,nextTier.mult*salesCompThreshold-qDirectFyc))}</div>
-              <div class="line" style="color:var(--good);font-weight:700;font-size:16px;">→ อัตรา ${nextTier.rate}% (เพิ่มขึ้น ${THB((nextTier.mult*salesCompThreshold*nextTier.rate/100)-reward)})</div>
+            ${nextTierQ?`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);">
+              <div class="title" style="color:var(--navy);font-size:16px;">🎯 ขาดอีก ${THB(Math.max(0,nextTierQ.minMultiplier*salesCompThreshold-qDirectFyc))}</div>
+              <div class="line" style="color:var(--good);font-weight:700;font-size:16px;">→ อัตรา ${nextTierQ.rate}% (เพิ่มขึ้น ${THB((nextTierQ.minMultiplier*salesCompThreshold*nextTierQ.rate/100)-reward)})</div>
             </div>`:`<div class="alert-box" style="background:#F1F8F3;border-color:var(--good);"><div class="line" style="color:var(--good);font-weight:700;font-size:16px;">🏆 อยู่ขั้นสูงสุดแล้ว</div></div>`}
+            <div class="mini-row" style="margin-top:6px;padding-top:6px;border-top:1px dashed #123F6B1A;"><span>CFYC ไตรมาสนี้ (อ้างอิง)</span><span class="v">${THB(qCFYC)}</span></div>
             <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #123F6B1A;">
               <table class="qtable">
                 <thead><tr><th>เดือน</th><th class="r">เป้า</th><th class="r">CFYC</th><th class="r">ตัวแทนตรง</th></tr></thead>
@@ -1962,6 +2025,7 @@ const DEFAULT_STATE = {
   agents: { "ตัวแทนคนที่ 1": JSON.parse(JSON.stringify(DEFAULT_AGENT_DATA)) },
   currentAgent: "ตัวแทนคนที่ 1",
   umGoal: { targetFYC: 0, startMonth: 0, endMonth: 11, position: "", compareA: "", compareB: "", monthOverrides: {}, directOverrides: {}, newAgentPremiums: {}, viewAsOfMonth: null },
+  teamUMs: {}, // ติดตาม UM คนอื่นในทีม เป็นข้อมูลแยกต่างหากล้วนๆ ไม่ถูกดึงไปใช้คำนวณผลประโยชน์ใดๆ ทั้งสิ้น
 };
 let state = loadState();
 let activeTab = "goals";
@@ -1981,6 +2045,9 @@ let newAgentNameInput = "";
 let entrySearchQuery = "";
 let entrySearchDebounceTimer = null;
 let addAgentMode = false;
+let selectedTeamUm = null;
+let addTeamUmMode = false;
+let newTeamUmNameInput = "";
 let collapsedBoxes = { explain:true, monthlyCalc:true, newAgent:true, compare:true, compareBars:true, pendingReport:false, cardExpiry:false, serviceFeeTimeline:true }; // ย่อไว้ตั้งแต่แรก กดหัวข้อเพื่อขยายดูรายละเอียด (pendingReport, cardExpiry เปิดไว้ก่อน เพราะเป็นเรื่องที่ต้องรีบดู)
 
 function agent(){
@@ -2099,6 +2166,7 @@ function render(){
   const c = document.getElementById("tab-content");
   if (activeSection==="um") c.innerHTML = renderTeamTab();
   else if (activeSection==="manage") c.innerHTML = renderManageAgentsTab();
+  else if (activeSection==="teamUm") c.innerHTML = renderTeamUmTab();
   else if (activeTab==="goals") c.innerHTML = renderGoalsTab();
   else if (activeTab==="entry") c.innerHTML = renderEntryTab();
   else if (activeTab==="competitions") c.innerHTML = renderCompetitionsTab();
@@ -2139,7 +2207,7 @@ function renderAgentPicker(){
   document.getElementById("agent-picker").innerHTML = html;
 }
 function renderTabNav(){
-  const sections = [["um","🧑‍🤝‍🧑 UM"],["agent","👤 ตัวแทน"],["manage","👥 จัดการตัวแทน"]];
+  const sections = [["um","🧑‍🤝‍🧑 UM"],["agent","👤 ตัวแทน"],["manage","👥 จัดการตัวแทน"],["teamUm","🧑‍💼 ทีม UM"]];
   let html = sections.map(([id,label])=>
     `<button data-section="${id}" class="${activeSection===id?'active':''}">${label}</button>`).join("");
   if (activeSection==="agent"){
@@ -3024,6 +3092,68 @@ function bindEvents(){
       const key = el.dataset.toggleBox;
       collapsedBoxes[key] = !collapsedBoxes[key];
       render();
+    };
+  });
+  document.querySelectorAll("[data-open-team-um]").forEach(el=>{
+    el.onclick = ()=>{ selectedTeamUm = el.dataset.openTeamUm; render(); };
+  });
+  const btnBackTeamUm = document.getElementById("btn-back-team-um");
+  if (btnBackTeamUm) btnBackTeamUm.onclick = ()=>{ selectedTeamUm = null; render(); };
+  const btnToggleAddTeamUm = document.getElementById("btn-toggle-add-team-um");
+  if (btnToggleAddTeamUm) btnToggleAddTeamUm.onclick = ()=>{ addTeamUmMode = true; newTeamUmNameInput=""; render(); };
+  const btnCancelAddTeamUm = document.getElementById("btn-cancel-add-team-um");
+  if (btnCancelAddTeamUm) btnCancelAddTeamUm.onclick = ()=>{ addTeamUmMode = false; render(); };
+  const newTeamUmNameEl = document.getElementById("new-team-um-name");
+  if (newTeamUmNameEl){
+    newTeamUmNameEl.oninput = (e)=>{ newTeamUmNameInput = e.target.value; };
+    newTeamUmNameEl.onfocus = (e)=>e.target.select();
+    newTeamUmNameEl.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); document.getElementById("btn-confirm-add-team-um")?.click(); } };
+  }
+  const btnConfirmAddTeamUm = document.getElementById("btn-confirm-add-team-um");
+  if (btnConfirmAddTeamUm) btnConfirmAddTeamUm.onclick = ()=>{
+    const name = newTeamUmNameInput.trim();
+    if (!name){ showToast("กรุณากรอกชื่อ UM"); return; }
+    if (state.teamUMs[name]){ showToast("มีชื่อนี้อยู่แล้ว"); return; }
+    state.teamUMs[name] = { position: "", notes: "", monthlyCFYC: {} };
+    addTeamUmMode = false;
+    saveState(); render();
+  };
+  document.querySelectorAll("[data-rename-team-um]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const oldName = btn.dataset.renameTeamUm;
+      const newName = window.prompt("เปลี่ยนชื่อ UM:", oldName);
+      if (!newName || !newName.trim() || newName.trim()===oldName) return;
+      const trimmed = newName.trim();
+      if (state.teamUMs[trimmed]){ showToast("มีชื่อนี้อยู่แล้ว"); return; }
+      state.teamUMs[trimmed] = state.teamUMs[oldName];
+      delete state.teamUMs[oldName];
+      if (selectedTeamUm===oldName) selectedTeamUm = trimmed;
+      saveState(); render();
+    };
+  });
+  document.querySelectorAll("[data-delete-team-um]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const name = btn.dataset.deleteTeamUm;
+      if (!window.confirm(`ลบข้อมูลของ "${name}" ใช่หรือไม่?`)) return;
+      delete state.teamUMs[name];
+      if (selectedTeamUm===name) selectedTeamUm = null;
+      saveState(); render();
+    };
+  });
+  const teamUmPosition = document.getElementById("team-um-position");
+  if (teamUmPosition) teamUmPosition.onchange = (e)=>{ state.teamUMs[selectedTeamUm].position = e.target.value; saveState(); render(); };
+  const teamUmNotes = document.getElementById("team-um-notes");
+  if (teamUmNotes) teamUmNotes.onblur = (e)=>{ state.teamUMs[selectedTeamUm].notes = e.target.value; saveState(); };
+  document.querySelectorAll("[data-team-um-month]").forEach(inp=>{
+    inp.oninput = (e)=>{ e.target.value = formatThousands(stripCommas(e.target.value)); };
+    inp.onfocus = (e)=>e.target.select();
+    inp.onblur = (e)=>{
+      const key = inp.dataset.teamUmMonth;
+      const raw = Number(stripCommas(e.target.value));
+      if (!state.teamUMs[selectedTeamUm].monthlyCFYC) state.teamUMs[selectedTeamUm].monthlyCFYC = {};
+      if (!isNaN(raw) && raw>0) state.teamUMs[selectedTeamUm].monthlyCFYC[key] = raw;
+      else delete state.teamUMs[selectedTeamUm].monthlyCFYC[key];
+      saveState();
     };
   });
   document.querySelectorAll("[data-rename-agent]").forEach(btn=>{
