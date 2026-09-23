@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.17-1</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.17-2</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -3107,6 +3107,8 @@ function bindEvents(){
       activeTeamUmName = name;
       activeSection = "um";
       syncAgentFormState();
+      umGoalsFycInput = formatThousands(String(getUmTargetFYC()));
+      umAnnualGoalsFycInput = formatThousands(String(getUmAnnualTargetFYC()));
       render();
     };
   });
@@ -3117,6 +3119,8 @@ function bindEvents(){
     activeTeamUmName = null;
     activeSection = "teamUm";
     syncAgentFormState();
+    umGoalsFycInput = formatThousands(String(getUmTargetFYC()));
+    umAnnualGoalsFycInput = formatThousands(String(getUmAnnualTargetFYC()));
     saveState(); render();
   };
   const btnToggleAddTeamUm = document.getElementById("btn-toggle-add-team-um");
@@ -3295,8 +3299,9 @@ function bindEvents(){
       state.umGoal.position = posValue;
       const pos = UM_POSITIONS.find(p=>p.value===posValue);
       if (pos){
-        setUmTargetFYC(pos.cfycYear);
-        umGoalsFycInput = formatThousands(String(pos.cfycYear));
+        // cfycYear คือโควตาทั้งปีของตำแหน่งนั้น ต้องเติมลงเป้าหมายทั้งปี ไม่ใช่เป้าหมายเฉพาะช่วง (ซึ่งพี่อาจตั้งเป็นช่วงสั้นกว่าเอง แยกกันคนละความหมาย)
+        setUmAnnualTargetFYC(pos.cfycYear);
+        umAnnualGoalsFycInput = formatThousands(String(pos.cfycYear));
       }
       saveState(); render();
     };
