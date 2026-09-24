@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.17-2</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.23-1</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -943,6 +943,11 @@ function renderTeamTab(){
               const ag = state.agents[name];
               return sum + effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; }).reduce((s,e)=>s+e.fyc,0);
             },0));
+            const pending = Math.round(names.reduce((sum,name)=>{
+              const ag = state.agents[name];
+              const effIds = new Set(effectiveEntries(ag.entries).map(e=>e.id));
+              return sum + ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m && !effIds.has(e.id); }).reduce((s,e)=>s+e.fyc,0);
+            },0));
             const directKey = `${selYear}-${m}`;
             const dov = directOverrides[directKey];
             const directIsOv = dov!==undefined && dov!==null;
@@ -951,7 +956,7 @@ function renderTeamTab(){
             const cov = monthOverrides[cfycKey];
             const cfycIsOv = cov!==undefined && cov!==null;
             const cfycValue = Math.round(cfycIsOv ? cov : directValue);
-            return { month:m, directKey, auto, directValue, directIsOv, cfycKey, cfycValue, cfycIsOv };
+            return { month:m, directKey, auto, directValue, directIsOv, cfycKey, cfycValue, cfycIsOv, pending };
           });
           const qDirectFyc = monthlyFycThisQ.reduce((s,x)=>s+x.directValue,0);
           const qCFYC = monthlyFycThisQ.reduce((s,x)=>s+x.cfycValue,0);
@@ -966,17 +971,19 @@ function renderTeamTab(){
             const inPeriod = x.month>=umStartMonth && x.month<=umEndMonth;
             const monthsInPeriod = umEndMonth - umStartMonth + 1;
             // ฐานของทุกเดือน = เป้าหมายทั้งปี ÷ 12 — ถ้าเดือนนั้นตกอยู่ในช่วงที่ตั้งเป้าเฉพาะช่วงไว้ ให้แทนที่ด้วย (เป้าเฉพาะช่วง ÷ จำนวนเดือนในช่วงนั้น) แทน
-            const monthTarget = inPeriod && monthsInPeriod>0 ? umGoalFYC/monthsInPeriod : umAnnualGoalFYC/12;
+            const monthTarget = inPeriod && monthsInPeriod>0 && umGoalFYC>0 ? umGoalFYC/monthsInPeriod : umAnnualGoalFYC/12;
             return `<tr>
             <td style="color:var(--navy-deep);font-weight:600;vertical-align:top;padding-top:8px;">${THAI_MONTH_SHORT[x.month]}</td>
             <td class="r" style="color:${inPeriod?'var(--gold)':'var(--navy-deep)'};vertical-align:top;padding-top:8px;">${THB(monthTarget)}</td>
             <td class="r" style="vertical-align:top;padding-top:0;">
               <input type="text" inputmode="decimal" data-qty-override="${x.cfycKey}" value="${esc(formatThousands(String(x.cfycValue)))}" style="width:98px;padding:4px 5px;font-size:21px;font-weight:700;font-family:'Space Grotesk',sans-serif;text-align:center;">
               <div style="font-size:12px;color:${x.cfycIsOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${x.cfycIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
+              ${!x.cfycIsOv && x.pending>0?`<div style="font-size:12px;color:var(--gold);margin-top:1px;">+${THB(x.pending)} รอพิจารณา</div>`:''}
             </td>
             <td class="r" style="vertical-align:top;padding-top:0;">
               <input type="text" inputmode="decimal" data-direct-override="${x.directKey}" value="${esc(formatThousands(String(x.directValue)))}" style="width:98px;padding:4px 5px;font-size:21px;font-weight:700;font-family:'Space Grotesk',sans-serif;text-align:center;">
               <div style="font-size:12px;color:${x.directIsOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${x.directIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
+              ${!x.directIsOv && x.pending>0?`<div style="font-size:12px;color:var(--gold);margin-top:1px;">+${THB(x.pending)} รอพิจารณา</div>`:''}
             </td>
           </tr>`;}).join("");
           return `<div class="qcard" style="background:${NAVY_TINTS[q-1]};">
