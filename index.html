@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.23-2</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.24-1</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -3460,6 +3460,7 @@ function bindEvents(){
       const approvalDate = todayIso();
       // เก็บวันที่เดิมไว้ก่อนเปลี่ยน เผื่อกดผิดจะได้ "ยกเลิกอนุมัติ" คืนค่าวันที่เดิมได้ตรงๆ
       agent().entries[idx] = { ...original, pending: false, date: approvalDate, dateBeforeApproval: original.date };
+      const approvedThisRound = [{ fyc: original.fyc, date: approvalDate }];
       // ถ้าเป็นงวดแรก (ต้นฉบับ) ของแผนผ่อนชำระหลายงวด งวดที่เหลือต้องขยับวันที่ตามวันอนุมัติใหม่ด้วย ไม่งั้นวันที่จะไม่ต่อเนื่องกัน
       const isOriginInstallment = (original.installmentIndex ?? 0) === 0;
       const hasSiblings = (original.installmentTotal ?? 1) > 1;
@@ -3468,7 +3469,26 @@ function bindEvents(){
         agent().entries.forEach((e,i)=>{
           if (e.policyId===original.policyId && (e.installmentIndex ?? 0) > 0){
             const s = schedule[e.installmentIndex];
-            if (s) agent().entries[i] = { ...e, date: addMonthsToDate(approvalDate, s.offset), dateBeforeApproval: e.date };
+            if (s){
+              const newDate = addMonthsToDate(approvalDate, s.offset);
+              agent().entries[i] = { ...e, date: newDate, dateBeforeApproval: e.date };
+              approvedThisRound.push({ fyc: s.amount, date: newDate });
+            }
+          }
+        });
+      }
+      // ถ้าเดือนที่ผลงานนี้ตกอยู่ (หลังอนุมัติ) มีการแก้ไขเองไว้ในตารางไตรมาสของ UM อยู่แล้ว ให้บวกยอดที่เพิ่งอนุมัติเข้าไปในตัวเลขที่แก้เองด้วยเลย ไม่งั้นยอดจะค้างไม่รวมของใหม่ที่เพิ่งอนุมัติ
+      if (state.umGoal){
+        if (!state.umGoal.monthOverrides) state.umGoal.monthOverrides = {};
+        if (!state.umGoal.directOverrides) state.umGoal.directOverrides = {};
+        approvedThisRound.forEach(({fyc, date})=>{
+          const d = new Date(date);
+          const key = `${d.getFullYear()}-${d.getMonth()}`;
+          if (state.umGoal.monthOverrides[key]!==undefined && state.umGoal.monthOverrides[key]!==null){
+            state.umGoal.monthOverrides[key] = Number(state.umGoal.monthOverrides[key]) + fyc;
+          }
+          if (state.umGoal.directOverrides[key]!==undefined && state.umGoal.directOverrides[key]!==null){
+            state.umGoal.directOverrides[key] = Number(state.umGoal.directOverrides[key]) + fyc;
           }
         });
       }
@@ -3482,6 +3502,7 @@ function bindEvents(){
       if (idx<0) return;
       const original = agent().entries[idx];
       const revertDate = original.dateBeforeApproval ?? original.date;
+      const revertedThisRound = [{ fyc: original.fyc, date: original.date }]; // วัน+ยอดตอนที่ยังอนุมัติอยู่ (ก่อนคืนค่า) ใช้หักออกจากตัวเลขที่เคยบวกเข้าไปตอนอนุมัติ
       const reverted = { ...original, pending: true, date: revertDate };
       delete reverted.dateBeforeApproval;
       agent().entries[idx] = reverted;
@@ -3491,9 +3512,25 @@ function bindEvents(){
       if (isOriginInstallment && hasSiblings){
         agent().entries.forEach((e,i)=>{
           if (e.policyId===original.policyId && (e.installmentIndex ?? 0) > 0 && e.dateBeforeApproval){
+            revertedThisRound.push({ fyc: e.fyc, date: e.date });
             const r = { ...e, date: e.dateBeforeApproval };
             delete r.dateBeforeApproval;
             agent().entries[i] = r;
+          }
+        });
+      }
+      // หักยอดที่เคยบวกเข้าตัวเลขแก้ไขเองตอนอนุมัติออกด้วย (สมมาตรกับตอนอนุมัติ) กันตัวเลขค้างเกินจริงถ้ากดยกเลิก
+      if (state.umGoal){
+        if (!state.umGoal.monthOverrides) state.umGoal.monthOverrides = {};
+        if (!state.umGoal.directOverrides) state.umGoal.directOverrides = {};
+        revertedThisRound.forEach(({fyc, date})=>{
+          const d = new Date(date);
+          const key = `${d.getFullYear()}-${d.getMonth()}`;
+          if (state.umGoal.monthOverrides[key]!==undefined && state.umGoal.monthOverrides[key]!==null){
+            state.umGoal.monthOverrides[key] = Number(state.umGoal.monthOverrides[key]) - fyc;
+          }
+          if (state.umGoal.directOverrides[key]!==undefined && state.umGoal.directOverrides[key]!==null){
+            state.umGoal.directOverrides[key] = Number(state.umGoal.directOverrides[key]) - fyc;
           }
         });
       }
