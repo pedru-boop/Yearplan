@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.24-1</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.24-2</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -2145,6 +2145,7 @@ function stripCommas(v){ return v.replace(/,/g,""); }
 
 /* ================= RENDER ROOT ================= */
 function render(){
+  if (activeTeamUmName && activeSection!=="um") activeSection = "um"; // อยู่ในบริบท UM คนอื่น ต้องเห็นแค่แถบ UM เท่านั้น
   renderTeamUmBanner();
   renderAgentPicker();
   renderTabNav();
@@ -2208,9 +2209,9 @@ function renderAgentPicker(){
   document.getElementById("agent-picker").innerHTML = html;
 }
 function renderTabNav(){
-  // ตอนอยู่ในบริบทของ UM คนอื่น ซ่อนแท็บ "ทีม UM" ไป กันสับสนซ้อนกันเอง (มีปุ่ม "กลับของฉันเอง" ในแถบเตือนด้านบนแทน)
+  // ตอนอยู่ในบริบทของ UM คนอื่น เหลือแค่แถบ UM อย่างเดียว ไม่โชว์ตัวแทน/จัดการตัวแทน/ทีม UM ซ้อนกันเอง
   const sections = activeTeamUmName
-    ? [["um","🧑‍🤝‍🧑 UM"],["agent","👤 ตัวแทน"],["manage","👥 จัดการตัวแทน"]]
+    ? [["um","🧑‍🤝‍🧑 UM"]]
     : [["um","🧑‍🤝‍🧑 UM"],["agent","👤 ตัวแทน"],["manage","👥 จัดการตัวแทน"],["teamUm","🧑‍💼 ทีม UM"]];
   let html = sections.map(([id,label])=>
     `<button data-section="${id}" class="${activeSection===id?'active':''}">${label}</button>`).join("");
