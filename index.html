@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.24-3</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.26-2</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -362,7 +362,7 @@ function eventAchieved(entries, ev){
   // ถ้ากรมธรรม์ถูกส่งก่อนช่วงแข่งขัน ต่อให้มีงวดผ่อน (เดือน 2, 3, ...) ตกอยู่ในช่วงแข่งขันพอดี ก็ไม่นับรวม
   const s = new Date(ev.start+"T00:00:00"), e = new Date(ev.end+"T23:59:59");
   const eligiblePolicyIds = new Set(
-    entries.filter(x => isOrigin(x) && new Date(x.date) >= s && new Date(x.date) <= e).map(x => x.policyId)
+    entries.filter(x => isOrigin(x) && D(x.date) >= s && D(x.date) <= e).map(x => x.policyId)
   );
   return entries.filter(x => eligiblePolicyIds.has(x.policyId)).reduce((sum,x)=>sum+x.fyc,0);
 }
@@ -389,8 +389,8 @@ function renderInsightsSection(entries, selYearArg, pacing){
   // 2) เทียบเดือนนี้กับปีที่แล้ว
   if (isCurrentYearView){
     const cmIdx = today.getMonth();
-    const thisMonthActual = entries.filter(e=>{const d=new Date(e.date); return d.getFullYear()===selYearArg && d.getMonth()===cmIdx;}).reduce((s,e)=>s+e.fyc,0);
-    const lastYearActual = entries.filter(e=>{const d=new Date(e.date); return d.getFullYear()===(selYearArg-1) && d.getMonth()===cmIdx;}).reduce((s,e)=>s+e.fyc,0);
+    const thisMonthActual = entries.filter(e=>{const d=D(e.date); return d.getFullYear()===selYearArg && d.getMonth()===cmIdx;}).reduce((s,e)=>s+e.fyc,0);
+    const lastYearActual = entries.filter(e=>{const d=D(e.date); return d.getFullYear()===(selYearArg-1) && d.getMonth()===cmIdx;}).reduce((s,e)=>s+e.fyc,0);
     if (lastYearActual>0 || thisMonthActual>0){
       const diff = thisMonthActual-lastYearActual;
       const diffPct = lastYearActual>0 ? (diff/lastYearActual*100) : null;
@@ -432,13 +432,13 @@ function renderInsightsSection(entries, selYearArg, pacing){
   // 4) งวดเบี้ยที่จะครบกำหนดใน 30 วันข้างหน้า (ใช้ข้อมูลงวดผ่อนที่มีอยู่แล้ว ไม่ต้องกรอกใหม่)
   {
     const in30 = new Date(today.getTime()+30*86400000);
-    const upcoming = entries.filter(e=>{ const d=new Date(e.date); return d>=today && d<=in30; }).sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const upcoming = entries.filter(e=>{ const d=D(e.date); return d>=today && d<=in30; }).sort((a,b)=>D(a.date)-D(b.date));
     if (upcoming.length>0){
       const upcomingSum = upcoming.reduce((s,e)=>s+e.fyc,0);
       cards.push(`<div class="card" style="padding:14px 16px;margin-bottom:12px;">
         <div style="font-size:16.5px;color:var(--muted);margin-bottom:6px;">🔔 งวดเบี้ยที่จะครบกำหนดใน 30 วันข้างหน้า</div>
         <div style="font-size:19px;font-weight:700;color:var(--navy);margin-bottom:6px;">${upcoming.length} งวด รวม ${THB(upcomingSum)}</div>
-        ${upcoming.slice(0,5).map(e=>`<div style="font-size:15px;color:var(--muted);padding:2px 0;">· ${new Date(e.date).toLocaleDateString('th-TH',{day:'numeric',month:'short'})} — ${esc(e.note)||'ไม่มีหมายเหตุ'} (${THB(e.fyc)})</div>`).join("")}
+        ${upcoming.slice(0,5).map(e=>`<div style="font-size:15px;color:var(--muted);padding:2px 0;">· ${D(e.date).toLocaleDateString('th-TH',{day:'numeric',month:'short'})} — ${esc(e.note)||'ไม่มีหมายเหตุ'} (${THB(e.fyc)})</div>`).join("")}
         ${upcoming.length>5?`<div style="font-size:15px;color:var(--muted);">...และอีก ${upcoming.length-5} งวด</div>`:''}
       </div>`);
     }
@@ -463,9 +463,68 @@ function renderInsightsSection(entries, selYearArg, pacing){
   if (cards.length===0) return "";
   return `<h3 style="margin:4px 0 4px;">💡 สรุปและคำแนะนำ</h3>${cards.join("")}`;
 }
+// คำนวณสรุปของ UM หนึ่งคน โดยใช้สูตรเดียวกับหน้า UM เป๊ะ (สลับ state ชั่วคราว แล้วคืนค่าเดิม ไม่แก้ไขข้อมูลใดๆ)
+let __umSummary = null;
+function computeUmSummary(st){
+  const saved = state, ownRc = !__rc;
+  if (ownRc) __rc = new WeakMap();
+  state = st; __umSummary = null; let out = null;
+  try { renderTeamTab(); out = __umSummary; } catch(e){ out = null; }
+  finally { state = saved; __umSummary = null; if (ownRc) __rc = null; }
+  return out;
+}
+function renderAllUmDashboard(){
+  const list = [{ name:"ของฉันเอง", own:true, st: state }]
+    .concat(Object.keys(state.teamUMs).filter(n=>state.teamUMs[n] && state.teamUMs[n].agents).map(n=>({ name:n, st: state.teamUMs[n] })));
+  const rows = list.map(x=>({ ...x, s: computeUmSummary(x.st) })).filter(x=>x.s);
+  if (!rows.length) return "";
+  // เรียงคนที่เสี่ยงเสียรายได้ขึ้นก่อน: ขาดโควตาสะสมมากสุด แล้วตามด้วย % เป้าทั้งปีน้อยสุด
+  rows.sort((a,b)=>(a.own?-1:b.own?1:0) || ((b.s.quotaShort||0)-(a.s.quotaShort||0)) || (a.s.annualPct-b.s.annualPct));
+  const mName = THAI_MONTH_NAMES[rows[0].s.viewMonth];
+  const card = (x)=>{
+    const s = x.s, pos = s.position;
+    const pct = Math.round(s.annualPct);
+    const barColor = pct>=100?'var(--good)':pct>=80?'var(--gold)':'var(--navy)';
+    let status = '';
+    if (pos){
+      status = s.quotaShort>0
+        ? `<span style="background:#B4231822;color:#B42318;border-radius:999px;padding:2px 8px;font-size:13px;font-weight:700;white-space:nowrap;">ขาดโควตาสะสม ${THB(s.quotaShort)}</span>`
+        : `<span style="background:#1F7A4F22;color:var(--good);border-radius:999px;padding:2px 8px;font-size:13px;font-weight:700;white-space:nowrap;">✓ ถึงโควตาสะสม</span>`;
+    } else status = `<span style="color:var(--muted);font-size:13px;">ยังไม่ระบุตำแหน่ง</span>`;
+    let bonus3 = '';
+    if (pos && s.nextBand3){
+      bonus3 = s.notYetQualified3
+        ? `💎 ข้อ 3: ขาดอีก <b>${THB(s.nextBand3.shortfall)}</b> จะเริ่มได้โบนัส (อัตรา ${s.nextBand3.nextRate}%)`
+        : `💎 ข้อ 3: ขาดอีก <b>${THB(s.nextBand3.shortfall)}</b> ขยับเป็น ${s.nextBand3.nextRate}% (+${THB(s.nextBand3.increase)})`;
+    } else if (pos) bonus3 = `💎 ข้อ 3: อยู่ขั้นสูงสุดแล้ว`;
+    const warn = [];
+    if (s.quietCount>0) warn.push(`${s.quietCount} ตัวแทนไม่มีงาน${mName}`);
+    if (s.yearPending>0) warn.push(`รอพิจารณา ${THB(s.yearPending)}`);
+    const attr = x.own ? `data-section="um"` : `data-open-team-um="${esc(x.name)}"`;
+    return `<div ${attr} style="border:1px solid #123F6B1F;border-radius:10px;padding:10px 12px;margin-bottom:10px;cursor:pointer;${x.own?'background:#FBF6E8;':''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="min-width:0;"><div style="font-weight:700;color:var(--navy);font-size:17px;">${x.own?'⭐ ':''}${esc(x.name)}</div>
+          <div style="font-size:13px;color:#6B7280;">${pos?pos.label:''}${pos?' · ':''}${s.agentCount} ตัวแทน</div></div>
+        ${status}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:14px;margin-top:8px;"><span>ทำได้ทั้งปี ${THB(s.annualAchieved)}${s.annualGoal>0?` / เป้า ${THB(s.annualGoal)}`:' · <span style="color:var(--muted);">ยังไม่ตั้งเป้า</span>'}</span><b style="color:${barColor};">${s.annualGoal>0?pct+'%':'—'}</b></div>
+      <div style="height:6px;background:#123F6B14;border-radius:4px;overflow:hidden;margin-top:3px;"><div style="height:100%;width:${Math.min(100,pct)}%;background:${barColor};"></div></div>
+      <div style="font-size:14px;margin-top:6px;">CFYC ${mName}: <b>${THB(s.monthCFYC)}</b>${pos?` / โควตา ${THB(s.monthQuota)}`:''}</div>
+      ${bonus3?`<div style="font-size:14px;margin-top:3px;color:var(--navy);">${bonus3}</div>`:''}
+      ${warn.length?`<div style="font-size:13px;margin-top:4px;color:#B45309;">⚠ ${warn.join(' · ')}</div>`:''}
+    </div>`;
+  };
+  return `<div class="card">
+    <h3 data-toggle-box="allUmDash" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+      <span>📊 ภาพรวมทุก UM</span>
+      <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.allUmDash?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
+    </h3>
+    ${collapsedBoxes.allUmDash?'':`<p class="sub">ข้อมูลถึงเดือน${mName} พ.ศ. ${toBE(selYear)} — เรียงคนที่ขาดโควตามากสุดขึ้นก่อน · แตะการ์ดเพื่อเข้าไปจัดการ</p>${rows.map(card).join("")}`}
+  </div>`;
+}
 function renderTeamUmTab(){
   const names = Object.keys(state.teamUMs);
-  return `
+  return renderAllUmDashboard() + `
     <div class="card">
       <h3>🧑‍💼 ทีม UM</h3>
       <p class="sub">แตะชื่อเพื่อเข้าไปดู/จัดการทีมของ UM คนนั้นแบบเต็มรูปแบบ (ทีมตัวแทน, เป้าหมาย, ผลประโยชน์ข้อ 1-7) แยกขาดจากทีมของพี่เองโดยสิ้นเชิง</p>
@@ -500,8 +559,8 @@ function renderManageAgentsTab(){
   const rows = names.map(name=>{
     const ag = state.agents[name];
     const effEntries = effectiveEntries(ag.entries);
-    const yearFyc = effEntries.filter(e=>new Date(e.date).getFullYear()===selYear).reduce((s,e)=>s+e.fyc,0);
-    const originCount = effEntries.filter(e=>new Date(e.date).getFullYear()===selYear && isOrigin(e)).length;
+    const yearFyc = effEntries.filter(e=>D(e.date).getFullYear()===selYear).reduce((s,e)=>s+e.fyc,0);
+    const originCount = effEntries.filter(e=>D(e.date).getFullYear()===selYear && isOrigin(e)).length;
     return { name, yearFyc, originCount, isCurrent: name===state.currentAgent };
   }).sort((a,b)=>b.yearFyc-a.yearFyc);
   return `
@@ -547,7 +606,7 @@ function renderTeamTab(){
   const monthlyDirectAgentFYC = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>{
     const auto = names.reduce((sum,name)=>{
       const ag = state.agents[name];
-      return sum + effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; }).reduce((s,e)=>s+e.fyc,0);
+      return sum + mEff(ag.entries, selYear, m);
     },0);
     const dov = umDirectOverrides[`${selYear}-${m}`];
     return (dov!==undefined && dov!==null) ? dov : auto;
@@ -563,19 +622,19 @@ function renderTeamTab(){
 
   const rows = names.map(name=>{
     const ag = state.agents[name];
-    const yEntries = effectiveEntries(ag.entries).filter(e=>new Date(e.date).getFullYear()===selYear);
+    const yEntries = effectiveEntries(ag.entries).filter(e=>D(e.date).getFullYear()===selYear);
     const achieved = yEntries.reduce((s,e)=>s+e.fyc,0);
     const goalFYC = getAgentTargetFYC(selYear, ag);
     const pct = goalFYC>0 ? (achieved/goalFYC*100) : 0;
     // เช็คว่า "งานหาย" ไหม: ดูแค่เดือนที่กำลังดูอยู่ (umViewAsOfMonth) — มีงานเดือนนี้ = ไม่ต้องจับตา ไม่สนเดือนก่อนหน้าหรือแนวโน้ม
-    const hasWorkThisMonth = ag.entries.some(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===umViewAsOfMonth; });
+    const hasWorkThisMonth = mAny(ag.entries, selYear, umViewAsOfMonth);
     const isQuiet = !hasWorkThisMonth;
     // ถ้าไม่มีงาน หาว่าเดือนล่าสุดที่มีงานคือเดือนไหน (ย้อนไปถึงต้นปีที่ดูอยู่) เพื่อบอกว่า "ไม่มีงานมาตั้งแต่เดือนไหน"
     let quietSinceMonth = null;
     if (isQuiet){
       let lastWorkMonth = -1;
       for (let m=0; m<=umViewAsOfMonth; m++){
-        if (ag.entries.some(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; })) lastWorkMonth = m;
+        if (mAny(ag.entries, selYear, m)) lastWorkMonth = m;
       }
       quietSinceMonth = lastWorkMonth+1; // เดือนถัดจากเดือนล่าสุดที่มีงาน คือเดือนแรกที่เริ่มไม่มีงาน
     }
@@ -595,18 +654,11 @@ function renderTeamTab(){
   const currentMonthHasOverride = currentMonthOverride!==undefined && currentMonthOverride!==null;
   const currentMonthApproved = currentMonthHasOverride ? currentMonthOverride : names.reduce((sum,name)=>{
     const ag = state.agents[name];
-    return sum + effectiveEntries(ag.entries).filter(e=>{
-      const d = new Date(e.date);
-      return d.getFullYear()===selYear && d.getMonth()===umEffectiveEndMonth;
-    }).reduce((s,e)=>s+e.fyc,0);
+    return sum + mEff(ag.entries, selYear, umEffectiveEndMonth);
   },0);
   const currentMonthPending = names.reduce((sum,name)=>{
     const ag = state.agents[name];
-    const effectiveIds = new Set(effectiveEntries(ag.entries).map(e=>e.id));
-    return sum + ag.entries.filter(e=>{
-      const d = new Date(e.date);
-      return d.getFullYear()===selYear && d.getMonth()===umEffectiveEndMonth && !effectiveIds.has(e.id);
-    }).reduce((s,e)=>s+e.fyc,0);
+    return sum + mPend(ag.entries, selYear, umEffectiveEndMonth);
   },0);
   const teamAchievedApproved = pastMonthsTotal + currentMonthApproved;
   const teamAchievedPending = currentMonthPending;
@@ -627,6 +679,7 @@ function renderTeamTab(){
   const umGoalFYC = getUmTargetFYC();
   const umRemaining = Math.max(0, umGoalFYC-teamAchievedInUmPeriod);
   const umProgressPct = umGoalFYC>0 ? Math.max(0,(teamAchievedInUmPeriod/umGoalFYC)*100) : 0; // ตัวเลขจริง ไม่ตัดเพดานที่ 100% เกินเป้าต้องโชว์เกิน 100% ได้
+  __umSummary = { agentCount: names.length, quietCount: rows.filter(r=>r.isQuiet).length, annualGoal: umAnnualGoalFYC, annualAchieved: umAnnualAchievedTotal, annualPct: umAnnualProgressPct, viewMonth: umViewAsOfMonth, monthCFYC: monthlyTeamCFYC[umViewAsOfMonth], position: selectedPosition, yearPending: names.reduce((s,n)=>s+yPend(state.agents[n].entries, selYear),0) };
   const umProgressPctForRing = Math.min(100, umProgressPct); // ใช้คำนวณวงแหวนภาพเท่านั้น กันวงแหวนวาดเกินรอบ
   const ringR = 44, ringC = 2*Math.PI*ringR;
   const umAnnualRingOffset = ringC - (umAnnualProgressPctForRing/100)*ringC;
@@ -776,8 +829,8 @@ function renderTeamTab(){
     ${(()=>{
       const pendingByAgent = names.map(name=>{
         const ag = state.agents[name];
-        const pendingEntries = ag.entries.filter(e=>e.pending && isOrigin(e) && new Date(e.date).getFullYear()===selYear)
-          .sort((a,b)=>new Date(b.date)-new Date(a.date));
+        const pendingEntries = ag.entries.filter(e=>e.pending && isOrigin(e) && D(e.date).getFullYear()===selYear)
+          .sort((a,b)=>D(b.date)-D(a.date));
         const totalFyc = pendingEntries.reduce((s,e)=>s+e.fyc,0);
         return { name, pendingEntries, totalFyc };
       }).filter(a=>a.pendingEntries.length>0);
@@ -796,7 +849,7 @@ function renderTeamTab(){
             <span style="color:var(--gold);font-weight:700;">${a.pendingEntries.length} รายการ · ${THB(a.totalFyc)}</span>
           </div>
           ${a.pendingEntries.map(e=>`<div style="display:flex;justify-content:space-between;padding:5px 0 5px 8px;font-size:17px;">
-            <span style="color:var(--muted);">${new Date(e.date).toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"})}${e.note?` — ${esc(e.note)}`:''}</span>
+            <span style="color:var(--muted);">${fmtTH(D(e.date),{day:"numeric",month:"short",year:"numeric"})}${e.note?` — ${esc(e.note)}`:''}</span>
             <span style="color:var(--navy-deep);font-weight:600;">${THB(e.fyc)}</span>
           </div>`).join("")}
         </div>`).join("")}
@@ -811,6 +864,7 @@ function renderTeamTab(){
       const cumulativeRequired = selectedPosition.cfycMonth * monthsElapsed;
       const quotaMet = cumulativeTeamCFYC>=cumulativeRequired;
       const quotaShort = Math.max(0, cumulativeRequired-cumulativeTeamCFYC);
+      if (__umSummary) Object.assign(__umSummary, { cumCFYC: cumulativeTeamCFYC, cumRequired: cumulativeRequired, quotaShort, monthQuota: selectedPosition.cfycMonth });
 
       // ข้อ 4: ค่าเสริมมือ 30% ของ FYC จากผลงานตัวแทนที่สร้างใหม่ ช่วง 12 เดือนแรกนับจากวันที่มีผลงานขึ้นแรก
       // ค่าเสริมมือ: FYC ของตัวแทนใหม่ (ตั้งวันที่มีผลงานขึ้นแรกไว้) ในช่วง 12 เดือนแรก ไม่มีเกณฑ์ขั้นต่ำ กี่รายคอมเท่าไหร่ก็นับ
@@ -822,7 +876,7 @@ function renderTeamTab(){
         const startDate = ag.competitions?.firstSaleDate;
         if (!startDate) return;
         const windowEnd = addMonths(startDate, 12);
-        const eligibleFYC = effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d>=new Date(startDate+"T00:00:00") && d<=windowEnd && d.getFullYear()===selYear; }).reduce((s,e)=>s+e.fyc,0);
+        const eligibleFYC = effectiveEntries(ag.entries).filter(e=>{ const d=D(e.date); return d>=new Date(startDate+"T00:00:00") && d<=windowEnd && d.getFullYear()===selYear; }).reduce((s,e)=>s+e.fyc,0);
         if (eligibleFYC>0){ serviceFee += eligibleFYC*0.3; serviceFeeDetail.push({name, eligibleFYC}); }
       });
 
@@ -834,7 +888,7 @@ function renderTeamTab(){
         const ag = state.agents[name];
         for (let q=1; q<=4; q++){
           const qMonths = [ (q-1)*3, (q-1)*3+1, (q-1)*3+2 ];
-          const qEntries = effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && qMonths.includes(d.getMonth()); });
+          const qEntries = effectiveEntries(ag.entries).filter(e=>{ const d=D(e.date); return d.getFullYear()===selYear && qMonths.includes(d.getMonth()); });
           const newCases = qEntries.filter(isOrigin).length;
           const qFyc = qEntries.reduce((s,e)=>s+e.fyc,0);
           if (newCases>=2){
@@ -894,6 +948,7 @@ function renderTeamTab(){
         nextBand3Info = { shortfall, nextRate, previewBonus, increase: previewBonus-previewBonusIfToday };
       }
 
+      if (__umSummary) Object.assign(__umSummary, { nextBand3: nextBand3Info, notYetQualified3, bonus3Today: previewBonusIfToday });
       // ข้อ 6: ค่าตอบแทนจากขายเองและตัวแทนตรง — หลักเกณฑ์เดียวกันทุกตำแหน่ง ต่างกันที่เกณฑ์ขั้นต่ำ/ไตรมาส
       const salesCompThreshold = SALES_COMP_QUARTERLY_THRESHOLD[selectedPosition.value];
       let salesCompReward = 0;
@@ -941,12 +996,11 @@ function renderTeamTab(){
           const monthlyFycThisQ = qMonths.map(m=>{
             const auto = Math.round(names.reduce((sum,name)=>{
               const ag = state.agents[name];
-              return sum + effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m; }).reduce((s,e)=>s+e.fyc,0);
+              return sum + mEff(ag.entries, selYear, m);
             },0));
             const pending = Math.round(names.reduce((sum,name)=>{
               const ag = state.agents[name];
-              const effIds = new Set(effectiveEntries(ag.entries).map(e=>e.id));
-              return sum + ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===m && !effIds.has(e.id); }).reduce((s,e)=>s+e.fyc,0);
+              return sum + mPend(ag.entries, selYear, m);
             },0));
             const directKey = `${selYear}-${m}`;
             const dov = directOverrides[directKey];
@@ -1137,8 +1191,7 @@ function renderTeamTab(){
         if (nextBand3Info){
           const annualPendingCFYC = names.reduce((sum,name)=>{
             const ag = state.agents[name];
-            const effIds = new Set(effectiveEntries(ag.entries).map(e=>e.id));
-            return sum + ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && !effIds.has(e.id); }).reduce((s,e)=>s+e.fyc,0);
+            return sum + yPend(ag.entries, selYear);
           },0);
           const remainingAfterPending = Math.max(0, nextBand3Info.shortfall - annualPendingCFYC);
           const pendingCoversIt = annualPendingCFYC >= nextBand3Info.shortfall;
@@ -1183,8 +1236,8 @@ function renderTeamTab(){
         const item7Rows = [];
         names.forEach(name=>{
           const ag = state.agents[name];
-          const allQEntries = ag.entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && q6Months.includes(d.getMonth()); });
-          const effQEntries = effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && q6Months.includes(d.getMonth()); });
+          const allQEntries = ag.entries.filter(e=>{ const d=D(e.date); return d.getFullYear()===selYear && q6Months.includes(d.getMonth()); });
+          const effQEntries = effectiveEntries(ag.entries).filter(e=>{ const d=D(e.date); return d.getFullYear()===selYear && q6Months.includes(d.getMonth()); });
           const effIds = new Set(effQEntries.map(e=>e.id));
           const pendingQEntries = allQEntries.filter(e=>!effIds.has(e.id));
           const newCases = effQEntries.filter(isOrigin).length;
@@ -1223,7 +1276,7 @@ function renderTeamTab(){
           const windowEnd = addMonths(sd, 12);
           const daysToWindowEnd = Math.ceil((windowEnd-now7)/86400000);
           if (daysToWindowEnd<0 || daysToWindowEnd>60) return;
-          const eligibleFYC = effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d>=new Date(sd+"T00:00:00") && d<=windowEnd; }).reduce((s,e)=>s+e.fyc,0);
+          const eligibleFYC = effectiveEntries(ag.entries).filter(e=>{ const d=D(e.date); return d>=new Date(sd+"T00:00:00") && d<=windowEnd; }).reduce((s,e)=>s+e.fyc,0);
           if (eligibleFYC>=100000) return; // ถือว่าทำไปพอสมควรแล้ว ไม่ต้องเตือน
           item4Rows.push({ name, daysLeft: daysToWindowEnd, fycGot: eligibleFYC, urgent: daysToWindowEnd<=14 });
         });
@@ -1318,8 +1371,8 @@ function renderTeamTab(){
           const ag = state.agents[name];
           const sd = ag.competitions.firstSaleDate;
           const cid = ag.license.cardIssueDate;
-          const sdLabel = new Date(sd+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
-          const cidLabel = new Date(cid+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
+          const sdLabel = fmtTH(new Date(sd+"T00:00:00"),{day:"numeric",month:"short",year:"numeric"});
+          const cidLabel = fmtTH(new Date(cid+"T00:00:00"),{day:"numeric",month:"short",year:"numeric"});
           const premiums = getNormalizedPremiums(name);
           const premiumSum = premiums.reduce((s,p)=>s+(Number(stripCommas(String(p.amount||0)))||0),0);
           return `<div style="padding:10px 0;border-bottom:1px solid #123F6B0D;">
@@ -1466,7 +1519,7 @@ function renderTeamTab(){
               if (nextTierA) alerts.push(`💰 โบนัสไตรมาสนี้: ขาดอีก FYC ${THB(nextTierA.min-curQResultA.fyc)} จะขยับเป็นอัตรา ${nextTierA.pct}%`);
             }
           }
-          const yearEntriesA = effectiveEntries(ag.entries).filter(e=>new Date(e.date).getFullYear()===selYear);
+          const yearEntriesA = effectiveEntries(ag.entries).filter(e=>D(e.date).getFullYear()===selYear);
           const annualCasesA = yearEntriesA.filter(isOrigin).length;
           const annualFycA = yearEntriesA.reduce((s,e)=>s+e.fyc,0);
           const annualBonusGateA = annualCasesA>=ANNUAL_BONUS_GATE_CASES && annualFycA>=ANNUAL_BONUS_GATE_FYC;
@@ -1517,7 +1570,7 @@ function renderTeamTab(){
             <span style="font-weight:600;color:var(--navy);font-size:18px;">${esc(c.name)}</span>
             <span style="text-align:right;">
               <div style="color:${color};font-weight:700;font-size:17px;">${expired?'❌ หมดอายุแล้ว':urgent?`🔴 เหลือ ${c.daysLeft} วัน`:`เหลือ ${c.daysLeft} วัน`}</div>
-              <div style="color:var(--muted);font-size:14px;">${c.expDate.toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"})}</div>
+              <div style="color:var(--muted);font-size:14px;">${fmtTH(c.expDate,{day:"numeric",month:"short",year:"numeric"})}</div>
             </span>
           </div>`;
         }).join("")}
@@ -1534,7 +1587,7 @@ function renderTeamTab(){
         const windowEnd = addMonths(sd, 12);
         const daysLeft = Math.ceil((windowEnd-now)/86400000);
         if (daysLeft<0) return null; // หมดเขตไปแล้ว ไม่ต้องโชว์ในไทม์ไลน์
-        const eligibleFYC = effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d>=startDate && d<=windowEnd; }).reduce((s,e)=>s+e.fyc,0);
+        const eligibleFYC = effectiveEntries(ag.entries).filter(e=>{ const d=D(e.date); return d>=startDate && d<=windowEnd; }).reduce((s,e)=>s+e.fyc,0);
         const totalDays = Math.ceil((windowEnd-startDate)/86400000);
         const daysPassed = totalDays-daysLeft;
         const pctPassed = totalDays>0 ? Math.min(100,Math.max(0,(daysPassed/totalDays)*100)) : 0;
@@ -1559,7 +1612,7 @@ function renderTeamTab(){
             </div>
             <div style="display:flex;justify-content:space-between;font-size:14px;color:var(--muted);">
               <span>สะสม FYC ${THB(t.eligibleFYC)} (ค่าเสริมมือ ≈ ${THB(t.eligibleFYC*0.3)})</span>
-              <span>ครบเขต ${t.windowEnd.toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"})}</span>
+              <span>ครบเขต ${fmtTH(t.windowEnd,{day:"numeric",month:"short",year:"numeric"})}</span>
             </div>
           </div>`;
         }).join("")}
@@ -1607,7 +1660,7 @@ function renderTeamTab(){
           const ag = state.agents[name];
           for (let q=1;q<=4;q++){
             const qMonths=[(q-1)*3,(q-1)*3+1,(q-1)*3+2];
-            const qEntries = effectiveEntries(ag.entries).filter(e=>{ const d=new Date(e.date); return d.getFullYear()===selYear && qMonths.includes(d.getMonth()); });
+            const qEntries = effectiveEntries(ag.entries).filter(e=>{ const d=D(e.date); return d.getFullYear()===selYear && qMonths.includes(d.getMonth()); });
             const newCases = qEntries.filter(isOrigin).length;
             const qFyc = qEntries.reduce((s,e)=>s+e.fyc,0);
             if (newCases>=2){
@@ -1669,7 +1722,7 @@ function generatePrintReport(){
   const name = state.currentAgent;
   const ag = agent();
   const entries = effectiveEntries(ag.entries);
-  const yearEntries = entries.filter(e=>new Date(e.date).getFullYear()===selYear);
+  const yearEntries = entries.filter(e=>D(e.date).getFullYear()===selYear);
   const qResults = quarterlyQualifyResults(entries, selYear);
   const streak = longestConsecutiveStreak(qResults);
   const annualCases = yearEntries.filter(isOrigin).length;
@@ -1703,7 +1756,7 @@ function generatePrintReport(){
     const joiningMonths = [0,1,2,3].map(i=>{
       const y = startY + Math.floor((startM+i)/12);
       const m = (startM+i)%12;
-      const list = entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===y && d.getMonth()===m; });
+      const list = entries.filter(e=>{ const d=D(e.date); return d.getFullYear()===y && d.getMonth()===m; });
       const count = list.filter(isOrigin).length;
       const fyc = list.reduce((s,e)=>s+e.fyc,0);
       const qualifies = count>=JOINING_MONTHLY_MIN_CASES && fyc>=JOINING_MONTHLY_MIN_FYC;
@@ -1720,10 +1773,10 @@ function generatePrintReport(){
   }
   const totalIncome = annualFYC + reward + totalQuarterlyBonus + annualBonusNet + joiningGrandTotal;
   const monthlyFyc = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>
-    yearEntries.filter(e=>new Date(e.date).getMonth()===m).reduce((s,e)=>s+e.fyc,0)
+    yearEntries.filter(e=>D(e.date).getMonth()===m).reduce((s,e)=>s+e.fyc,0)
   );
   const today = new Date();
-  const printDate = today.toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"});
+  const printDate = fmtTH(today,{day:"numeric",month:"long",year:"numeric"});
 
   const html = `<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
 <title>รายงานสรุปผลงาน ${esc(name)} ปี ${toBE(selYear)}</title>
@@ -1787,7 +1840,7 @@ function generatePrintReport(){
 }
 
 function renderSpecialEventsSection(entries){
-  const thDate = (iso)=> new Date(iso+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
+  const thDate = (iso)=> fmtTH(new Date(iso+"T00:00:00"),{day:"numeric",month:"short",year:"numeric"});
   const eventsThisYear = SPECIAL_EVENTS.filter(ev=>{
     const s = new Date(ev.start+"T00:00:00"), e = new Date(ev.end+"T00:00:00");
     return s.getFullYear()===selYear || e.getFullYear()===selYear;
@@ -1843,7 +1896,40 @@ const toBE = y => y + 543;
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 function isOrigin(e){ return (e.installmentIndex ?? 0) === 0; }
+const __fmtCache = {};
+function fmtTH(d, opts){ const k=JSON.stringify(opts); const f=__fmtCache[k]||(__fmtCache[k]=new Intl.DateTimeFormat("th-TH",opts)); return f.format(d); }
+/* ===== PERF CACHE — คำนวณครั้งเดียวต่อการ render ไม่วนซ้ำหลายรอบ ===== */
+const __dateCache = new Map();
+function D(s){ let d=__dateCache.get(s); if(!d){ if(__dateCache.size>50000) __dateCache.clear(); d=new Date(s); __dateCache.set(s,d); } return d; }
+let __rc = null; // WeakMap ใช้เฉพาะระหว่าง render() เท่านั้น
+function rcGet(entries, key, fn){
+  if (!__rc) return fn();
+  let o = __rc.get(entries); if (!o){ o={}; __rc.set(entries,o); }
+  if (!(key in o)) o[key] = fn();
+  return o[key];
+}
+function effIdSet(entries){ return rcGet(entries,'effIds',()=>new Set(effectiveEntries(entries).map(e=>e.id))); }
+// ผลรวม FYC รายเดือน แยก อนุมัติแล้ว(eff) / รอพิจารณา(pend) / มีงาน(any) — key "ปี-เดือน(0-11)"
+function monthSums(entries){
+  return rcGet(entries,'ms',()=>{
+    const ids = effIdSet(entries), m = new Map();
+    for (const e of entries){
+      const d=D(e.date), k=d.getFullYear()+'-'+d.getMonth();
+      let o=m.get(k); if(!o){ o={eff:0,pend:0,any:0}; m.set(k,o); }
+      o.any++; if (ids.has(e.id)) o.eff+=e.fyc; else o.pend+=e.fyc;
+    }
+    return m;
+  });
+}
+function mEff(entries,y,m){ const o=monthSums(entries).get(y+'-'+m); return o?o.eff:0; }
+function mPend(entries,y,m){ const o=monthSums(entries).get(y+'-'+m); return o?o.pend:0; }
+function mAny(entries,y,m){ const o=monthSums(entries).get(y+'-'+m); return !!(o&&o.any); }
+function yPend(entries,y){ let t=0; for(let m=0;m<12;m++) t+=mPend(entries,y,m); return t; }
 function effectiveEntries(entries){
+  if (__rc){ return rcGet(entries,'eff',()=>__effectiveEntriesRaw(entries)); }
+  return __effectiveEntriesRaw(entries);
+}
+function __effectiveEntriesRaw(entries){
   // เอนทรีนับผลได้จริง ก็ต่อเมื่อ "งวดต้นฉบับ" ของกรมธรรม์เดียวกัน ไม่ได้ค้างสถานะรอพิจารณาอยู่
   // ถ้าต้นฉบับยังไม่อนุมัติ งวดต่อเนื่องอื่นๆ ในกรมธรรม์เดียวกัน (แม้จะยังไม่ถึงกำหนดหรือถึงกำหนดแล้ว) ก็ยังไม่นับผลด้วย ไม่ว่าจะตั้ง pending ของตัวเองไว้อย่างไร
   const originPendingMap = {};
@@ -1909,7 +1995,7 @@ function setAgentAnnualTargetFYC(value, year){
 function getAgentYearFyc(name, year){
   const ag = state.agents[name];
   if (!ag) return 0;
-  return effectiveEntries(ag.entries).filter(e=>new Date(e.date).getFullYear()===year).reduce((s,e)=>s+e.fyc,0);
+  return effectiveEntries(ag.entries).filter(e=>D(e.date).getFullYear()===year).reduce((s,e)=>s+e.fyc,0);
 }
 
 function addMonthsToDate(dateStr, n){
@@ -1935,10 +2021,10 @@ function buildInstallmentSchedule(modeValue, perInstallmentFyc){
 }
 
 function getQuarter(dateStr){
-  const d = new Date(dateStr);
+  const d = D(dateStr);
   return { year: d.getFullYear(), quarter: Math.floor(d.getMonth()/3)+1 };
 }
-function monthKey(dateStr){ const d=new Date(dateStr); return `${d.getFullYear()}-${d.getMonth()}`; }
+function monthKey(dateStr){ const d=D(dateStr); return `${d.getFullYear()}-${d.getMonth()}`; }
 function monthsOfQuarter(year,q){ const startM=(q-1)*3; return [0,1,2].map(i=>`${year}-${startM+i}`); }
 
 function quarterlyPct(fyc){ const t=QUARTERLY_TIERS.find(t=>fyc>=t.min && fyc<=t.max); return t?t.pct:0; }
@@ -1977,7 +2063,7 @@ function computeMonthlyPacing(entries, year, goalFYC, startMonth, endMonth, annu
   const periodBaseline = totalMonthsInPlan > 0 ? goalFYC / totalMonthsInPlan : 0;
   const annualBaseline = (annualGoalFYC||0) / 12;
   const monthActual = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>{
-    const list = entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===year && d.getMonth()===m; });
+    const list = entries.filter(e=>{ const d=D(e.date); return d.getFullYear()===year && d.getMonth()===m; });
     return { actual: list.reduce((s,e)=>s+e.fyc,0), count: list.length };
   });
   const months = [];
@@ -2025,7 +2111,7 @@ let mainAppState = null; // เก็บ state จริงของพี่เ
 let activeTeamUmName = null; // ถ้าไม่ใช่ null แปลว่ากำลังอยู่ในบริบทของ UM คนอื่น (state ตอนนี้ชี้ไปที่ข้อมูลของ UM คนนั้นแทน)
 let addTeamUmMode = false;
 let newTeamUmNameInput = "";
-let collapsedBoxes = { explain:true, monthlyCalc:true, newAgent:true, compare:true, compareBars:true, pendingReport:false, cardExpiry:false, serviceFeeTimeline:true }; // ย่อไว้ตั้งแต่แรก กดหัวข้อเพื่อขยายดูรายละเอียด (pendingReport, cardExpiry เปิดไว้ก่อน เพราะเป็นเรื่องที่ต้องรีบดู)
+let collapsedBoxes = { allUmDash:false, explain:true, monthlyCalc:true, newAgent:true, compare:true, compareBars:true, pendingReport:false, cardExpiry:false, serviceFeeTimeline:true }; // ย่อไว้ตั้งแต่แรก กดหัวข้อเพื่อขยายดูรายละเอียด (pendingReport, cardExpiry เปิดไว้ก่อน เพราะเป็นเรื่องที่ต้องรีบดู)
 
 function agent(){
   if (!state.agents[state.currentAgent]){
@@ -2076,18 +2162,54 @@ function loadState(){
     return normalizeState(parsed);
   }catch(e){ return JSON.parse(JSON.stringify(DEFAULT_STATE)); }
 }
-function saveState(){
-  try{
-    if (activeTeamUmName && mainAppState){
-      // กำลังแก้ไขข้อมูลของ UM คนอื่นอยู่ — ต้องเก็บกลับเข้าไปในช่อง teamUMs ของ state จริง แล้วเซฟตัว state จริงเสมอ ไม่ใช่เซฟ state ที่สลับเข้ามาตรงๆ (ไม่งั้นจะทับโครงสร้างหลักผิด)
-      mainAppState.teamUMs[activeTeamUmName] = state;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mainAppState));
-    } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }
-  }
-  catch(e){ showToast("บันทึกไม่สำเร็จ — เบราว์เซอร์อาจเต็มหรือปิดการใช้ localStorage"); }
+/* ===== IndexedDB — พื้นที่เก็บใหญ่กว่า localStorage มาก (หลายร้อย MB ขึ้นไป) ===== */
+const IDB_NAME = "ped-dashboard", IDB_STORE = "kv";
+let __idbP = null, __useIdb = false, __booted = false;
+const metaCache = {};
+function idbOpen(){
+  if (__idbP) return __idbP;
+  __idbP = new Promise((res,rej)=>{
+    if (!window.indexedDB) return rej(new Error("no indexedDB"));
+    const r = indexedDB.open(IDB_NAME, 1);
+    r.onupgradeneeded = ()=>r.result.createObjectStore(IDB_STORE);
+    r.onsuccess = ()=>res(r.result);
+    r.onerror = ()=>rej(r.error);
+    r.onblocked = ()=>rej(new Error("blocked"));
+  });
+  return __idbP;
 }
+function idbGet(key){ return idbOpen().then(db=>new Promise((res,rej)=>{ const q=db.transaction(IDB_STORE,"readonly").objectStore(IDB_STORE).get(key); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); })); }
+function idbPut(key,val){ return idbOpen().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(IDB_STORE,"readwrite"); tx.objectStore(IDB_STORE).put(val,key); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); tx.onabort=()=>rej(tx.error||new Error("abort")); })); }
+function setMeta(k,v){
+  metaCache[k] = v;
+  if (__useIdb) idbPut("meta", {...metaCache}).catch(()=>{});
+  else { try{ localStorage.setItem("ped-dashboard-meta", JSON.stringify(metaCache)); }catch(e){} }
+}
+function rootStateForSave(){
+  if (activeTeamUmName && mainAppState){ mainAppState.teamUMs[activeTeamUmName] = state; return mainAppState; }
+  return state;
+}
+// เซฟแบบหน่วงเวลาเล็กน้อย (รวบหลายการกดเป็นการเขียนครั้งเดียว) หน้าจอจะตอบสนองทันทีไม่ต้องรอเขียนข้อมูลก้อนใหญ่
+let __saveTimer = null;
+function saveState(){
+  clearTimeout(__saveTimer);
+  __saveTimer = setTimeout(flushSave, 400);
+}
+function flushSave(){
+  if (__saveTimer===null) return;
+  clearTimeout(__saveTimer); __saveTimer = null;
+  if (!__booted){ __saveTimer = setTimeout(flushSave, 200); return; } // ยังโหลดข้อมูลไม่เสร็จ ห้ามเขียนทับ
+  const root = rootStateForSave();
+  if (__useIdb){
+    idbPut(STORAGE_KEY, root).catch(()=>{ __useIdb = false; saveToLocalStorage(root); });
+  } else saveToLocalStorage(root);
+}
+function saveToLocalStorage(root){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(root)); }
+  catch(e){ showToast("บันทึกไม่สำเร็จ — พื้นที่เก็บข้อมูลเต็ม กรุณากด 📤 บันทึกไฟล์แบ็กอัพทันที"); }
+}
+window.addEventListener("pagehide", flushSave);
+document.addEventListener("visibilitychange", ()=>{ if (document.visibilityState==="hidden") flushSave(); });
 function showToast(msg){
   const t=document.getElementById("toast");
   t.innerHTML = esc(msg);
@@ -2145,20 +2267,44 @@ function stripCommas(v){ return v.replace(/,/g,""); }
 
 /* ================= RENDER ROOT ================= */
 function render(){
+  __rc = new WeakMap();
+  try { __renderInner(); } finally { __rc = null; }
+}
+function __renderInner(){
   if (activeTeamUmName && activeSection!=="um") activeSection = "um"; // อยู่ในบริบท UM คนอื่น ต้องเห็นแค่แถบ UM เท่านั้น
   renderTeamUmBanner();
   renderAgentPicker();
   renderTabNav();
   renderYearPicker();
   const c = document.getElementById("tab-content");
-  if (activeSection==="um") c.innerHTML = renderTeamTab();
+  if (activeSection==="um") c.innerHTML = renderBackupReminder() + renderTeamTab();
   else if (activeSection==="manage") c.innerHTML = renderManageAgentsTab();
-  else if (activeSection==="teamUm") c.innerHTML = renderTeamUmTab();
+  else if (activeSection==="teamUm") c.innerHTML = renderBackupReminder() + renderTeamUmTab();
   else if (activeTab==="goals") c.innerHTML = renderGoalsTab();
   else if (activeTab==="entry") c.innerHTML = renderEntryTab();
   else if (activeTab==="competitions") c.innerHTML = renderCompetitionsTab();
   bindEvents();
   positionOpenCalendars();
+}
+// เตือนแบ็กอัพทุก 7 วัน (เฉพาะหน้าของตัวเอง ไม่แสดงตอนดู UM คนอื่น)
+let backupReminderSnoozed = false;
+function renderBackupReminder(){
+  if (activeTeamUmName || backupReminderSnoozed) return "";
+  const root = state;
+  const hasData = Object.values(root.agents||{}).some(ag=>(ag.entries||[]).length>0) || Object.keys(root.teamUMs||{}).length>0;
+  if (!hasData) return "";
+  const last = metaCache.lastBackupAt ? new Date(metaCache.lastBackupAt) : null;
+  const days = last ? Math.floor((Date.now()-last.getTime())/86400000) : null;
+  if (days!==null && days<7) return "";
+  const msg = days===null ? "ยังไม่เคยแบ็กอัพข้อมูลเลย" : `ไม่ได้แบ็กอัพมา ${days} วันแล้ว (ล่าสุด ${fmtTH(last,{day:"numeric",month:"short",year:"numeric"})})`;
+  return `<div style="background:#FFF4E5;border:1px solid #F5B25B;border-radius:10px;padding:10px 12px;margin-bottom:12px;">
+    <div style="font-weight:700;color:#8A4B00;">💾 ${msg}</div>
+    <div style="font-size:14px;color:#8A4B00;margin-top:2px;">ถ้าล้างเบราว์เซอร์ เปลี่ยนมือถือ หรือเครื่องหาย ข้อมูลทุกตัวแทนและทุก UM จะหายหมด — ควรเก็บไฟล์ไว้ใน Google Drive/LINE Keep ทุกสัปดาห์</div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn-primary" id="btn-backup-now">📤 แบ็กอัพเลย</button>
+      <button class="btn-ghost" id="btn-backup-later">ไว้ทีหลัง</button>
+    </div>
+  </div>`;
 }
 function renderTeamUmBanner(){
   let banner = document.getElementById("team-um-banner");
@@ -2200,7 +2346,7 @@ function renderAgentPicker(){
   const names = Object.keys(state.agents).sort((a,b)=>getAgentYearFyc(b,selYear)-getAgentYearFyc(a,selYear));
   const options = names.map(n=>`<option value="${esc(n)}" ${n===state.currentAgent?"selected":""}>${esc(n)}</option>`).join("");
   const startDate = agent().competitions?.firstSaleDate || "";
-  const startDateLabel = startDate ? new Date(startDate+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"}) : "ยังไม่ระบุ (ตั้งได้ที่แท็บผลงาน → Joining Bonus)";
+  const startDateLabel = startDate ? fmtTH(new Date(startDate+"T00:00:00"),{day:"numeric",month:"short",year:"numeric"}) : "ยังไม่ระบุ (ตั้งได้ที่แท็บผลงาน → Joining Bonus)";
   let html = `<div class="agent-picker">
     <span class="lbl">👤 ตัวแทน:</span>
     <select id="agent-select">${options}</select>
@@ -2223,7 +2369,7 @@ function renderTabNav(){
   document.getElementById("tab-nav").innerHTML = html;
 }
 function getYears(){
-  const s = new Set(agent().entries.map(e=>new Date(e.date).getFullYear()));
+  const s = new Set(agent().entries.map(e=>D(e.date).getFullYear()));
   s.add(new Date().getFullYear());
   // เผื่อช่วงปีล่วงหน้า/ย้อนหลังไว้ตายตัว ไม่ผูกกับว่ามีผลงานอยู่แล้วหรือยัง จะได้ตั้งเป้าปีถัดไปล่วงหน้าได้ก่อนมีผลงานจริง
   const real = new Date().getFullYear();
@@ -2243,7 +2389,7 @@ function renderYearPicker(){
     document.getElementById("year-picker").innerHTML = yearSelectHtml;
   }
 }
-function getYearEntries(){ return agent().entries.filter(e=>new Date(e.date).getFullYear()===selYear); }
+function getYearEntries(){ return agent().entries.filter(e=>D(e.date).getFullYear()===selYear); }
 function getQuarterBuckets(){
   const b={1:[],2:[],3:[],4:[]};
   agent().entries.forEach(e=>{ const {year,quarter}=getQuarter(e.date); if(year===selYear) b[quarter].push(e); });
@@ -2319,7 +2465,7 @@ function renderGoalsTab(){
   const isCurrentYear = selYear === now.getFullYear();
   const currentMonthIdx = now.getMonth();
   const pacing = (goalFYC>0 || annualGoalFYC>0) ? computeMonthlyPacing(effectiveEntries(agent().entries), selYear, goalFYC, startMonth, endMonth, annualGoalFYC) : null;
-  const yearEntries = effectiveEntries(getYearEntries()).filter(e => { const m = new Date(e.date).getMonth(); return m >= startMonth && m <= endMonth; });
+  const yearEntries = effectiveEntries(getYearEntries()).filter(e => { const m = D(e.date).getMonth(); return m >= startMonth && m <= endMonth; });
   const achieved = yearEntries.reduce((s,e)=>s+e.fyc,0);
   const remaining = Math.max(0, goalFYC-achieved);
   const progressPct = goalFYC>0 ? Math.max(0,(achieved/goalFYC)*100) : 0; // ไม่ตัดเพดาน 100% เกินเป้าต้องโชว์เกินได้
@@ -2426,8 +2572,8 @@ function renderGoalsTab(){
           ${renderDateInput("license-expiry", agent().license.cardExpiryDate)}
         </label>
       </div>
-      ${cardExpiryWarning?(cardExpiryWarning.expired?`<div class="alert-box" style="background:#FBEEEC;border-color:var(--bad);margin-bottom:14px;"><div class="line" style="color:var(--bad);font-weight:700;">⚠ บัตรตัวแทนหมดอายุแล้ว (${cardExpiryWarning.expDate.toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})})</div></div>`
-        :`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);margin-bottom:14px;"><div class="line" style="color:var(--navy);font-weight:700;">🔔 บัตรตัวแทนใกล้หมดอายุ — เหลืออีก ${cardExpiryWarning.daysLeft} วัน (หมดอายุ ${cardExpiryWarning.expDate.toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})})</div></div>`):''}
+      ${cardExpiryWarning?(cardExpiryWarning.expired?`<div class="alert-box" style="background:#FBEEEC;border-color:var(--bad);margin-bottom:14px;"><div class="line" style="color:var(--bad);font-weight:700;">⚠ บัตรตัวแทนหมดอายุแล้ว (${fmtTH(cardExpiryWarning.expDate,{day:"numeric",month:"long",year:"numeric"})})</div></div>`
+        :`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);margin-bottom:14px;"><div class="line" style="color:var(--navy);font-weight:700;">🔔 บัตรตัวแทนใกล้หมดอายุ — เหลืออีก ${cardExpiryWarning.daysLeft} วัน (หมดอายุ ${fmtTH(cardExpiryWarning.expDate,{day:"numeric",month:"long",year:"numeric"})})</div></div>`):''}
 
       <div style="border-top:1px dashed #123F6B22;padding-top:12px;">
         <div id="training-toggle" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
@@ -2438,7 +2584,7 @@ function renderGoalsTab(){
           ${agent().license.trainings.length?agent().license.trainings.map((t,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #123F6B0D;">
             <div>
               <div style="font-weight:600;color:var(--navy-deep);">${esc(t.courseName)}</div>
-              <div style="font-size:14px;color:var(--muted);">${t.trainingDate?new Date(t.trainingDate+"T00:00:00").toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"}):'ไม่ระบุวันที่'}</div>
+              <div style="font-size:14px;color:var(--muted);">${t.trainingDate?fmtTH(new Date(t.trainingDate+"T00:00:00"),{day:"numeric",month:"short",year:"numeric"}):'ไม่ระบุวันที่'}</div>
             </div>
             <span data-remove-training="${i}" style="color:var(--bad);cursor:pointer;font-size:20px;padding:4px 8px;">×</span>
           </div>`).join(""):`<div class="empty" style="padding:8px 0;">ยังไม่มีประวัติการอบรม</div>`}
@@ -2556,7 +2702,7 @@ function billingModeOf(e){
 }
 function renderEntryTab(){
   const entries = getYearEntries(); // ทั้งหมด รวมที่รอพิจารณาด้วย — ใช้แสดงตารางครบทุกแถว
-  const sorted = [...entries].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const sorted = [...entries].sort((a,b)=>D(b.date)-D(a.date));
 
   // ค้นหาจากหมายเหตุ (ชื่อลูกค้า/เลขกรมธรรม์) หรือชื่อเดือน (ไทย เต็มหรือย่อ) — พิมพ์ชื่อเดือนจะกรองเฉพาะเดือนนั้น ไม่ใช่ค้นข้อความ
   const q = entrySearchQuery.trim().toLowerCase();
@@ -2564,7 +2710,7 @@ function renderEntryTab(){
   const matchedMonthShort = q ? THAI_MONTH_SHORT.findIndex(m=>m.toLowerCase().replace(/\./g,"").includes(q.replace(/\./g,""))) : -1;
   const monthFilter = matchedMonth>=0 ? matchedMonth : matchedMonthShort;
   const filtered = !q ? sorted
-    : monthFilter>=0 ? sorted.filter(e=>new Date(e.date).getMonth()===monthFilter)
+    : monthFilter>=0 ? sorted.filter(e=>D(e.date).getMonth()===monthFilter)
     : sorted.filter(e=>(e.note||"").toLowerCase().includes(q));
 
   // ยอดรวมทุกตัว (ที่แสดงบนสุดและแถวรวมท้ายตาราง) คำนวณจากผลลัพธ์ที่ค้นหา/กรองอยู่ตอนนี้เท่านั้น ไม่ใช่ทั้งปีเสมอไป
@@ -2620,7 +2766,7 @@ function renderEntryTab(){
         const effPending = effectivePendingOf(e);
         if (!origin && effPending) return ''; // งวดต่อเนื่อง ยังไม่โผล่ในตารางเลยจนกว่าต้นฉบับจะอนุมัติ
         return `<tr style="${effPending?'background:#FBF6E844;':''}">
-          <td style="${origin?'color:var(--navy);font-weight:600;':''}${effPending?'opacity:0.7;':''}">${new Date(e.date).toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})}</td>
+          <td style="${origin?'color:var(--navy);font-weight:600;':''}${effPending?'opacity:0.7;':''}">${fmtTH(D(e.date),{day:"numeric",month:"long",year:"numeric"})}</td>
           <td style="color:var(--muted)">${esc(e.note)||"—"}</td>
           ${cell("annual")}${cell("semiannual")}${cell("quarterly")}${cell("monthly")}
           <td style="text-align:center;">
@@ -2689,7 +2835,7 @@ function renderEntryTab(){
 /* ================= COMPETITIONS TAB ================= */
 function renderCompetitionsTab(){
   const entries = effectiveEntries(agent().entries);
-  const yearEntries = entries.filter(e=>new Date(e.date).getFullYear()===selYear);
+  const yearEntries = entries.filter(e=>D(e.date).getFullYear()===selYear);
   const qResults = quarterlyQualifyResults(entries, selYear);
   const streak = longestConsecutiveStreak(qResults);
   const annualCases = yearEntries.filter(isOrigin).length;
@@ -2719,7 +2865,7 @@ function renderCompetitionsTab(){
     joiningMonths = [0,1,2,3].map(i=>{
       const y = startY + Math.floor((startM+i)/12);
       const m = (startM+i)%12;
-      const list = entries.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===y && d.getMonth()===m; });
+      const list = entries.filter(e=>{ const d=D(e.date); return d.getFullYear()===y && d.getMonth()===m; });
       const count = list.filter(isOrigin).length;
       const fyc = list.reduce((s,e)=>s+e.fyc,0);
       const qualifies = count>=JOINING_MONTHLY_MIN_CASES && fyc>=JOINING_MONTHLY_MIN_FYC;
@@ -2756,7 +2902,7 @@ function renderCompetitionsTab(){
   const annualBonusNet = Math.max(0, annualBonusGross - totalQuarterlyBonus);
 
   const totalIncome = annualFYC + reward + totalQuarterlyBonus + annualBonusNet + joiningGrandTotal;
-  const thMonth = (y,m)=> new Date(y,m,1).toLocaleDateString("th-TH",{month:"short",year:"2-digit"});
+  const thMonth = (y,m)=> fmtTH(new Date(y,m,1),{month:"short",year:"2-digit"});
 
   const qCardsHtml = qResults.map(r=>{
     const isCurrentQuarter = isCurrentYear && r.q===currentActual.quarter;
@@ -2948,7 +3094,7 @@ function renderCompetitionsTab(){
       ${(()=>{
         const capMonth = isCurrentYear ? currentMonthIdx : 11;
         const monthlyFyc = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>
-          yearEntries.filter(e=>new Date(e.date).getMonth()===m).reduce((s,e)=>s+e.fyc,0)
+          yearEntries.filter(e=>D(e.date).getMonth()===m).reduce((s,e)=>s+e.fyc,0)
         );
         const rowsHtml = [0,1,2,3,4,5,6,7,8,9,10,11].filter(m=>m<=capMonth).map(m=>{
           const fyc = monthlyFyc[m];
@@ -3102,6 +3248,7 @@ function bindEvents(){
   document.querySelectorAll("[data-open-team-um]").forEach(el=>{
     el.onclick = ()=>{
       const name = el.dataset.openTeamUm;
+      if (!state.teamUMs[name]) return;
       mainAppState = state;
       // ครั้งแรกที่เข้า ให้สร้างโครงสร้างข้อมูลเต็มแบบเดียวกับแอปหลัก (ทีมตัวแทน + เป้าหมาย UM ของตัวเอง) ถ้ายังไม่มี
       if (!mainAppState.teamUMs[name].agents){
@@ -3112,7 +3259,12 @@ function bindEvents(){
         };
       }
       state = mainAppState.teamUMs[name];
+      if (!state.umGoal) state.umGoal = {};
+      state.umGoal = Object.assign({ targetFYC: 0, startMonth: 0, endMonth: 11, position: "", compareA: "", compareB: "", monthOverrides: {}, directOverrides: {}, newAgentPremiums: {}, viewAsOfMonth: null }, state.umGoal);
+      if (!state.agents || !Object.keys(state.agents).length) state.agents = { "ตัวแทนคนที่ 1": JSON.parse(JSON.stringify(DEFAULT_AGENT_DATA)) };
+      if (!state.agents[state.currentAgent]) state.currentAgent = Object.keys(state.agents)[0];
       activeTeamUmName = name;
+      window.scrollTo(0,0);
       activeSection = "um";
       syncAgentFormState();
       umGoalsFycInput = formatThousands(String(getUmTargetFYC()));
@@ -3126,6 +3278,7 @@ function bindEvents(){
     state = mainAppState;
     activeTeamUmName = null;
     activeSection = "teamUm";
+    window.scrollTo(0,0);
     syncAgentFormState();
     umGoalsFycInput = formatThousands(String(getUmTargetFYC()));
     umAnnualGoalsFycInput = formatThousands(String(getUmAnnualTargetFYC()));
@@ -3155,7 +3308,8 @@ function bindEvents(){
     saveState(); render();
   };
   document.querySelectorAll("[data-rename-team-um]").forEach(btn=>{
-    btn.onclick = ()=>{
+    btn.onclick = (ev)=>{
+      ev.stopPropagation(); // กันไม่ให้คลิกทะลุไปเปิดหน้า UM (เดิมทำให้ error/ค้าง)
       const oldName = btn.dataset.renameTeamUm;
       const newName = window.prompt("เปลี่ยนชื่อ UM:", oldName);
       if (!newName || !newName.trim() || newName.trim()===oldName) return;
@@ -3167,7 +3321,8 @@ function bindEvents(){
     };
   });
   document.querySelectorAll("[data-delete-team-um]").forEach(btn=>{
-    btn.onclick = ()=>{
+    btn.onclick = (ev)=>{
+      ev.stopPropagation();
       const name = btn.dataset.deleteTeamUm;
       if (!window.confirm(`ลบข้อมูลทีมทั้งหมดของ "${name}" ใช่หรือไม่? การลบนี้ย้อนกลับไม่ได้`)) return;
       delete state.teamUMs[name];
@@ -3638,18 +3793,29 @@ function bindEvents(){
     };
   });
 
+  const btnBackupNow = document.getElementById("btn-backup-now");
+  if (btnBackupNow) btnBackupNow.onclick = ()=>document.getElementById("btn-export-header").click();
+  const btnBackupLater = document.getElementById("btn-backup-later");
+  if (btnBackupLater) btnBackupLater.onclick = ()=>{ backupReminderSnoozed = true; render(); };
   const exportBtn = document.getElementById("btn-export-header");
   if (exportBtn) exportBtn.onclick = ()=>{
-    const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+    // ถ้ากำลังดู UM คนอื่นอยู่ ต้องแบ็กอัพก้อนข้อมูลหลักทั้งหมด (ของพี่เอง + ทุก UM) ไม่ใช่แค่ของ UM คนนั้น
+    if (activeTeamUmName && mainAppState) mainAppState.teamUMs[activeTeamUmName] = state;
+    const full = (activeTeamUmName && mainAppState) ? mainAppState : state;
+    const blob = new Blob([JSON.stringify(full)],{type:"application/json"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href=url; a.download=`ped-dashboard-backup-${todayIso()}.json`;
-    a.click(); URL.revokeObjectURL(url);
+    a.click(); setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    setMeta("lastBackupAt", new Date().toISOString());
+    showToast("ดาวน์โหลดไฟล์แบ็กอัพแล้ว — อย่าลืมเก็บไว้ใน Drive/LINE Keep");
+    render();
   };
   const importBtn = document.getElementById("btn-import-header");
   const fileInput = document.getElementById("file-import-header");
   if (importBtn && fileInput){
     importBtn.onclick = ()=>{
+      if (activeTeamUmName){ showToast("กรุณากด ← กลับของฉันเอง ก่อนโหลดไฟล์แบ็กอัพ"); return; }
       const hasExistingData = Object.values(state.agents).some(ag=>ag.entries.length>0);
       if (hasExistingData){
         const ok = confirm("การนำเข้าไฟล์จะทับข้อมูลปัจจุบันทั้งหมด (ของทุกตัวแทน) ย้อนกลับไม่ได้ นอกจากมีไฟล์แบ็กอัพเก่าเก็บไว้ ต้องการดำเนินการต่อไหม?");
@@ -3954,13 +4120,13 @@ function submitEntry(){
   const entryDate = new Date(entryForm.date+"T00:00:00");
   const daysFromToday = Math.round((entryDate-new Date())/86400000);
   if (daysFromToday > 90){
-    warnings.push(`วันที่ ${entryDate.toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})} อยู่ล่วงหน้าเกิน 90 วันจากวันนี้ — ใช่วันที่ที่ตั้งใจไหม?`);
+    warnings.push(`วันที่ ${fmtTH(entryDate,{day:"numeric",month:"long",year:"numeric"})} อยู่ล่วงหน้าเกิน 90 วันจากวันนี้ — ใช่วันที่ที่ตั้งใจไหม?`);
   }
   const firstSaleDate = agent().competitions?.firstSaleDate;
   if (firstSaleDate){
     const fsd = new Date(firstSaleDate+"T00:00:00");
     if (entryDate < fsd){
-      warnings.push(`วันที่นี้อยู่ก่อน "วันที่มีผลงานขึ้นแรก" ของตัวแทนคนนี้ (${fsd.toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"})}) — ถ้าไม่ตรงกัน อาจกระทบการคำนวณ Joining Bonus/ค่าเสริมมือ`);
+      warnings.push(`วันที่นี้อยู่ก่อน "วันที่มีผลงานขึ้นแรก" ของตัวแทนคนนี้ (${fmtTH(fsd,{day:"numeric",month:"long",year:"numeric"})}) — ถ้าไม่ตรงกัน อาจกระทบการคำนวณ Joining Bonus/ค่าเสริมมือ`);
     }
   }
   if (warnings.length){
@@ -3996,7 +4162,34 @@ function submitEntry(){
 
 /* init */
 document.addEventListener("click", closeAllCalendarsAndRender);
-render();
+function refreshInputsAfterLoad(){
+  syncAgentFormState();
+  umGoalsFycInput = formatThousands(String(getUmTargetFYC()));
+  umAnnualGoalsFycInput = formatThousands(String(getUmAnnualTargetFYC()));
+}
+async function boot(){
+  try{
+    try{ Object.assign(metaCache, JSON.parse(localStorage.getItem("ped-dashboard-meta")||"{}")); }catch(e){}
+    const saved = await idbGet(STORAGE_KEY);
+    __useIdb = true;
+    const meta = await idbGet("meta");
+    if (meta) Object.assign(metaCache, meta);
+    if (saved){
+      state = normalizeState(saved);
+    } else {
+      // ย้ายข้อมูลเดิมจาก localStorage เข้า IndexedDB ครั้งแรก (state ตอนนี้โหลดมาจาก localStorage แล้ว)
+      await idbPut(STORAGE_KEY, state);
+      await idbPut("meta", {...metaCache});
+      const check = await idbGet(STORAGE_KEY);
+      if (check && check.agents){ try{ localStorage.removeItem(STORAGE_KEY); localStorage.removeItem("ped-dashboard-meta"); }catch(e){} }
+    }
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+  }catch(e){ __useIdb = false; } // เบราว์เซอร์ไม่รองรับ/โหมดส่วนตัว — ใช้ localStorage แบบเดิม
+  __booted = true;
+  refreshInputsAfterLoad();
+  render();
+}
+boot();
 </script>
 </body>
 </html>
