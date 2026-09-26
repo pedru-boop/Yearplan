@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.26-3</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.26-6</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -576,29 +576,87 @@ function renderTeamUmTab(){
     </div>
   `;
 }
+// สถานะบัตรตัวแทน: หมดอายุ / ใกล้หมด (ภายใน 4 เดือน เกณฑ์เดียวกับหน้าตัวแทน) / ปกติ / ยังไม่ระบุ
+function licenseStatus(exp){
+  const pill=(bg,fg,t)=>`<span style="background:${bg};color:${fg};border-radius:999px;padding:1px 6px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block;margin-top:2px;">${t}</span>`;
+  if (!exp){ const h=`<span style="color:var(--muted);">ยังไม่ระบุ</span>`; return { rank: 2, html:h, short:h }; }
+  const expDate = new Date(exp+"T00:00:00"), today = new Date(); today.setHours(0,0,0,0);
+  const daysLeft = Math.round((expDate-today)/86400000);
+  const warnFrom = new Date(expDate); warnFrom.setMonth(warnFrom.getMonth()-4);
+  const label = fmtTH(expDate,{day:"numeric",month:"short",year:"2-digit"});
+  if (daysLeft<0){ const h=`<b style="color:var(--bad);">${label}</b><br>${pill('#B4231822','var(--bad)',`หมดแล้ว ${-daysLeft} วัน`)}`; return { rank:0, html:h, short:h }; }
+  if (today>=warnFrom){ const h=`<b style="color:#B45309;">${label}</b><br>${pill('#F5B25B33','#8A4B00',`เหลือ ${daysLeft} วัน`)}`; return { rank:0, html:h, short:h }; }
+  const h=`<span style="color:var(--good);font-weight:600;">${label}</span>`; return { rank:1, html:h, short:h };
+}
+let editLicenseAgent = null; // ชื่อตัวแทนที่กำลังเปิดแก้ข้อมูลบัตรในแท็บจัดการตัวแทน
 function renderManageAgentsTab(){
   const names = Object.keys(state.agents);
   const rows = names.map(name=>{
     const ag = state.agents[name];
+    const lic = ag.license || {};
     const effEntries = effectiveEntries(ag.entries);
     const yearFyc = effEntries.filter(e=>D(e.date).getFullYear()===selYear).reduce((s,e)=>s+e.fyc,0);
     const originCount = effEntries.filter(e=>D(e.date).getFullYear()===selYear && isOrigin(e)).length;
-    return { name, yearFyc, originCount, isCurrent: name===state.currentAgent };
-  }).sort((a,b)=>b.yearFyc-a.yearFyc);
+    return { name, lic, yearFyc, originCount, isCurrent: name===state.currentAgent, st: licenseStatus(lic.cardExpiryDate) };
+  }).sort((a,b)=>{
+    // บัตรหมดอายุใกล้สุดอยู่บน (รวมที่หมดแล้ว) — ยังไม่ระบุวันหมดอายุไว้ล่างสุด
+    const ea=a.lic.cardExpiryDate, eb=b.lic.cardExpiryDate;
+    if (ea && eb) return ea<eb?-1:ea>eb?1:0;
+    if (ea) return -1; if (eb) return 1;
+    return b.yearFyc-a.yearFyc;
+  });
+  const alertCount = rows.filter(r=>r.st.rank===0).length;
   return `
     <div class="card">
       <h3>👥 จัดการตัวแทน</h3>
-      <p class="sub">เพิ่ม เปลี่ยนชื่อ หรือลบตัวแทน — เรียงตามผลงาน FYC มากไปน้อย — ดูข้อมูลรายวันไปที่แท็บ "ตัวแทน" แทน</p>
-      ${rows.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #123F6B0D;">
-        <div data-switch-agent="${esc(r.name)}" style="cursor:pointer;flex:1;">
-          <div style="font-weight:700;color:${r.isCurrent?'var(--gold-soft)':'var(--navy)'};font-size:19px;">${r.isCurrent?'▶ ':''}${esc(r.name)}</div>
-          <div style="font-size:14px;color:var(--muted);">${r.originCount} ราย · FYC ${THB(r.yearFyc)} (พ.ศ. ${toBE(selYear)})</div>
-        </div>
-        <div style="display:flex;gap:4px;flex-shrink:0;">
-          <button class="icon-btn" data-rename-agent="${esc(r.name)}" title="เปลี่ยนชื่อ">✏️</button>
-          ${names.length>1?`<button class="icon-btn" data-delete-agent="${esc(r.name)}" title="ลบตัวแทนนี้">🗑</button>`:''}
-        </div>
-      </div>`).join("")}
+      <p class="sub">เรียงตามวันหมดอายุบัตรตัวแทน ใกล้หมดอยู่บนสุด · แตะชื่อเพื่อเลือกตัวแทน · 📝 แก้ข้อมูลบัตร/เปลี่ยนชื่อ/ลบ</p>
+      ${alertCount?`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);margin-bottom:10px;"><div class="line" style="color:var(--navy);font-weight:700;">🔔 มีบัตรตัวแทนหมดอายุ/ใกล้หมดอายุ ${alertCount} คน — รีบดำเนินการต่ออายุ</div></div>`:''}
+      <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:auto;">
+        <thead><tr style="background:#123F6B0D;color:var(--navy);text-align:left;">
+          <th style="padding:8px 4px;">ชื่อ</th>
+          <th style="padding:8px 4px;white-space:nowrap;">รหัส</th>
+          <th style="padding:8px 4px;white-space:nowrap;">เลขบัตร</th>
+          <th style="padding:8px 4px;white-space:nowrap;">หมดอายุ</th>
+          <th style="padding:8px 2px;"></th>
+        </tr></thead>
+        <tbody>
+      ${rows.map(r=>{
+        const enc = encodeURIComponent(r.name), editing = editLicenseAgent===r.name;
+        const dash = '<span style="color:var(--muted);">—</span>';
+        return `<tr style="border-bottom:${editing?'none':'1px solid #123F6B14'};vertical-align:top;${r.st.rank===0?'background:#FFF8EC;':''}">
+          <td data-switch-agent="${esc(r.name)}" style="padding:8px 4px;cursor:pointer;min-width:84px;">
+            <div style="font-weight:700;color:${r.isCurrent?'var(--gold-soft)':'var(--navy)'};font-size:14px;line-height:1.3;">${r.isCurrent?'▶ ':''}${esc(r.name)}</div>
+            <div style="font-size:11px;color:var(--muted);">FYC ${THB(r.yearFyc)}</div>
+          </td>
+          <td style="padding:8px 4px;font-weight:600;word-break:break-all;">${esc(r.lic.agentCode)||dash}</td>
+          <td style="padding:8px 4px;font-weight:600;word-break:break-all;">${esc(r.lic.cardNumber)||dash}</td>
+          <td style="padding:8px 4px;white-space:nowrap;">${r.st.short}</td>
+          <td style="padding:4px 2px;text-align:right;">
+            <button class="icon-btn" data-edit-license="${esc(r.name)}" title="แก้ไข">${editing?'✖':'📝'}</button>
+          </td>
+        </tr>
+        ${editing?`<tr style="border-bottom:1px solid #123F6B14;"><td colspan="5" style="padding:0 6px 10px;">
+          <div style="background:#123F6B08;border-radius:8px;padding:10px;">
+            <div style="font-weight:700;color:var(--navy);margin-bottom:6px;">📝 ${esc(r.name)}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+              <label class="field" style="flex:1;min-width:140px;"><span>รหัสตัวแทน (Code)</span>
+                <input type="text" data-mlic="agentCode" data-agent="${enc}" value="${esc(r.lic.agentCode)}"></label>
+              <label class="field" style="flex:1;min-width:140px;"><span>เลขที่บัตรตัวแทน</span>
+                <input type="text" data-mlic="cardNumber" data-agent="${enc}" value="${esc(r.lic.cardNumber)}"></label>
+              <label class="field" style="flex:1;min-width:140px;"><span>วันหมดอายุบัตร</span>
+                ${renderDateInput("mlic-exp|"+enc, r.lic.cardExpiryDate)}</label>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+              <button class="btn-primary" data-edit-license="${esc(r.name)}">✓ เสร็จ</button>
+              <button class="btn-ghost" data-rename-agent="${esc(r.name)}">✏️ เปลี่ยนชื่อ</button>
+              ${names.length>1?`<button class="btn-ghost" data-delete-agent="${esc(r.name)}" style="color:var(--bad);">🗑 ลบ</button>`:''}
+            </div>
+          </div>
+        </td></tr>`:''}`;}).join("")}
+        </tbody>
+      </table>
+      </div>
       ${addAgentMode?`<div class="add-agent-form" style="margin-top:14px;">
         <input type="text" id="new-agent-name" placeholder="ชื่อตัวแทนใหม่" value="${esc(newAgentNameInput)}" style="max-width:220px;">
         <button class="btn-primary" id="btn-confirm-add-agent">เพิ่ม</button>
@@ -2380,7 +2438,7 @@ function renderTabNav(){
   // ตอนอยู่ในบริบทของ UM คนอื่น เหลือแค่แถบ UM อย่างเดียว ไม่โชว์ตัวแทน/จัดการตัวแทน/ทีม UM ซ้อนกันเอง
   const sections = activeTeamUmName
     ? [["um","🧑‍🤝‍🧑 UM"]]
-    : [["um","🧑‍🤝‍🧑 UM"],["agent","👤 ตัวแทน"],["manage","👥 จัดการตัวแทน"],["teamUm","🧑‍💼 ทีม UM"]];
+    : [["um","🧑‍🤝‍🧑 UM"],["manage","👥 จัดการตัวแทน"],["agent","👤 ตัวแทน"],["teamUm","🧑‍💼 ทีม UM"]];
   let html = sections.map(([id,label])=>
     `<button data-section="${id}" class="${activeSection===id?'active':''}">${label}</button>`).join("");
   if (activeSection==="agent"){
@@ -3411,6 +3469,13 @@ function bindEvents(){
     goalInput.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
   }
   // ข้อมูลบัตรตัวแทนและการอบรม — วันที่ 2 ช่องนี้ใช้ปฏิทินกำหนดเองของแอป (ผูกผ่าน data-toggle-cal/data-pick-day ที่อื่นแล้ว) จึงเหลือแค่ช่องข้อความ
+  document.querySelectorAll("[data-edit-license]").forEach(btn=>{
+    btn.onclick = (ev)=>{ ev.stopPropagation(); const n=btn.dataset.editLicense; editLicenseAgent = (editLicenseAgent===n)?null:n; closeAllCalendars(); render(); };
+  });
+  document.querySelectorAll("[data-mlic]").forEach(el=>{
+    el.onblur = (e)=>{ const ag=state.agents[decodeURIComponent(el.dataset.agent)]; if(!ag) return; if(!ag.license) ag.license={cardIssueDate:"",cardExpiryDate:"",cardNumber:"",agentCode:"",trainings:[]}; if (ag.license[el.dataset.mlic]!==e.target.value){ ag.license[el.dataset.mlic]=e.target.value.trim(); saveState(); } };
+    el.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
+  });
   const licenseTextFieldMap = { "license-agent-code":"agentCode", "license-card-number":"cardNumber" };
   Object.keys(licenseTextFieldMap).forEach(id=>{
     const el = document.getElementById(id);
@@ -4077,6 +4142,7 @@ function getIsoForPicker(id){
   if (id==="joining") return agent().competitions.firstSaleDate;
   if (id==="license-issue") return agent().license.cardIssueDate;
   if (id==="license-expiry") return agent().license.cardExpiryDate;
+  if (id.startsWith("mlic-exp|")){ const ag=state.agents[decodeURIComponent(id.slice(9))]; return ag&&ag.license?ag.license.cardExpiryDate:""; }
   if (id==="new-training") return newTrainingDraft.date;
   if (id.startsWith("premium|")){
     const parts = id.split("|"); // premium|<encodedName>|<idx>
@@ -4092,6 +4158,7 @@ function setIsoForPicker(id, iso){
   else if (id==="joining"){ agent().competitions.firstSaleDate = iso; saveState(); }
   else if (id==="license-issue"){ agent().license.cardIssueDate = iso; saveState(); }
   else if (id==="license-expiry"){ agent().license.cardExpiryDate = iso; saveState(); }
+  else if (id.startsWith("mlic-exp|")){ const ag=state.agents[decodeURIComponent(id.slice(9))]; if (ag){ if(!ag.license) ag.license={cardIssueDate:"",cardExpiryDate:"",cardNumber:"",agentCode:"",trainings:[]}; ag.license.cardExpiryDate = iso; saveState(); } }
   else if (id==="new-training"){ newTrainingDraft.date = iso; }
   else if (id.startsWith("premium|")){
     const parts = id.split("|");
