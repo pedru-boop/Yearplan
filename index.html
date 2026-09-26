@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.26-2</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.26-3</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -481,6 +481,28 @@ function renderAllUmDashboard(){
   // เรียงคนที่เสี่ยงเสียรายได้ขึ้นก่อน: ขาดโควตาสะสมมากสุด แล้วตามด้วย % เป้าทั้งปีน้อยสุด
   rows.sort((a,b)=>(a.own?-1:b.own?1:0) || ((b.s.quotaShort||0)-(a.s.quotaShort||0)) || (a.s.annualPct-b.s.annualPct));
   const mName = THAI_MONTH_NAMES[rows[0].s.viewMonth];
+  // แถบ 12 เดือน: 1 ช่อง = โควตา 1 เดือน (ถ้ายังไม่ระบุตำแหน่ง ใช้เป้าทั้งปี ÷ 12) เติมสีตามผลงานสะสม เพื่อดูว่าผลงานถึงตอนนี้เท่ากับโควตากี่เดือนแล้ว
+  const monthBar = (s)=>{
+    const unit = s.position ? s.position.cfycMonth : (s.annualGoal>0 ? s.annualGoal/12 : 0);
+    if (!unit) return `<div style="font-size:13px;color:var(--muted);margin-top:4px;">ระบุตำแหน่งหรือตั้งเป้าทั้งปี เพื่อดูแถบ 12 เดือน</div>`;
+    const cum = s.position ? s.cumCFYC : s.cumAll;
+    const covered = cum/unit, due = s.viewMonth+1, diff = covered-due;
+    const cells = THAI_MONTH_SHORT.map((lab,i)=>{
+      const fill = Math.max(0, Math.min(1, covered-i));
+      const passed = i<=s.viewMonth;
+      const bg = passed ? '#B4231824' : '#123F6B10'; // เดือนที่ผ่านมาแล้วแต่ยังไม่ถึงโควตา = พื้นแดงอ่อน
+      const fg = i<due ? 'var(--good)' : 'var(--gold)'; // ส่วนที่เกินเดือนปัจจุบัน (ทำล่วงหน้า) = สีทอง
+      return `<div style="flex:1;min-width:0;">
+        <div style="height:12px;background:${bg};border-radius:3px;overflow:hidden;${i===s.viewMonth?'outline:2px solid var(--navy);outline-offset:1px;':''}"><div style="height:100%;width:${Math.round(fill*100)}%;background:${fg};"></div></div>
+        <div style="font-size:10px;text-align:center;margin-top:3px;color:${i===s.viewMonth?'var(--navy)':'#6B7280'};font-weight:${i===s.viewMonth?700:400};white-space:nowrap;">${lab}</div>
+      </div>`;
+    }).join("");
+    const status = diff>=0
+      ? `<span style="color:var(--good);font-weight:700;">นำหน้า ${diff.toFixed(1)} เดือน</span>`
+      : `<span style="color:#B42318;font-weight:700;">ช้ากว่า ${Math.abs(diff).toFixed(1)} เดือน</span>`;
+    return `<div style="display:flex;gap:2px;margin-top:6px;">${cells}</div>
+      <div style="font-size:14px;margin-top:4px;">ผลงานสะสม ${THB(cum)} = ${s.position?'โควตา':'เป้า'} <b>${covered.toFixed(1)} เดือน</b> (ควรได้ ${due} เดือน) · ${status}</div>`;
+  };
   const card = (x)=>{
     const s = x.s, pos = s.position;
     const pct = Math.round(s.annualPct);
@@ -508,7 +530,7 @@ function renderAllUmDashboard(){
         ${status}
       </div>
       <div style="display:flex;justify-content:space-between;font-size:14px;margin-top:8px;"><span>ทำได้ทั้งปี ${THB(s.annualAchieved)}${s.annualGoal>0?` / เป้า ${THB(s.annualGoal)}`:' · <span style="color:var(--muted);">ยังไม่ตั้งเป้า</span>'}</span><b style="color:${barColor};">${s.annualGoal>0?pct+'%':'—'}</b></div>
-      <div style="height:6px;background:#123F6B14;border-radius:4px;overflow:hidden;margin-top:3px;"><div style="height:100%;width:${Math.min(100,pct)}%;background:${barColor};"></div></div>
+      ${monthBar(s)}
       <div style="font-size:14px;margin-top:6px;">CFYC ${mName}: <b>${THB(s.monthCFYC)}</b>${pos?` / โควตา ${THB(s.monthQuota)}`:''}</div>
       ${bonus3?`<div style="font-size:14px;margin-top:3px;color:var(--navy);">${bonus3}</div>`:''}
       ${warn.length?`<div style="font-size:13px;margin-top:4px;color:#B45309;">⚠ ${warn.join(' · ')}</div>`:''}
@@ -679,7 +701,7 @@ function renderTeamTab(){
   const umGoalFYC = getUmTargetFYC();
   const umRemaining = Math.max(0, umGoalFYC-teamAchievedInUmPeriod);
   const umProgressPct = umGoalFYC>0 ? Math.max(0,(teamAchievedInUmPeriod/umGoalFYC)*100) : 0; // ตัวเลขจริง ไม่ตัดเพดานที่ 100% เกินเป้าต้องโชว์เกิน 100% ได้
-  __umSummary = { agentCount: names.length, quietCount: rows.filter(r=>r.isQuiet).length, annualGoal: umAnnualGoalFYC, annualAchieved: umAnnualAchievedTotal, annualPct: umAnnualProgressPct, viewMonth: umViewAsOfMonth, monthCFYC: monthlyTeamCFYC[umViewAsOfMonth], position: selectedPosition, yearPending: names.reduce((s,n)=>s+yPend(state.agents[n].entries, selYear),0) };
+  __umSummary = { agentCount: names.length, quietCount: rows.filter(r=>r.isQuiet).length, annualGoal: umAnnualGoalFYC, annualAchieved: umAnnualAchievedTotal, annualPct: umAnnualProgressPct, viewMonth: umViewAsOfMonth, monthCFYC: monthlyTeamCFYC[umViewAsOfMonth], cumAll: monthlyTeamCFYC.slice(0, umViewAsOfMonth+1).reduce((a,b)=>a+b,0), position: selectedPosition, yearPending: names.reduce((s,n)=>s+yPend(state.agents[n].entries, selYear),0) };
   const umProgressPctForRing = Math.min(100, umProgressPct); // ใช้คำนวณวงแหวนภาพเท่านั้น กันวงแหวนวาดเกินรอบ
   const ringR = 44, ringC = 2*Math.PI*ringR;
   const umAnnualRingOffset = ringC - (umAnnualProgressPctForRing/100)*ringC;
