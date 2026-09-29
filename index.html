@@ -162,7 +162,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.26-7</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.29-1</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -374,7 +374,8 @@ function agentCompStatus(ag){
   const curQ = isCurYear ? Math.floor(now.getMonth()/3)+1 : 4;
   const qResults = quarterlyQualifyResults(entries, selYear);
   const r = qResults[curQ-1];
-  const items = []; // { ok, near, title, text }
+  const items = []; // { ok, near, title, text, has } — has=false = ยังไม่มีผลงานในช่วงนั้น ไม่ต้องรายงาน
+  const qHas = r.count>0 || r.fyc>0;
   const shortTxt = (cases, fyc, extra)=>[cases>0?`${cases} ราย`:'', fyc>0?THB(fyc):'', extra||''].filter(Boolean).join(' + ');
   const NEAR = 10000; // ขาดไม่เกินนี้ถือว่า "ใกล้แล้ว"
 
@@ -387,10 +388,10 @@ function agentCompStatus(ag){
     const next = QUARTERLY_TIERS[idx+1];
     if (ok){
       const pct = QUARTERLY_TIERS[idx].pct;
-      items.push({ ok:true, near: next && next.min-r.fyc<=NEAR, title:`โบนัสไตรมาส Q${curQ}`,
+      items.push({ has:qHas, ok:true, near: next && next.min-r.fyc<=NEAR, title:`โบนัสไตรมาส Q${curQ}`,
         text:`ได้แล้ว ${pct}% ≈ ${THB(r.fyc*pct/100)}${next?` · ขาดอีก <b>${THB(next.min-r.fyc)}</b> ขยับเป็น ${next.pct}%`:' · ขั้นสูงสุดแล้ว'}` });
     } else {
-      items.push({ ok:false, near: cs<=1 && fs<=NEAR && persist>=75, title:`โบนัสไตรมาส Q${curQ}`,
+      items.push({ has:qHas, ok:false, near: cs<=1 && fs<=NEAR && persist>=75, title:`โบนัสไตรมาส Q${curQ}`,
         text:`ขาดอีก <b>${shortTxt(cs,fs,persist<75?'ความยั่งยืน ≥75%':'')}</b> จะได้ 4%` });
     }
   }
@@ -399,12 +400,13 @@ function agentCompStatus(ag){
     const cs=Math.max(0,QUALIFY_MIN_CASES-r.count), fs=Math.max(0,QUALIFY_MIN_FYC-r.fyc), ms=Math.max(0,QUALIFY_MIN_ACTIVE_MONTHS-r.activeMonths);
     const streak = longestConsecutiveStreak(qResults);
     items.push(r.qualifies
-      ? { ok:true, title:`ผ่านเกณฑ์ไตรมาส Q${curQ} (Trophy)`, text:`ผ่านแล้ว · ต่อเนื่องสูงสุด ${streak} ไตรมาส${streak<4?` · ผ่านต่ออีก 1 ไตรมาส รางวัลต่อเนื่องเป็น ${THB(STREAK_REWARDS[streak+1])} (ต้องผ่านเกณฑ์ทั้งปีด้วย)`:' · ครบ 4 ไตรมาสแล้ว'}` }
-      : { ok:false, near: cs<=2 && fs<=NEAR && ms===0, title:`ผ่านเกณฑ์ไตรมาส Q${curQ} (Trophy)`, text:`ขาดอีก <b>${shortTxt(cs,fs,ms>0?`มีงานอีก ${ms} เดือน`:'')}</b>` });
+      ? { has:qHas, ok:true, title:`ผ่านเกณฑ์ไตรมาส Q${curQ} (Trophy)`, text:`ผ่านแล้ว · ต่อเนื่องสูงสุด ${streak} ไตรมาส${streak<4?` · ผ่านต่ออีก 1 ไตรมาส รางวัลต่อเนื่องเป็น ${THB(STREAK_REWARDS[streak+1])} (ต้องผ่านเกณฑ์ทั้งปีด้วย)`:' · ครบ 4 ไตรมาสแล้ว'}` }
+      : { has:qHas, ok:false, near: cs<=2 && fs<=NEAR && ms===0, title:`ผ่านเกณฑ์ไตรมาส Q${curQ} (Trophy)`, text:`ขาดอีก <b>${shortTxt(cs,fs,ms>0?`มีงานอีก ${ms} เดือน`:'')}</b>` });
   }
   // 3) โบนัสปี — ขั้นต่ำ 12 ราย + FYC 50,000 แล้วอัตราตามช่วง FYC ทั้งปี
   const yearEntries = entries.filter(e=>D(e.date).getFullYear()===selYear);
   const aCases = yearEntries.filter(isOrigin).length, aFyc = yearEntries.reduce((s,e)=>s+e.fyc,0);
+  const aHas = aCases>0 || aFyc>0;
   {
     const persist = (ag.persistQuarterly||{})[`annual-${selYear}`] ?? 90;
     const band = persist>=90?'high':persist>=85?'mid':'low';
@@ -412,14 +414,14 @@ function agentCompStatus(ag){
     if (cs===0 && fs===0){
       const idx = ANNUAL_TIER_RANGES.findIndex(t=>aFyc>=t.min && aFyc<=t.max);
       const next = ANNUAL_TIER_RANGES[idx+1];
-      items.push({ ok:true, near: next && next.min-aFyc<=NEAR, title:`โบนัสปี ${toBE(selYear)}`,
+      items.push({ has:aHas, ok:true, near: next && next.min-aFyc<=NEAR, title:`โบนัสปี ${toBE(selYear)}`,
         text:`ได้แล้ว ${ANNUAL_BANDS[band].pct[idx]}%${next?` · ขาดอีก <b>${THB(next.min-aFyc)}</b> ขยับเป็น ${ANNUAL_BANDS[band].pct[idx+1]}%`:' · ขั้นสูงสุดแล้ว'}` });
-    } else items.push({ ok:false, near: cs<=2 && fs<=NEAR, title:`โบนัสปี ${toBE(selYear)}`, text:`ขาดอีก <b>${shortTxt(cs,fs)}</b> จะเริ่มได้ ${ANNUAL_BANDS[band].pct[0]}%` });
+    } else items.push({ has:aHas, ok:false, near: cs<=2 && fs<=NEAR, title:`โบนัสปี ${toBE(selYear)}`, text:`ขาดอีก <b>${shortTxt(cs,fs)}</b> จะเริ่มได้ ${ANNUAL_BANDS[band].pct[0]}%` });
     // เกณฑ์รางวัลต่อเนื่องทั้งปี 24 ราย + 160,000
     const gc=Math.max(0,ANNUAL_GATE_CASES-aCases), gf=Math.max(0,ANNUAL_GATE_FYC-aFyc);
     items.push(gc===0&&gf===0
-      ? { ok:true, title:'เกณฑ์รางวัลต่อเนื่องทั้งปี', text:'ผ่านแล้ว (24 ราย + 160,000)' }
-      : { ok:false, near: gc<=2 && gf<=NEAR, title:'เกณฑ์รางวัลต่อเนื่องทั้งปี', text:`ขาดอีก <b>${shortTxt(gc,gf)}</b>` });
+      ? { has:aHas, ok:true, title:'เกณฑ์รางวัลต่อเนื่องทั้งปี', text:'ผ่านแล้ว (24 ราย + 160,000)' }
+      : { has:aHas, ok:false, near: gc<=2 && gf<=NEAR, title:'เกณฑ์รางวัลต่อเนื่องทั้งปี', text:`ขาดอีก <b>${shortTxt(gc,gf)}</b>` });
   }
   // 4) Joining Bonus — เฉพาะช่วง 4 เดือนแรกนับจากวันที่มีผลงานขึ้นแรก
   const sd = ag.competitions && ag.competitions.firstSaleDate;
@@ -433,7 +435,7 @@ function agentCompStatus(ag){
       let tier=null; for (const t of JOINING_CUM_TABLE) if (cc>=t.cases && cf>=t.fyc) tier=t;
       const next = JOINING_CUM_TABLE.find(t=>!(cc>=t.cases && cf>=t.fyc));
       const left = Math.max(0, Math.ceil((endJ-now)/86400000));
-      items.push({ ok:!!tier, near: next && Math.max(0,next.fyc-cf)<=NEAR && next.cases-cc<=1, title:'Joining Bonus',
+      items.push({ has: cc>0 || cf>0, ok:!!tier, near: next && Math.max(0,next.fyc-cf)<=NEAR && next.cases-cc<=1, title:'Joining Bonus',
         text:`${tier?`ได้แล้ว ${THB(tier.bonus)}`:'ยังไม่ได้'}${next?` · ขาดอีก <b>${shortTxt(Math.max(0,next.cases-cc),Math.max(0,next.fyc-cf))}</b> ได้ ${THB(next.bonus)}`:' · สูงสุดแล้ว'} (เหลือ ${left} วัน)` });
     }
   }
@@ -445,38 +447,10 @@ function agentCompStatus(ag){
     const reached = ev.tiers.filter(t=>ach>=t).length, next = ev.tiers[reached];
     const running = now>=s0 && now<=e0;
     if (!running && reached===0) return; // จบไปแล้วและไม่ได้ ไม่ต้องเตือน
-    items.push({ ok: reached>0, near: running && next!==undefined && next-ach<=NEAR, title:`${ev.name}${running?'':' (จบแล้ว)'}`,
+    items.push({ has: ach>0, ok: reached>0, near: running && next!==undefined && next-ach<=NEAR, title:`${ev.name}${running?'':' (จบแล้ว)'}`,
       text:`${reached>0?`ได้ระดับ ${reached}${ev.tiers.length>1?`/${ev.tiers.length}`:''}`:'ยังไม่ถึง'}${next!==undefined?(running?` · ขาดอีก <b>${THB(next-ach)}</b> ถึง${reached>0?'ระดับถัดไป':''} ${THB(next)}`:''):' · ครบทุกระดับ 🎉'}` });
   });
-  return items;
-}
-function renderAgentCompAlerts(names){
-  if (!names.length) return '';
-  const now = new Date(), curQ = selYear===now.getFullYear() ? Math.floor(now.getMonth()/3)+1 : 4;
-  const list = names.map(n=>({ name:n, items: agentCompStatus(state.agents[n]) }));
-  const nearCount = list.reduce((s,a)=>s+a.items.filter(i=>i.near).length,0);
-  const okCount = list.reduce((s,a)=>s+a.items.filter(i=>i.ok).length,0);
-  // คนที่มีรายการ "ใกล้แล้ว" ขึ้นก่อน เพราะเป็นคนที่ต้องรีบผลักดัน
-  list.sort((a,b)=>b.items.filter(i=>i.near).length - a.items.filter(i=>i.near).length);
-  const row = (it)=>{
-    const icon = it.ok ? '✅' : it.near ? '🔥' : '⏳';
-    const bg = it.near ? 'background:#FFF4E5;' : '';
-    return `<div style="display:flex;gap:6px;font-size:14px;padding:4px 6px;border-radius:6px;${bg}">
-      <span style="flex-shrink:0;">${icon}</span>
-      <div style="min-width:0;"><b style="color:var(--navy);">${it.title}</b> — <span style="color:#374151;">${it.text}</span></div>
-    </div>`;
-  };
-  return `<div class="card">
-    <h3 data-toggle-box="agentComp" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-      <span>🏆 การแข่งขันของตัวแทน</span>
-      <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.agentComp?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
-    </h3>
-    <p class="sub" style="margin-bottom:6px;">ไตรมาส Q${curQ}/${toBE(selYear)} · ✅ ได้แล้ว ${okCount} รายการ · 🔥 ใกล้ได้/ใกล้ขยับขั้น ${nearCount} รายการ (ขาดไม่เกิน ${THB(10000)}) · นับเฉพาะงานที่อนุมัติแล้ว</p>
-    ${collapsedBoxes.agentComp?'':list.map(a=>`<div style="border:1px solid #123F6B1A;border-radius:10px;padding:8px 8px 6px;margin-bottom:8px;">
-      <div data-switch-agent-comp="${esc(a.name)}" style="font-weight:700;color:var(--navy);font-size:16px;margin:0 6px 4px;cursor:pointer;">👤 ${esc(a.name)} <span style="font-size:12px;color:var(--muted);font-weight:400;">แตะเพื่อดูรายละเอียด ›</span></div>
-      ${a.items.map(row).join('')}
-    </div>`).join('')}
-  </div>`;
+  return items.filter(i=>i.has);
 }
 function renderInsightsSection(entries, selYearArg, pacing){
   const today = new Date();
@@ -1017,8 +991,6 @@ function renderTeamTab(){
           :umGoalFYC>0 && umProgressPct>=80?`<div style="margin-top:14px;background:#C69A3B33;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;">🔥 ใกล้ถึงเป้าหมาย UM แล้ว! เหลืออีกแค่ ${THB(umRemaining)} (ขาดอีก ${Math.round(100-umProgressPct)}%)</div>`:''}
       </div>
     </div>
-
-    ${renderAgentCompAlerts(names)}
 
     ${(()=>{
       const pendingByAgent = names.map(name=>{
@@ -1690,51 +1662,27 @@ function renderTeamTab(){
           if (today>expDate) alerts.push(`⚠ บัตรตัวแทนหมดอายุแล้ว`);
           else if (today>=warnFrom) alerts.push(`🔔 บัตรตัวแทนใกล้หมดอายุ (เหลือ ${Math.ceil((expDate-today)/86400000)} วัน)`);
         }
-        // ภาพรวมสถานการณ์ของตัวแทนคนนี้: ยังต้องทำอีกเท่าไหร่ถึงเป้า/ขั้นถัดไป (เฉพาะปีที่กำลังดูอยู่)
-        if (curQInfo.year===selYear){
-          const qResultsA = quarterlyQualifyResults(effectiveEntries(ag.entries), selYear);
-          const curQResultA = qResultsA.find(qr=>qr.q===curQInfo.quarter);
-          if (curQResultA && !curQResultA.qualifies){
-            const casesShort = Math.max(0, QUALIFY_MIN_CASES-curQResultA.count);
-            const fycShort = Math.max(0, QUALIFY_MIN_FYC-curQResultA.fyc);
-            alerts.push(`🎯 คุณวุฒิไตรมาสนี้: ขาดอีก ${casesShort>0?`${casesShort} ราย `:''}${fycShort>0?`FYC ${THB(fycShort)} `:''}จึงจะผ่าน`);
-          }
-          if (curQResultA){
-            const bKeyA = `${selYear}-Q${curQInfo.quarter}`;
-            const bPersistA = ag.persistQuarterly?.[bKeyA] ?? 80;
-            const bQualifiesA = curQResultA.count>=3 && curQResultA.fyc>=12500 && bPersistA>=75;
-            const bFycShortA = Math.max(0, 12500-curQResultA.fyc);
-            const bCasesShortA = Math.max(0, 3-curQResultA.count);
-            if (!bQualifiesA){
-              alerts.push(`💰 โบนัสไตรมาสนี้: ขาดอีก ${bCasesShortA>0?`${bCasesShortA} ราย `:''}${bFycShortA>0?`FYC ${THB(bFycShortA)} `:''}จึงจะเริ่มได้`);
-            } else {
-              const bPctA = quarterlyPct(curQResultA.fyc);
-              const nextTierA = QUARTERLY_TIERS.find(t=>t.min > curQResultA.fyc);
-              if (nextTierA) alerts.push(`💰 โบนัสไตรมาสนี้: ขาดอีก FYC ${THB(nextTierA.min-curQResultA.fyc)} จะขยับเป็นอัตรา ${nextTierA.pct}%`);
-            }
-          }
-          const yearEntriesA = effectiveEntries(ag.entries).filter(e=>D(e.date).getFullYear()===selYear);
-          const annualCasesA = yearEntriesA.filter(isOrigin).length;
-          const annualFycA = yearEntriesA.reduce((s,e)=>s+e.fyc,0);
-          const annualBonusGateA = annualCasesA>=ANNUAL_BONUS_GATE_CASES && annualFycA>=ANNUAL_BONUS_GATE_FYC;
-          if (!annualBonusGateA){
-            const casesShortA = Math.max(0, ANNUAL_BONUS_GATE_CASES-annualCasesA);
-            const fycShortA = Math.max(0, ANNUAL_BONUS_GATE_FYC-annualFycA);
-            alerts.push(`📈 โบนัสปี: ขาดอีก ${casesShortA>0?`${casesShortA} ราย `:''}${fycShortA>0?`FYC ${THB(fycShortA)} `:''}จึงจะเริ่มได้`);
-          }
-        }
+        // การแข่งขัน/ผลประโยชน์ของตัวแทน — รายงานเฉพาะรายการที่มีผลงานเข้ามาแล้ว (ยังไม่มีงานในช่วงนั้น = ไม่รายงาน)
+        agentCompStatus(ag).forEach(it=>alerts.push({ comp:true, ...it }));
         return { name, alerts };
       }).filter(a=>a.alerts.length>0);
       if (!agentAlerts.length) return '';
       return `<div class="card">
         <h3>⚠️ ตัวแทนที่ต้องจับตา</h3>
-        <p class="sub">รวมสถานการณ์ปัจจุบันของตัวแทนแต่ละคน — เห็นเลยว่าใครยังต้องทำอีกเท่าไหร่ถึงเป้าหรือขั้นถัดไป — แตะชื่อเพื่อสลับไปดู/แก้ไขได้โดยตรง</p>
+        <p class="sub">รวมสถานการณ์ปัจจุบันของตัวแทนแต่ละคน รวมการแข่งขัน/ผลประโยชน์ (แสดงเฉพาะรายการที่มีผลงานเข้ามาแล้ว) · ✅ ได้แล้ว · 🔥 ขาดไม่เกิน ${THB(10000)} · 🏆 กำลังสะสม — แตะชื่อเพื่อสลับไปดู/แก้ไขได้โดยตรง</p>
         ${agentAlerts.map(a=>`<div data-switch-agent="${esc(a.name)}" style="padding:10px 0;border-bottom:1px solid #123F6B0D;cursor:pointer;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <span style="font-weight:600;color:var(--navy);font-size:19px;">${esc(a.name)}</span>
             <span style="color:var(--muted);font-size:18px;">›</span>
           </div>
-          ${a.alerts.map(al=>`<div style="font-size:17px;font-weight:600;color:var(--bad);margin-top:4px;">${al}</div>`).join("")}
+          ${a.alerts.map(al=>{
+            if (!al.comp) return `<div style="font-size:17px;font-weight:600;color:var(--bad);margin-top:4px;">${al}</div>`;
+            const icon = al.ok ? '✅' : al.near ? '🔥' : '🏆';
+            return `<div style="display:flex;gap:6px;font-size:15px;margin-top:4px;padding:3px 6px;border-radius:6px;${al.near?'background:#FFF4E5;':''}">
+              <span style="flex-shrink:0;">${icon}</span>
+              <div style="min-width:0;"><b style="color:${al.ok?'var(--good)':'var(--navy)'};">${al.title}</b> — <span style="color:#374151;">${al.text}</span></div>
+            </div>`;
+          }).join("")}
         </div>`).join("")}
       </div>`;
     })()}
