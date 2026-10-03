@@ -110,7 +110,13 @@
   .qcard{border-radius:12px; padding:14px; position:relative;}
   .qcard .badge-current{position:absolute; top:-11px; left:12px; background:var(--gold); color:var(--navy-deep); font-size:15.75px; font-weight:700; padding:2px 9px; border-radius:999px;}
   .qcard .head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-weight:700; color:var(--navy-deep); font-size:20.25px;}
-  .alert-box{margin-top:8px; background:#FBF0EF; border:1px solid #B4453B33; border-radius:8px; padding:8px 10px;}
+  .tier-btn{display:inline-block;margin:2px 0 8px;padding:5px 12px;font-size:14px;font-weight:600;color:var(--navy);background:#123F6B0D;border:1px solid #123F6B33;border-radius:999px;cursor:pointer;}
+.tier-btn:hover{background:#123F6B1A;}
+.tier-box{margin:0 0 12px;padding:8px 10px;border:1px solid #123F6B1F;border-radius:8px;background:#F5F8FC;}
+.tier-box .qtable th,.tier-box .qtable td{font-size:14px !important;padding:5px 6px;white-space:nowrap;font-family:inherit;}
+.tier-box tr.tier-cur td{background:#C69A3B26;font-weight:700;}
+.tier-note{font-size:13px;color:var(--muted);margin-top:6px;}
+.alert-box{margin-top:8px; background:#FBF0EF; border:1px solid #B4453B33; border-radius:8px; padding:8px 10px;}
   .alert-box .title{display:flex; align-items:center; gap:5px; margin-bottom:3px; font-size:17.25px; font-weight:700; color:var(--bad);}
   .alert-box .line{font-size:18px; color:var(--bad);}
   .qtable{width:100%; border-collapse:collapse; font-size:17.25px;}
@@ -162,7 +168,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.09.29-1</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.03-1</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -342,6 +348,36 @@ const TEAM_BUILDING_TIERS = [
   { level: "ระดับ 3", minFyc: 22000, reward: 1050 },
   { level: "ระดับ 4", minFyc: 15000, reward: 700 },
 ];
+// ปุ่มแสดง/ซ่อนรายละเอียดแต่ละขั้นของผลประโยชน์แบบขั้นบันได (ซ่อนไว้ตั้งแต่แรก)
+let openTiers = {};
+function tierToggle(key, bodyHtml){
+  const open = !!openTiers[key];
+  return `<button type="button" class="tier-btn" data-tier-toggle="${key}">${open?'▲ ซ่อนรายละเอียดแต่ละขั้น':'📊 ดูรายละเอียดแต่ละขั้น'}</button>`
+    + (open?`<div class="tier-box">${bodyHtml}</div>`:'');
+}
+function tierRowStyle(isCur){ return isCur?' class="tier-cur"':''; }
+// DPO: 100% / 175% / 250% ของเกณฑ์ต่อไตรมาส → 20% / 22% / 25%
+function dpoTiersHtml(threshold, curRate){
+  const tiers = [...SALES_COMP_RATE_TIERS].sort((a,b)=>a.minMultiplier-b.minMultiplier);
+  return `<table class="qtable"><thead><tr><th>ขั้น</th><th class="r">ตัวแทนตรง/ไตรมาส</th><th class="r">อัตรา</th><th class="r">ได้รับขั้นต่ำ/ไตรมาส</th></tr></thead><tbody>
+    ${tiers.map(t=>{ const need=threshold*t.minMultiplier; return `<tr${tierRowStyle(curRate===t.rate)}><td>${Math.round(t.minMultiplier*100)}% ของเกณฑ์</td><td class="r">≥ ${THB(need)}</td><td class="r">${t.rate}%</td><td class="r">${THB(need*t.rate/100)}</td></tr>`; }).join('')}
+  </tbody></table><div class="tier-note">เกณฑ์ตำแหน่งนี้ ${THB(threshold)}/ไตรมาส · คิดจาก FYC ตัวแทนตรงทั้งก้อน × อัตราของขั้นที่ถึง</div>`;
+}
+// ค่าสร้างและรักษาตัวแทน: ระดับ 4 → สตาร์ (ต่อคน/ไตรมาส)
+function teamBuildTiersHtml(){
+  const tiers = [...TEAM_BUILDING_TIERS].sort((a,b)=>a.minFyc-b.minFyc);
+  return `<table class="qtable"><thead><tr><th>ระดับ</th><th class="r">FYC/ไตรมาส/คน</th><th class="r">ได้รับ/คน</th></tr></thead><tbody>
+    ${tiers.map((t,i)=>{ const nx=tiers[i+1]; return `<tr><td>${t.level}</td><td class="r">${nx?`${THB(t.minFyc)} – ${THB(nx.minFyc-1)}`:`≥ ${THB(t.minFyc)}`}</td><td class="r">${THB(t.reward)}</td></tr>`; }).join('')}
+  </tbody></table><div class="tier-note">ทุกระดับต้องมีผลงานรายใหม่ ≥ 2 รายในไตรมาสนั้น</div>`;
+}
+// โบนัสส่วนเกินโควตา: 8 ขั้นตาม % ส่วนเกินของโควตาทั้งปี
+function bonus3TiersHtml(pos, curIdx){
+  const tb = NEW_AGENT_PROFIT_TABLE[pos.value]; const q = pos.cfycYear;
+  const labels = ['1–20%','21–40%','41–60%','61–80%','81–100%','101–150%','151–200%','200% ขึ้นไป'];
+  return `<div style="overflow-x:auto;"><table class="qtable"><thead><tr><th>ส่วนเกิน</th><th class="r">CFYC ทั้งปีขั้นต่ำ</th><th class="r">โบนัส 1</th>${tb.amounts?'<th class="r">โบนัส 2</th>':''}<th class="r">ได้รับขั้นต่ำ</th></tr></thead><tbody>
+    ${labels.map((lb,i)=>{ const ex=q*NEW_AGENT_PROFIT_BAND_MIN_PCT[i]/100; const flat=tb.amounts?tb.amounts[i]:0; return `<tr${tierRowStyle(curIdx===i)}><td>${lb}</td><td class="r">${THB(q+ex)}</td><td class="r">${tb.rates[i]}%</td>${tb.amounts?`<td class="r">${THB(flat)}</td>`:''}<td class="r">${THB(ex*tb.rates[i]/100+flat)}</td></tr>`; }).join('')}
+  </tbody></table></div><div class="tier-note">โควตาทั้งปี ${THB(q)} · โบนัส 1 = % × ส่วนเกิน${tb.amounts?' · โบนัส 2 = เงินคงที่ประจำขั้น':''}</div>`;
+}
 function todayIso(){
   // ห้ามใช้ toISOString() ตรงๆ กับเวลาปัจจุบัน เพราะจะแปลงเป็น UTC ทำให้ก่อน 7 โมงเช้า (เวลาไทย) วันที่เพี้ยนไปเป็นเมื่อวาน
   const t = new Date();
@@ -602,12 +638,12 @@ function renderAllUmDashboard(){
     let bonus3 = '';
     if (pos && s.nextBand3){
       bonus3 = s.notYetQualified3
-        ? `💎 ข้อ 3: ขาดอีก <b>${THB(s.nextBand3.shortfall)}</b> จะเริ่มได้โบนัส (อัตรา ${s.nextBand3.nextRate}%)`
-        : `💎 ข้อ 3: ขาดอีก <b>${THB(s.nextBand3.shortfall)}</b> ขยับเป็น ${s.nextBand3.nextRate}% (+${THB(s.nextBand3.increase)})`;
-    } else if (pos) bonus3 = `💎 ข้อ 3: อยู่ขั้นสูงสุดแล้ว`;
+        ? `💎 โบนัสส่วนเกินโควตา: ขาดอีก <b>${THB(s.nextBand3.shortfall)}</b> จะเริ่มได้โบนัส (อัตรา ${s.nextBand3.nextRate}%)`
+        : `💎 โบนัสส่วนเกินโควตา: ขาดอีก <b>${THB(s.nextBand3.shortfall)}</b> ขยับเป็น ${s.nextBand3.nextRate}% (+${THB(s.nextBand3.increase)})`;
+    } else if (pos) bonus3 = `💎 โบนัสส่วนเกินโควตา: อยู่ขั้นสูงสุดแล้ว`;
     const warn = [];
     if (s.quietCount>0) warn.push(`${s.quietCount} ตัวแทนไม่มีงาน${mName}`);
-    if (s.yearPending>0) warn.push(`รอพิจารณา ${THB(s.yearPending)}`);
+    if (s.yearPending>0) warn.push(`รอพิจารณา ${s.yearPendingCount?s.yearPendingCount+' ราย · ':''}${THB(s.yearPending)}`);
     const attr = x.own ? `data-section="um"` : `data-open-team-um="${esc(x.name)}"`;
     return `<div ${attr} style="border:1px solid #123F6B1F;border-radius:10px;padding:10px 12px;margin-bottom:10px;cursor:pointer;${x.own?'background:#FBF6E8;':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
@@ -635,7 +671,7 @@ function renderTeamUmTab(){
   return renderAllUmDashboard() + `
     <div class="card">
       <h3>🧑‍💼 ทีม UM</h3>
-      <p class="sub">แตะชื่อเพื่อเข้าไปดู/จัดการทีมของ UM คนนั้นแบบเต็มรูปแบบ (ทีมตัวแทน, เป้าหมาย, ผลประโยชน์ข้อ 1-7) แยกขาดจากทีมของพี่เองโดยสิ้นเชิง</p>
+      <p class="sub">แตะชื่อเพื่อเข้าไปดู/จัดการทีมของ UM คนนั้นแบบเต็มรูปแบบ (ทีมตัวแทน, เป้าหมาย, ผลประโยชน์ทุกตัว) แยกขาดจากทีมของพี่เองโดยสิ้นเชิง</p>
       ${names.length===0?`<div class="empty">ยังไม่มี UM ที่บันทึกไว้ — เพิ่มได้ด้านล่าง</div>`:names.map(name=>{
         const u = state.teamUMs[name];
         const agentCount = Object.keys(u.agents||{}).length;
@@ -822,12 +858,11 @@ function renderTeamTab(){
     const ag = state.agents[name];
     return sum + mEff(ag.entries, selYear, umEffectiveEndMonth);
   },0);
-  const currentMonthPending = names.reduce((sum,name)=>{
-    const ag = state.agents[name];
-    return sum + mPend(ag.entries, selYear, umEffectiveEndMonth);
-  },0);
+  // รอพิจารณา = คงค้างสะสมทุกเดือนที่ยังไม่อนุมัติ จนถึงเดือนที่ดูอยู่ (ไม่ใช่เฉพาะเดือนนี้)
+  const pendAnnual = cumPending(names, selYear, 0, umEffectiveEndMonth);
+  const pendPeriod = cumPending(names, selYear, umStartMonth, umEffectiveEndMonth);
   const teamAchievedApproved = pastMonthsTotal + currentMonthApproved;
-  const teamAchievedPending = currentMonthPending;
+  const teamAchievedPending = pendPeriod.fyc;
   const teamAchievedInUmPeriod = teamAchievedApproved + teamAchievedPending;
   const teamAchievedAllYear = rows.reduce((s,r)=>s+r.achieved,0);
   const teamGoalSum = rows.reduce((s,r)=>s+r.goalFYC,0);
@@ -835,7 +870,7 @@ function renderTeamTab(){
   // เป้าหมายทั้งปี (ม.ค.-ธ.ค. เสมอ) แยกจากเป้าหมายเฉพาะช่วงด้านบน ใช้ตรรกะเดียวกัน (เดือนที่ผ่านมา=ค่า CFYC จริง, เดือนนี้=แยกอนุมัติ/รอพิจารณา) แค่เริ่มนับจากเดือนมกราเสมอไม่ผูกกับ umStartMonth
   const annualPastMonthsTotal = pastMonthsEnd>=0 ? monthlyTeamCFYC.slice(0, pastMonthsEnd+1).reduce((a,b)=>a+b,0) : 0;
   const umAnnualAchievedApproved = annualPastMonthsTotal + currentMonthApproved;
-  const umAnnualAchievedPending = currentMonthPending;
+  const umAnnualAchievedPending = pendAnnual.fyc;
   const umAnnualAchievedTotal = umAnnualAchievedApproved + umAnnualAchievedPending;
   const umAnnualGoalFYC = getUmAnnualTargetFYC();
   const umAnnualRemaining = Math.max(0, umAnnualGoalFYC-umAnnualAchievedTotal);
@@ -845,7 +880,7 @@ function renderTeamTab(){
   const umGoalFYC = getUmTargetFYC();
   const umRemaining = Math.max(0, umGoalFYC-teamAchievedInUmPeriod);
   const umProgressPct = umGoalFYC>0 ? Math.max(0,(teamAchievedInUmPeriod/umGoalFYC)*100) : 0; // ตัวเลขจริง ไม่ตัดเพดานที่ 100% เกินเป้าต้องโชว์เกิน 100% ได้
-  __umSummary = { agentCount: names.length, quietCount: rows.filter(r=>r.isQuiet).length, annualGoal: umAnnualGoalFYC, annualAchieved: umAnnualAchievedTotal, annualPct: umAnnualProgressPct, viewMonth: umViewAsOfMonth, monthCFYC: monthlyTeamCFYC[umViewAsOfMonth], cumAll: monthlyTeamCFYC.slice(0, umViewAsOfMonth+1).reduce((a,b)=>a+b,0), position: selectedPosition, yearPending: names.reduce((s,n)=>s+yPend(state.agents[n].entries, selYear),0) };
+  __umSummary = { agentCount: names.length, quietCount: rows.filter(r=>r.isQuiet).length, annualGoal: umAnnualGoalFYC, annualAchieved: umAnnualAchievedTotal, annualPct: umAnnualProgressPct, viewMonth: umViewAsOfMonth, monthCFYC: monthlyTeamCFYC[umViewAsOfMonth], cumAll: monthlyTeamCFYC.slice(0, umViewAsOfMonth+1).reduce((a,b)=>a+b,0), position: selectedPosition, yearPending: pendAnnual.fyc, yearPendingCount: pendAnnual.count };
   const umProgressPctForRing = Math.min(100, umProgressPct); // ใช้คำนวณวงแหวนภาพเท่านั้น กันวงแหวนวาดเกินรอบ
   const ringR = 44, ringC = 2*Math.PI*ringR;
   const umAnnualRingOffset = ringC - (umAnnualProgressPctForRing/100)*ringC;
@@ -894,7 +929,7 @@ function renderTeamTab(){
         warnings.push(`⚠ เดือนนี้เหลืออีก ${daysLeftInMonth} วัน แต่ CFYC สะสมยังขาด ${THB(quotaShortW)} ถึงจะได้เงินเดือนเดือนนี้`);
       }
       if (daysLeftInQuarter<=14 && q6ShortW>0){
-        warnings.push(`⚠ ไตรมาส ${currentQW} เหลืออีก ${daysLeftInQuarter} วัน แต่ FYC ทีมยังขาด ${THB(q6ShortW)} ถึงจะเข้าเกณฑ์ผลตอบแทนข้อ 6 ขั้นแรก`);
+        warnings.push(`⚠ ไตรมาส ${currentQW} เหลืออีก ${daysLeftInQuarter} วัน แต่ FYC ทีมยังขาด ${THB(q6ShortW)} ถึงจะเข้าเกณฑ์ DPO ขั้นแรก`);
       }
       if (warnings.length){
         teamEarlyWarningHtml = `<div class="alert-box" style="background:#FBEEEC;border-color:var(--bad);margin-bottom:14px;">
@@ -942,7 +977,7 @@ function renderTeamTab(){
             <div style="flex:1;min-width:220px;">
               <div class="tech-row"><span class="lab">เป้าหมายทั้งปี</span><span class="val">${THB(umAnnualGoalFYC)}</span></div>
               <div class="tech-row"><span class="lab">อนุมัติแล้ว (ทั้งปี)</span><span class="val good">${THB(umAnnualAchievedApproved)}</span></div>
-              <div class="tech-row"><span class="lab" style="color:var(--gold);">รอพิจารณา (เฉพาะเดือน${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val" style="color:var(--gold);">${THB(umAnnualAchievedPending)}</span></div>
+              <div class="tech-row"><span class="lab" style="color:var(--gold);">รอพิจารณา (คงค้างสะสมถึง${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val" style="color:var(--gold);">${pendLabel(pendAnnual)}</span></div>
               <div class="tech-row" style="border-top:1px dashed #ffffff33;padding-top:6px;"><span class="lab" style="font-weight:700;">รวมทั้งหมด (ทั้งปี)</span><span class="val" style="font-weight:700;">${THB(umAnnualAchievedTotal)}</span></div>
               <div class="tech-row"><span class="lab">ยังขาดอีก (ทั้งปี)</span><span class="val ${umAnnualRemaining>0?'warn':''}">${THB(umAnnualRemaining)}</span></div>
             </div>
@@ -982,7 +1017,7 @@ function renderTeamTab(){
               </select>
             </div>
             <div class="tech-row"><span class="lab">ทำได้แล้ว (เดือนก่อนหน้า + อนุมัติแล้วเดือน${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val good">${THB(teamAchievedApproved)}${umGoalFYC>0?` (${Math.round(Math.max(0,(teamAchievedApproved/umGoalFYC)*100))}%)`:''}</span></div>
-            <div class="tech-row"><span class="lab" style="color:var(--gold);">รอพิจารณา (เฉพาะเดือน${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val" style="color:var(--gold);">${THB(teamAchievedPending)}${umGoalFYC>0?` (${Math.round(Math.max(0,(teamAchievedPending/umGoalFYC)*100))}%)`:''}</span></div>
+            <div class="tech-row"><span class="lab" style="color:var(--gold);">รอพิจารณา (คงค้างสะสม ${THAI_MONTH_NAMES[umStartMonth]}–${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val" style="color:var(--gold);">${pendLabel(pendPeriod)}${umGoalFYC>0?` (${Math.round(Math.max(0,(teamAchievedPending/umGoalFYC)*100))}%)`:''}</span></div>
             <div class="tech-row" style="border-top:1px dashed #123F6B22;padding-top:6px;"><span class="lab" style="font-weight:700;">รวมทั้งหมด</span><span class="val" style="font-weight:700;">${THB(teamAchievedInUmPeriod)}${umGoalFYC>0?` (${Math.round(umProgressPct)}%)`:''}</span></div>
             <div class="tech-row"><span class="lab">ยังขาดอีก</span><span class="val ${umRemaining>0?'warn':''}">${THB(umRemaining)}</span></div>
           </div>
@@ -1154,7 +1189,8 @@ function renderTeamTab(){
       const directOverrides = state.umGoal.directOverrides || {};
 
       const boxABeforeExplain = `
-      <h3 style="margin:4px 0 4px;">🎯 ควบคุมผลงานเพื่อผลตอบแทนข้อ 6 (DPO) (${selectedPosition.label})</h3>
+      <h3 style="margin:4px 0 4px;">🎯 ควบคุมผลงานเพื่อ DPO (${selectedPosition.label})</h3>
+        ${tierToggle('dpo-ctrl', dpoTiersHtml(salesCompThreshold, null))}
       <p class="sub" style="margin-top:0;">DPO คำนวณจากตัวแทนตรงเท่านั้น เทียบกับเกณฑ์ขั้นต่ำ ${THB(salesCompThreshold)}/ไตรมาส — คอลัมน์เป้าใช้โควตา/เดือนของตำแหน่ง คอลัมน์ CFYC และตัวแทนตรงแก้ไขเองได้ ค่าเริ่มต้นดึงจากผลงานที่คีย์ไว้จริง</p>
       <div class="qgrid">
         ${[1,2,3,4].map(q=>{
@@ -1211,7 +1247,7 @@ function renderTeamTab(){
             <div class="head"><span>ไตรมาส ${q}</span><span>${isCurrentQ?'⏳':(rate>0?'✔':'✕')}</span></div>
             <div class="mini-row"><span>ตัวแทนตรงไตรมาสนี้ (ใช้คำนวณ DPO)</span><span class="v ${rate>0?'ok':''}">${THB(qDirectFyc)}</span></div>
             <div class="mini-row"><span>เทียบเกณฑ์ (${Math.round(multiplier*100)}%)</span><span class="v">${rate>0?`อัตรา ${rate}%`:'ยังไม่ถึงเกณฑ์'}</span></div>
-            <div class="mini-row"><span>ผลตอบแทนข้อ 6 (DPO)</span><span class="v ok" style="font-weight:700;">${THB(reward)}</span></div>
+            <div class="mini-row"><span>DPO</span><span class="v ok" style="font-weight:700;">${THB(reward)}</span></div>
             ${nextTierQ?`<div class="alert-box" style="background:#FBF6E8;border-color:var(--gold);">
               <div class="title" style="color:var(--navy);font-size:16px;">🎯 ขาดอีก ${THB(Math.max(0,nextTierQ.minMultiplier*salesCompThreshold-qDirectFyc))}</div>
               <div class="line" style="color:var(--good);font-weight:700;font-size:16px;">→ อัตรา ${nextTierQ.rate}% (เพิ่มขึ้น ${THB((nextTierQ.minMultiplier*salesCompThreshold*nextTierQ.rate/100)-reward)})</div>
@@ -1254,21 +1290,24 @@ function renderTeamTab(){
         </h3>
         ${collapsedBoxes.explain?'':`
         <p class="sub">อธิบายเงื่อนไขแต่ละข้อเท่านั้น ไม่มีตัวเลขคำนวณจริง (ดูผลคำนวณจริงที่การ์ดถัดไป)</p>
-        <div class="tech-row"><span class="lab">1. เงินเดือน</span><span class="val">${THB(selectedPosition.salary)}/เดือน</span></div>
+        <div class="tech-row"><span class="lab">เงินเดือน</span><span class="val">${THB(selectedPosition.salary)}/เดือน</span></div>
         <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: CFYC สะสมเต็มโควตา (${THB(selectedPosition.cfycMonth)}) ครบ 1 เดือน = รับเงินเดือน 1 เดือน</div>
-        <div class="tech-row"><span class="lab">2. ค่าขยายงาน</span><span class="val">${selectedPosition.tenurePct}%</span></div>
+        <div class="tech-row"><span class="lab">ค่าขยายงาน</span><span class="val">${selectedPosition.tenurePct}%</span></div>
         <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: CFYC จริงแต่ละเดือน × ${selectedPosition.tenurePct}%</div>
-        <div class="tech-row"><span class="lab">3. โบนัสส่วนเกินโควต้า</span><span class="val">โควตาปี ${THB(selectedPosition.cfycYear)}</span></div>
+        <div class="tech-row"><span class="lab">โบนัสส่วนเกินโควตา</span><span class="val">โควตาปี ${THB(selectedPosition.cfycYear)}</span></div>
         <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: ต้องทำ CFYC เกินโควตาเต็มปีก่อน แล้วนำส่วนเกินไปคิดเป็น% ของโควตา จ่ายตามอัตราขั้นบันได (โบนัส 1 = %ของส่วนเกิน, โบนัส 2 = คงที่ประจำขั้น) — ถ้าสิ้นมิถุนาเกินโควตาทั้งปีได้แล้ว มีสิทธิ์รับโบนัสงวดแรก 1 ครั้ง พอครบปีคำนวณจากผลงานทั้งปีจริงอีกครั้งแล้วหักงวดแรกที่ได้รับไปแล้วออก</div>
-        <div class="tech-row"><span class="lab">4. ค่าเสริมมือ</span><span class="val">30%</span></div>
+        ${tierToggle('b3-explain', bonus3TiersHtml(selectedPosition, bandIdx))}
+        <div class="tech-row"><span class="lab">ค่าเสริมมือ</span><span class="val">30%</span></div>
         <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: 30% ของ FYC ตัวแทนใหม่ ในช่วง 12 เดือนแรกนับจากวันที่มีผลงานขึ้นแรก ไม่มีเกณฑ์ขั้นต่ำ</div>
-        <div class="tech-row"><span class="lab">5. ค่ารักษาทีมงาน</span><span class="val">500/หน่วยตรง</span></div>
+        <div class="tech-row"><span class="lab">ค่ารักษาทีมงาน</span><span class="val">500/หน่วยตรง</span></div>
         <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: 500 ต่อหน่วยตรงใต้สังกัดที่มีผลงานครบโควตา เฉพาะเดือนที่ผลงานครบโควตานั้น (ยังไม่คำนวณให้ในแอปนี้)</div>
-        <div class="tech-row"><span class="lab">6. ค่าตอบแทนขายเองและตัวแทนตรง (DPO)</span><span class="val">เกณฑ์ ${THB(salesCompThreshold)}/ไตรมาส</span></div>
+        <div class="tech-row"><span class="lab">DPO</span><span class="val">เกณฑ์ ${THB(salesCompThreshold)}/ไตรมาส</span></div>
         <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: คิดจาก "ตัวแทนตรง" เท่านั้น (ไม่ใช่ CFYC) เทียบเกณฑ์ขั้นต่ำ/ไตรมาส — ทำได้ 100% ของเกณฑ์ = 20%, 175% = 22%, 250% = 25%</div>
-        <div class="tech-row"><span class="lab">7. ค่าสร้างและรักษาตัวแทน</span></div>
+        ${tierToggle('dpo-explain', dpoTiersHtml(salesCompThreshold, null))}
+        <div class="tech-row"><span class="lab">ค่าสร้างและรักษาตัวแทน</span></div>
         <div style="font-size:14px;color:var(--muted);margin:-4px 0 10px;">เงื่อนไข: ตัวแทน (เก่าหรือใหม่) มีเคสใหม่ ≥2 รายในไตรมาสนั้น จ่ายตามระดับ FYC/ไตรมาส/คน (สตาร์ 3,500 / ระดับ1 2,000 / ระดับ2 1,500 / ระดับ3 1,050 / ระดับ4 700)</div>
-        <div class="tech-row"><span class="lab">8. ค่าส่งเสริมความคงอยู่ของเบี้ย</span></div>
+        ${tierToggle('tb-explain', teamBuildTiersHtml())}
+        <div class="tech-row"><span class="lab">ค่าส่งเสริมความคงอยู่ของเบี้ย</span></div>
         <div style="font-size:14px;color:var(--muted);margin:-4px 0;">เงื่อนไข: อิงอัตราความคงอยู่ของเบี้ยปีที่ 2 (70-90%+) จ่ายเป็น % ของผลประโยชน์ค่าขายหน้าปีที่ 2-6 (ยังไม่คำนวณให้ เพราะแอปนี้ไม่มีข้อมูลเบี้ยปีต่อ)</div>
         `}
       </div>
@@ -1289,7 +1328,7 @@ function renderTeamTab(){
           const totalQuotaMonths = Math.min(umViewAsOfMonth+1, Math.floor(cumulativeTeamCFYC/selectedPosition.cfycMonth));
           const totalItem1 = totalQuotaMonths * selectedPosition.salary;
           const totalItem2 = monthlyTeamCFYC.slice(0,umViewAsOfMonth+1).reduce((s,v)=>s+v*selectedPosition.tenurePct/100,0);
-          const monthlyTableHtml = `<table class="qtable"><thead><tr><th>เดือน</th><th class="r">CFYC</th><th class="r">ข้อ1 เงินเดือน</th><th class="r">ข้อ2 ค่าขยายงาน</th></tr></thead><tbody>
+          const monthlyTableHtml = `<table class="qtable"><thead><tr><th>เดือน</th><th class="r">CFYC</th><th class="r">เงินเดือน</th><th class="r">ค่าขยายงาน</th></tr></thead><tbody>
             ${monthRows.map(r=>{
               const cumSoFar = monthlyTeamCFYC.slice(0,r.m+1).reduce((a,b)=>a+b,0);
               const cumQuotaMonths = Math.min(r.m+1, Math.floor(cumSoFar/selectedPosition.cfycMonth));
@@ -1303,7 +1342,8 @@ function renderTeamTab(){
           return monthlyTableHtml;
         })()}
         <div style="margin-top:14px;padding-top:10px;border-top:1px dashed #123F6B1A;">
-          <div class="tech-row"><span class="lab">3. โบนัสส่วนเกินโควต้า${umViewAsOfMonth<5?' (ยังไม่ถึงรอบคำนวณ)':''}</span><span class="val good">${THB(profitBonus)}</span></div>
+          <div class="tech-row"><span class="lab">โบนัสส่วนเกินโควตา${umViewAsOfMonth<5?' (ยังไม่ถึงรอบคำนวณ)':''}</span><span class="val good">${THB(profitBonus)}</span></div>
+          ${tierToggle('b3-calc', bonus3TiersHtml(selectedPosition, bandIdx))}
           ${umViewAsOfMonth<5?`<div style="font-size:14px;color:var(--muted);margin-bottom:6px;">⏳ ยังไม่ถึงรอบคำนวณงวดแรก — เริ่มเช็คตั้งแต่สิ้นเดือนมิถุนา (ประมาณการถ้าคำนวณวันนี้: ${THB(previewBonusIfToday)})</div>`
             :hasInterim6mo?`<div style="font-size:14px;color:var(--muted);margin-bottom:6px;">คิดจาก: CFYC ทีมสะสมทั้งปี ${THB(teamCFYCForItem3)} − โควตา ${THB(quota3)} = ส่วนเกิน ${THB(excessAmount)} × อัตรา ${profitRate}% = ${THB(previewBonusIfToday)}${profitFlatAmount>0?` (รวมโบนัส2 ${THB(profitFlatAmount)})`:''} − งวดแรก (มิถุนา) ${THB(interimBonus6mo)} = คงเหลือ ${THB(profitBonus)}</div>
               <div style="font-size:14px;color:var(--gold);margin-bottom:6px;">📌 มิถุนาเกินโควตาทั้งปีแล้ว ได้รับสิทธิ์โบนัสงวดแรก ${THB(interimBonus6mo)} ไปก่อน (อัตรา ${interimRate6mo}%)</div>`
@@ -1320,15 +1360,17 @@ function renderTeamTab(){
             <input type="text" inputmode="decimal" id="item3-hypothetical-input" data-current-cfyc="${teamCFYCForItem3}" data-quota3="${quota3}" data-position="${selectedPosition.value}" data-interim-paid="${interimBonus6mo}" placeholder="0" style="width:140px;padding:5px 8px;font-size:18px;text-align:center;margin-bottom:6px;">
             <div id="item3-hypothetical-result" style="font-size:14px;color:var(--muted);"></div>
           </div>
-          <div class="tech-row"><span class="lab">4. ค่าเสริมมือ</span><span class="val good">${THB(serviceFee)}</span></div>
+          <div class="tech-row"><span class="lab">ค่าเสริมมือ</span><span class="val good">${THB(serviceFee)}</span></div>
           ${serviceFeeDetail.length?`<div style="max-height:50vh;overflow-y:auto;margin-bottom:8px;border:1px solid #123F6B14;border-radius:6px;"><table class="qtable" style="font-size:14px;"><thead><tr><th style="padding:4px 6px;">ตัวแทน</th><th class="r" style="padding:4px 6px;">FYC</th><th class="r" style="padding:4px 6px;">ค่าเสริมมือ</th></tr></thead><tbody>${serviceFeeDetail.map(d=>`<tr><td style="color:var(--navy-deep);padding:3px 6px;">${esc(d.name)}</td><td class="r" style="padding:3px 6px;font-size:15px;">${THB(d.eligibleFYC)}</td><td class="r" style="color:var(--good);padding:3px 6px;font-size:15px;">${THB(d.eligibleFYC*0.3)}</td></tr>`).join("")}</tbody></table></div>`:''}
-          <div class="tech-row"><span class="lab">6. ค่าตอบแทนขายเอง/ตัวแทนตรง (DPO)</span><span class="val good">${THB(salesCompReward)}</span></div>
+          <div class="tech-row"><span class="lab">DPO</span><span class="val good">${THB(salesCompReward)}</span></div>
+          ${tierToggle('dpo-calc', dpoTiersHtml(salesCompThreshold, (()=>{ const q0=Math.floor(umViewAsOfMonth/3)*3; return salesCompRate(monthlyDirectAgentFYC[q0]+monthlyDirectAgentFYC[q0+1]+monthlyDirectAgentFYC[q0+2], salesCompThreshold); })()))}
           ${salesCompDetail.length?`<div style="font-size:14px;color:var(--muted);margin-bottom:6px;">คิดจาก:<br>${salesCompDetail.map(d=>`· ไตรมาส${d.q} ตัวแทนตรง ${THB(d.qTeamFyc)} × ${d.rate}% = <b style="color:var(--good);">${THB(d.reward)}</b>`).join('<br>')}</div>`:''}
-          <div class="tech-row"><span class="lab">7. ค่าสร้างและรักษาตัวแทน</span><span class="val good">${THB(teamBuildingReward)}</span></div>
+          <div class="tech-row"><span class="lab">ค่าสร้างและรักษาตัวแทน</span><span class="val good">${THB(teamBuildingReward)}</span></div>
+          ${tierToggle('tb-calc', teamBuildTiersHtml())}
           ${teamBuildingDetail.length?`<table class="qtable" style="margin-bottom:8px;"><thead><tr><th>ตัวแทน</th><th>ไตรมาส</th><th>ระดับ</th><th class="r">ได้รับ</th></tr></thead><tbody>${teamBuildingDetail.map(d=>`<tr><td style="color:var(--navy-deep);">${esc(d.name)}</td><td>${d.q}</td><td>${d.level}</td><td class="r" style="color:var(--good);">${THB(d.reward)}</td></tr>`).join("")}</tbody></table>`:''}
         </div>
         <div style="background:#F5F8FC;border:1px dashed #123F6B33;border-radius:8px;padding:10px 12px;margin-top:14px;">
-          <div style="font-size:14px;color:var(--navy-deep);font-weight:600;margin-bottom:6px;">🧪 ลองสมมติรวม: ถ้าทีมทำ CFYC เพิ่มขึ้นอีก (กระทบข้อ 2, 3, 6 พร้อมกัน — ข้อ 1 ไม่รวมเพราะขึ้นกับว่าเดือนไหนถึงโควตา ไม่ใช่ยอดสะสม)</div>
+          <div style="font-size:14px;color:var(--navy-deep);font-weight:600;margin-bottom:6px;">🧪 ลองสมมติรวม: ถ้าทีมทำ CFYC เพิ่มขึ้นอีก (กระทบค่าขยายงาน, โบนัสส่วนเกินโควตา, DPO พร้อมกัน — เงินเดือนไม่รวมเพราะขึ้นกับว่าเดือนไหนถึงโควตา ไม่ใช่ยอดสะสม)</div>
           <input type="text" inputmode="decimal" id="combined-hypothetical-input"
             data-current-cfyc="${teamCFYCForItem3}" data-quota3="${quota3}" data-position="${selectedPosition.value}" data-interim-paid="${interimBonus6mo}"
             data-tenure-pct="${selectedPosition.tenurePct}"
@@ -1338,7 +1380,7 @@ function renderTeamTab(){
           <div id="combined-hypothetical-result" style="font-size:14px;color:var(--muted);"></div>
         </div>
         <div style="margin-top:14px;padding-top:10px;border-top:2px solid #123F6B22;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-weight:700;color:var(--navy);">สรุปรวมสะสม (ไม่รวมข้อ 4) ถึงเดือน${THAI_MONTH_NAMES[umViewAsOfMonth]}</span>
+          <span style="font-weight:700;color:var(--navy);">สรุปรวมสะสม (ไม่รวมค่าเสริมมือ) ถึงเดือน${THAI_MONTH_NAMES[umViewAsOfMonth]}</span>
           <span style="font-weight:800;font-size:23px;color:var(--good);">${THB(Math.min(umViewAsOfMonth+1, Math.floor(cumulativeTeamCFYC/selectedPosition.cfycMonth))*selectedPosition.salary + monthlyTeamCFYC.slice(0,umViewAsOfMonth+1).reduce((s,v)=>s+v*selectedPosition.tenurePct/100,0) + profitBonus + salesCompReward + teamBuildingReward)}</span>
         </div>
         `}
@@ -1353,16 +1395,13 @@ function renderTeamTab(){
         const isUrgent7 = daysLeftInQ7<=7 && daysLeftInQ7>=0;
         const sections = [];
 
-        // ข้อ 3 (โบนัสส่วนเกินโควตาของ UM เอง) — แจ้งถ้ายังไม่ถึงขั้นสูงสุด ว่าขาดอีกเท่าไหร่จะขยับขั้น (นับรวมยอดรออนุมัติทั้งปีด้วย เผื่อดูว่าถ้าอนุมัติครบจะพ้นเกณฑ์ทันทีไหม)
+        // ข้อ 3 (โบนัสส่วนเกินโควตาของ UM เอง) — แจ้งถ้ายังไม่ถึงขั้นสูงสุด ว่าขาดอีกเท่าไหร่จะขยับขั้น (นับรวมยอดรออนุมัติคงค้างสะสมด้วย เผื่อดูว่าถ้าอนุมัติครบจะพ้นเกณฑ์ทันทีไหม)
         if (nextBand3Info){
-          const annualPendingCFYC = names.reduce((sum,name)=>{
-            const ag = state.agents[name];
-            return sum + yPend(ag.entries, selYear);
-          },0);
+          const annualPendingCFYC = pendAnnual.fyc; // ใช้ยอดคงค้างสะสมตัวเดียวกับกล่องเป้าหมาย UM
           const remainingAfterPending = Math.max(0, nextBand3Info.shortfall - annualPendingCFYC);
           const pendingCoversIt = annualPendingCFYC >= nextBand3Info.shortfall;
           sections.push({
-            title: `💎 ข้อ 3 — โบนัสส่วนเกินโควตาของ UM เอง`,
+            title: `💎 โบนัสส่วนเกินโควตาของ UM เอง`,
             urgent: false,
             rows: [{ name: notYetQualified3?"ยังไม่เข้าเกณฑ์":"ทีม (รวม)", fycOk:false, fycGot:teamCFYCForItem3, fycNeed:teamCFYCForItem3+nextBand3Info.shortfall, casesPending:0, fycPending:annualPendingCFYC }],
             cols: ["fyc","pending"],
@@ -1390,7 +1429,7 @@ function renderTeamTab(){
             return `${Math.round(t.minMultiplier*100)}% (FYC ${THB(fycNeeded)}) → ${t.rate}% = ${THB(reward)}`;
           }).join(" · ");
           sections.push({
-            title: `💰 ข้อ 6 — ค่าตอบแทนขายเองและตัวแทนตรง (DPO) — ไตรมาส ${curQ7}`,
+            title: `💰 DPO — ไตรมาส ${curQ7}`,
             urgent: isUrgent7,
             rows: [{ name: "ทีม (รวม)", fycOk:false, fycGot:q6DirectFyc, fycNeed:q6Threshold }],
             cols: ["fyc"],
@@ -1425,7 +1464,7 @@ function renderTeamTab(){
         });
         if (item7Rows.length){
           sections.push({
-            title: `👤 ข้อ 7 — ค่าสร้างและรักษาตัวแทน — ไตรมาส ${curQ7}`,
+            title: `👤 ค่าสร้างและรักษาตัวแทน — ไตรมาส ${curQ7}`,
             urgent: isUrgent7,
             rows: item7Rows,
             cols: ["need","cases","fyc","pending","reward"],
@@ -1449,7 +1488,7 @@ function renderTeamTab(){
         if (item4Rows.length){
           const item4CurrentTotal = item4Rows.reduce((s,r)=>s+r.fycGot*0.3,0);
           sections.push({
-            title: `🆕 ข้อ 4 — ค่าเสริมมือ (หน้าต่าง 12 เดือนใกล้หมด)`,
+            title: `🆕 ค่าเสริมมือ (หน้าต่าง 12 เดือนใกล้หมด)`,
             urgent: item4Rows.some(r=>r.urgent),
             rows: item4Rows,
             cols: ["days","fycOnly"],
@@ -1504,7 +1543,7 @@ function renderTeamTab(){
         };
         return `<div class="card">
           <h3>🎯 โอกาสที่กำลังจะพลาด</h3>
-          <p class="sub">รวมทุกข้อที่ยังทันเวลาทำเพิ่ม (ข้อ 3, 4, 6, 7) — สีแดงหมายถึงเหลือเวลาน้อยมากแล้ว</p>
+          <p class="sub">รวมทุกข้อที่ยังทันเวลาทำเพิ่ม (โบนัสส่วนเกินโควตา, ค่าเสริมมือ, DPO, ค่าสร้างและรักษาตัวแทน) — สีแดงหมายถึงเหลือเวลาน้อยมากแล้ว</p>
           ${sections.map(sec=>`<div style="margin-bottom:16px;">
             <div style="font-weight:700;color:${sec.urgent?'var(--bad)':'var(--navy-deep)'};margin-bottom:6px;">${sec.urgent?'🔴 ':''}${sec.title}</div>
             <div style="overflow-x:auto"><table class="qtable"><thead>${colHeaders(sec.cols)}</thead><tbody>${sec.rows.map(r=>renderRow(r, sec.cols)).join("")}</tbody></table></div>
@@ -1738,7 +1777,7 @@ function renderTeamTab(){
       if (!timelineList.length) return '';
       return `<div class="card">
         <h3 data-toggle-box="serviceFeeTimeline" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-          <span>⏳ ไทม์ไลน์ค่าเสริมมือ (ข้อ 4) ทั้งทีม</span>
+          <span>⏳ ไทม์ไลน์ค่าเสริมมือทั้งทีม</span>
           <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.serviceFeeTimeline?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
         </h3>
         <p class="sub">แสดงทุกคนตั้งแต่วันแรก ไม่ต้องรอใกล้หมดเขตถึงจะเห็น — ช่วยวางแผนดัน FYC ให้ตัวแทนใหม่แต่ละคนได้ล่วงหน้า (30% ของ FYC ในช่วง 12 เดือนแรก ไม่มีขั้นต่ำ)</p>
@@ -1821,27 +1860,27 @@ function renderTeamTab(){
         </tr>`;
         const explain = [];
         if (posA.cfycMonth !== posB.cfycMonth){
-          explain.push(`ข้อ 1 ต่างกันเพราะโควตา/เดือนต่างกัน (${THB(posA.cfycMonth)} vs ${THB(posB.cfycMonth)}) ทำให้จำนวน "เดือนที่ครบโควตา" จากผลงานชุดเดียวกันไม่เท่ากัน`);
+          explain.push(`เงินเดือนต่างกันเพราะโควตา/เดือนต่างกัน (${THB(posA.cfycMonth)} vs ${THB(posB.cfycMonth)}) ทำให้จำนวน "เดือนที่ครบโควตา" จากผลงานชุดเดียวกันไม่เท่ากัน`);
         }
         if (posA.tenurePct !== posB.tenurePct){
-          explain.push(`ข้อ 2 ต่างกันเพราะอัตราค่าขยายงานต่างกัน (${posA.tenurePct}% vs ${posB.tenurePct}%) คูณกับ CFYC จริงชุดเดียวกัน`);
+          explain.push(`ค่าขยายงานต่างกันเพราะอัตราค่าขยายงานต่างกัน (${posA.tenurePct}% vs ${posB.tenurePct}%) คูณกับ CFYC จริงชุดเดียวกัน`);
         }
         if (posA.cfycYear !== posB.cfycYear){
-          explain.push(`ข้อ 3 ต่างกันเพราะโควตา/ปีต่างกัน (${THB(posA.cfycYear)} vs ${THB(posB.cfycYear)}) ทำให้ "ส่วนเกินโควตา" จาก FYC ตัวแทนใหม่ชุดเดียวกันเหลือไม่เท่ากัน (โควตาสูงกว่า = ส่วนเกินน้อยกว่าหรือไม่เกินเลย)`);
+          explain.push(`โบนัสส่วนเกินโควตาต่างกันเพราะโควตา/ปีต่างกัน (${THB(posA.cfycYear)} vs ${THB(posB.cfycYear)}) ทำให้ "ส่วนเกินโควตา" จาก FYC ตัวแทนใหม่ชุดเดียวกันเหลือไม่เท่ากัน (โควตาสูงกว่า = ส่วนเกินน้อยกว่าหรือไม่เกินเลย)`);
         }
         if (posA.value.startsWith(posB.value.slice(0,4))===false && SALES_COMP_QUARTERLY_THRESHOLD[posA.value]!==SALES_COMP_QUARTERLY_THRESHOLD[posB.value]){
-          explain.push(`ข้อ 6 ต่างกันเพราะเกณฑ์ขั้นต่ำ/ไตรมาสต่างกัน (${THB(SALES_COMP_QUARTERLY_THRESHOLD[posA.value])} vs ${THB(SALES_COMP_QUARTERLY_THRESHOLD[posB.value])}) ทำให้ FYC ทีมชุดเดียวกันได้อัตรา%ไม่เท่ากัน`);
+          explain.push(`DPO ต่างกันเพราะเกณฑ์ขั้นต่ำ/ไตรมาสต่างกัน (${THB(SALES_COMP_QUARTERLY_THRESHOLD[posA.value])} vs ${THB(SALES_COMP_QUARTERLY_THRESHOLD[posB.value])}) ทำให้ FYC ทีมชุดเดียวกันได้อัตรา%ไม่เท่ากัน`);
         }
         return `<div style="overflow-x:auto"><table class="qtable">
           <thead><tr><th style="text-align:left;">รายการ</th><th class="r">${posA.label}</th><th class="r">${posB.label}</th><th class="r">ต่างกัน</th></tr></thead>
           <tbody>
-            ${diffRow("1. เงินเดือน", resA.item1, resB.item1)}
-            ${diffRow("2. ค่าขยายงาน", resA.item2, resB.item2)}
-            ${diffRow("3. โบนัสส่วนเกินโควตา (รวม)", resA.item3, resB.item3)}
+            ${diffRow("เงินเดือน", resA.item1, resB.item1)}
+            ${diffRow("ค่าขยายงาน", resA.item2, resB.item2)}
+            ${diffRow("โบนัสส่วนเกินโควตา (รวม)", resA.item3, resB.item3)}
             <tr><td style="text-align:left;padding-left:16px;font-size:14px;color:var(--muted);">— โบนัส 1 (อัตรา ${resA.rate3}% / ${resB.rate3}%)</td><td class="r" style="font-size:14px;color:var(--muted);">${THB(resA.bonus1)}</td><td class="r" style="font-size:14px;color:var(--muted);">${THB(resB.bonus1)}</td><td class="r"></td></tr>
             ${(resA.flat3>0||resB.flat3>0)?`<tr><td style="text-align:left;padding-left:16px;font-size:14px;color:var(--muted);">— โบนัส 2 (คงที่ประจำขั้น)</td><td class="r" style="font-size:14px;color:var(--muted);">${resA.flat3>0?THB(resA.flat3):'—'}</td><td class="r" style="font-size:14px;color:var(--muted);">${resB.flat3>0?THB(resB.flat3):'—'}</td><td class="r"></td></tr>`:''}
-            ${diffRow("6. ค่าตอบแทนขายเอง/ตัวแทนตรง (DPO)", resA.item6, resB.item6)}
-            <tr><td style="text-align:left;">7. ค่าสร้างและรักษาตัวแทน</td><td class="r">${THB(item7cmp)}</td><td class="r">${THB(item7cmp)}</td><td class="r" style="color:var(--muted);">เท่ากัน</td></tr>
+            ${diffRow("DPO", resA.item6, resB.item6)}
+            <tr><td style="text-align:left;">ค่าสร้างและรักษาตัวแทน</td><td class="r">${THB(item7cmp)}</td><td class="r">${THB(item7cmp)}</td><td class="r" style="color:var(--muted);">เท่ากัน</td></tr>
             <tr style="border-top:2px solid #123F6B22;font-weight:700;">
               <td style="text-align:left;color:var(--navy);">รวมประมาณการ</td>
               <td class="r" style="color:var(--navy);">${THB(totalA)}</td>
@@ -1854,7 +1893,7 @@ function renderTeamTab(){
           <div class="title" style="color:var(--navy);">💡 ทำไมถึงต่างกัน</div>
           ${explain.map(e=>`<div class="line" style="color:var(--navy);">· ${e}</div>`).join("")}
         </div>`:''}
-        <p class="foot-note" style="margin-top:8px;">* ข้อ 7 ไม่ขึ้นกับตำแหน่ง (เกณฑ์เดียวกันทุกตำแหน่ง) จึงเท่ากันทั้งสองฝั่งเสมอ · ข้อ 4 (ค่าเสริมมือ) ก็ไม่ขึ้นกับตำแหน่งเช่นกัน จึงไม่ต้องเทียบ</p>`;
+        <p class="foot-note" style="margin-top:8px;">* ค่าสร้างและรักษาตัวแทนไม่ขึ้นกับตำแหน่ง (เกณฑ์เดียวกันทุกตำแหน่ง) จึงเท่ากันทั้งสองฝั่งเสมอ · ค่าเสริมมือก็ไม่ขึ้นกับตำแหน่งเช่นกัน จึงไม่ต้องเทียบ</p>`;
       })()}
       `}
     </div>
@@ -2067,6 +2106,21 @@ function mEff(entries,y,m){ const o=monthSums(entries).get(y+'-'+m); return o?o.
 function mPend(entries,y,m){ const o=monthSums(entries).get(y+'-'+m); return o?o.pend:0; }
 function mAny(entries,y,m){ const o=monthSums(entries).get(y+'-'+m); return !!(o&&o.any); }
 function yPend(entries,y){ let t=0; for(let m=0;m<12;m++) t+=mPend(entries,y,m); return t; }
+// ยอดรอพิจารณา "คงค้างสะสม" ของทั้งทีม ตั้งแต่เดือน fromM ถึง toM (รวมเดือนก่อนหน้าที่ยังไม่อนุมัติด้วย) — แหล่งเดียวที่ทุกจุดใช้
+function cumPending(names, y, fromM, toM){
+  let fyc=0, count=0;
+  for (const name of names){
+    const ag = state.agents[name]; if (!ag) continue;
+    for (let m=Math.max(0,fromM); m<=toM; m++) fyc += mPend(ag.entries, y, m);
+    for (const e of ag.entries){
+      if (!e.pending || !isOrigin(e)) continue;
+      const d=D(e.date); if (d.getFullYear()!==y) continue;
+      const mm=d.getMonth(); if (mm>=fromM && mm<=toM) count++;
+    }
+  }
+  return { fyc, count };
+}
+function pendLabel(p){ return `${p.count>0?`${p.count} ราย · `:''}${THB(p.fyc)}`; }
 function effectiveEntries(entries){
   if (__rc){ return rcGet(entries,'eff',()=>__effectiveEntriesRaw(entries)); }
   return __effectiveEntriesRaw(entries);
@@ -3380,6 +3434,9 @@ function bindEvents(){
   // Agent picker
   const agentSelect = document.getElementById("agent-select");
   if (agentSelect) agentSelect.onchange = ()=>{ state.currentAgent = agentSelect.value; syncAgentFormState(); saveState(); render(); };
+  document.querySelectorAll("[data-tier-toggle]").forEach(el=>{
+    el.onclick = (ev)=>{ ev.stopPropagation(); const k=el.dataset.tierToggle; openTiers[k]=!openTiers[k]; render(); };
+  });
   document.querySelectorAll("[data-toggle-box]").forEach(el=>{
     el.onclick = ()=>{
       const key = el.dataset.toggleBox;
@@ -4094,12 +4151,12 @@ function bindEvents(){
       const totalImpact = item2Impact + item3Impact + item6Impact;
       resultEl.innerHTML = `<div style="color:var(--navy);">ถ้าทีมทำ CFYC เพิ่มอีก <b>${formatThousands(String(raw))}</b> จะได้เพิ่ม:</div>
         <div style="padding-left:10px;margin-top:2px;">
-          <div>ข้อ 2 (ค่าขยายงาน): <b style="color:var(--good);">${THB(item2Impact)}</b></div>
-          <div>ข้อ 3 (โบนัสโควตา): <b style="color:var(--good);">${THB(item3Impact)}</b>${item3Impact>0 && hypBandIdx!==curBandIdx?' (ขยับขั้น)':''}</div>
-          <div>ข้อ 6 (DPO): <b style="color:var(--good);">${THB(item6Impact)}</b>${hypRate6!==curRate?` (อัตราขยับเป็น ${hypRate6}%)`:''}</div>
+          <div>ค่าขยายงาน: <b style="color:var(--good);">${THB(item2Impact)}</b></div>
+          <div>โบนัสส่วนเกินโควตา: <b style="color:var(--good);">${THB(item3Impact)}</b>${item3Impact>0 && hypBandIdx!==curBandIdx?' (ขยับขั้น)':''}</div>
+          <div>DPO: <b style="color:var(--good);">${THB(item6Impact)}</b>${hypRate6!==curRate?` (อัตราขยับเป็น ${hypRate6}%)`:''}</div>
         </div>
         <div style="margin-top:4px;font-weight:700;color:var(--navy);">รวมเพิ่มขึ้นทั้งหมด: <span style="color:var(--good);font-size:17px;">${THB(totalImpact)}</span></div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px;">*ข้อ 6 สมมติว่ายอดที่เพิ่มนับเป็นตัวแทนตรงของไตรมาสนี้ด้วย ถ้าเป็นผลงานทีมอื่นที่ไม่ใช่ตัวแทนตรง ข้อ 6 อาจไม่ได้เพิ่มตามนี้จริง</div>`;
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">*DPO สมมติว่ายอดที่เพิ่มนับเป็นตัวแทนตรงของไตรมาสนี้ด้วย ถ้าเป็นผลงานทีมอื่นที่ไม่ใช่ตัวแทนตรง DPO อาจไม่ได้เพิ่มตามนี้จริง</div>`;
     };
     combinedHypInput.oninput = (e)=>{ e.target.value = formatThousands(stripCommas(e.target.value)); recompute(); };
     combinedHypInput.onfocus = (e)=>e.target.select();
