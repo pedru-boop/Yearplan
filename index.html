@@ -116,7 +116,6 @@
 .stage-chip.on{background:#4FAE7422;color:var(--navy);}
 .renew-chip{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid #123F6B33;color:var(--muted);cursor:pointer;white-space:nowrap;}
 .renew-chip.on{background:#C69A3B26;border-color:var(--gold);color:#8A4B00;font-weight:700;}
-.recon-in{width:110px;padding:4px 6px;font-size:17px;text-align:right;}
 .hist-item{border:1px solid #123F6B1F;border-radius:10px;padding:12px;margin-bottom:12px;background:#FAFBFD;position:relative;}
 .hist-item::before{content:"จบแล้ว";position:absolute;top:10px;right:10px;font-size:12px;font-weight:700;color:var(--muted);background:#123F6B12;border-radius:999px;padding:2px 8px;}
 .hist-item h3{padding-right:64px;}
@@ -179,7 +178,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.03-3</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.03-5</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -593,7 +592,7 @@ function renderCoachingCard(names){
   </div>`;
 }
 
-// ===== ท่อสรรหาตัวแทน =====
+// ===== ว่าที่ตัวแทนใหม่ =====
 const RECRUIT_STAGES = ["สนใจ","นัดฟังโอกาส","สมัครสอบ","สอบผ่าน","ออกบัตรแล้ว","เข้าทีมแล้ว"];
 function renderRecruitsCard(){
   const recruits = state.recruits || [];
@@ -603,7 +602,7 @@ function renderRecruitsCard(){
   const counts = RECRUIT_STAGES.map(st=>({ st, n: recruits.filter(r=>r.stage===st).length }));
   return `<div class="card">
     <h3 data-toggle-box="recruits" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-      <span>🌱 ท่อสรรหาตัวแทน (${active.length} คนกำลังดำเนินการ)</span>
+      <span>🌱 ว่าที่ตัวแทนใหม่ (${active.length} คนกำลังดำเนินการ)</span>
       <span style="color:var(--muted);font-size:18px;">${closed?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
     </h3>
     ${closed?'':`
@@ -1658,71 +1657,6 @@ function renderTeamTab(){
       `;
 
 
-      // ===== เทียบยอดจริงจากรายงานตัวจริง กับที่แอปคำนวณ (ตามรอบผลงานของเดือนนั้น) =====
-      {
-        const appItemsFor = (m)=>{
-          const cumSoFar = monthlyTeamCFYC.slice(0,m+1).reduce((a,b)=>a+b,0);
-          const cq = Math.min(m+1, Math.floor(cumSoFar/selectedPosition.cfycMonth));
-          const pq = m>0 ? Math.min(m, Math.floor(monthlyTeamCFYC.slice(0,m).reduce((a,b)=>a+b,0)/selectedPosition.cfycMonth)) : 0;
-          const items = [
-            { key:'salary', label:'เงินเดือน', v:(cq-pq)*selectedPosition.salary },
-            { key:'tenure', label:'ค่าขยายงาน', v: monthlyTeamCFYC[m]*selectedPosition.tenurePct/100 },
-            { key:'service', label:'ค่าเสริมมือ', v: serviceFeeByMonth[m] },
-            { key:'maint', label:'ค่ารักษาทีมงาน', v: maint.byMonth[m] },
-          ];
-          if (m%3===2){
-            const q = Math.floor(m/3)+1;
-            const qd = [m-2,m-1,m].reduce((sum,x)=>sum+monthlyDirectAgentFYC[x],0);
-            items.push({ key:'dpo', label:`DPO (ไตรมาส ${q})`, v: qd*salesCompRate(qd, salesCompThreshold)/100 });
-            items.push({ key:'build', label:`ค่าสร้างและรักษาตัวแทน (ไตรมาส ${q})`, v: teamBuildingDetail.filter(d=>d.q===q).reduce((sum,d)=>sum+d.reward,0) });
-          }
-          if (m===5) items.push({ key:'bonus3', label:'โบนัสส่วนเกินโควตา (งวดแรก)', v: interimBonus6mo });
-          if (m===11) items.push({ key:'bonus3', label:'โบนัสส่วนเกินโควตา (ส่วนที่เหลือ)', v: umViewAsOfMonth>=11 ? profitBonus : 0 });
-          return items;
-        };
-        const actualAll = state.umGoal.actualPay || {};
-        const statusOf = (app, act)=>{
-          if (act===undefined || act===null) return { t:'—', c:'var(--muted)', bad:0 };
-          const diff = act - app;
-          if (Math.abs(diff)<1) return { t:'✓ ตรง', c:'var(--good)', bad:0 };
-          return diff<0 ? { t:`ขาด ${THB(-diff)}`, c:'var(--bad)', bad:-diff } : { t:`เกิน ${THB(diff)}`, c:'#8A4B00', bad:0 };
-        };
-        let mismatchCount = 0, shortTotal = 0, keyedMonths = 0; const issueMonths = [];
-        for (let m=0; m<=umViewAsOfMonth; m++){
-          const act = actualAll[`${selYear}-${m}`]; if (!act || !Object.keys(act).length) continue;
-          keyedMonths++; let monthBad = 0;
-          appItemsFor(m).forEach(it=>{ const st = statusOf(it.v, act[it.key]); if (act[it.key]!==undefined && st.t!=='✓ ตรง'){ mismatchCount++; monthBad++; shortTotal += st.bad; } });
-          if (monthBad) issueMonths.push(m);
-        }
-        const rm = (reconMonth===null || reconMonth>umViewAsOfMonth) ? umViewAsOfMonth : reconMonth;
-        const act = actualAll[`${selYear}-${rm}`] || {};
-        const closedR = collapsedBoxes.recon;
-        explainAndCalcHtml += `
-      <div class="card">
-        <h3 data-toggle-box="recon" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-          <span>🧾 เทียบยอดกับรายงานจริง${mismatchCount?` <span style="color:var(--bad);font-size:16px;">· ไม่ตรง ${mismatchCount} รายการ</span>`:keyedMonths?` <span style="color:var(--good);font-size:16px;">· ตรงทั้งหมด</span>`:''}</span>
-          <span style="color:var(--muted);font-size:18px;">${closedR?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
-        </h3>
-        ${closedR?'':`
-        <p class="sub">คีย์ยอดที่ได้จริงจากรายงานตัวจริง ตามรอบผลงานของเดือนนั้น แอปจะบอกว่าตรง ขาด หรือเกิน</p>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-          <label class="field" style="max-width:200px;margin:0;"><span>ผลงานเดือน</span>
-            <select id="recon-month">${THAI_MONTH_NAMES.slice(0, umViewAsOfMonth+1).map((n,i)=>`<option value="${i}" ${i===rm?'selected':''}>${n}</option>`).join('')}</select></label>
-          ${keyedMonths?`<div style="font-size:15px;color:var(--muted);">คีย์แล้ว ${keyedMonths} เดือน${shortTotal>0?` · <b style="color:var(--bad);">ขาดรวม ${THB(shortTotal)}</b>`:''}</div>`:''}
-        </div>
-        ${issueMonths.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">${issueMonths.map(m=>`<span class="stage-chip" data-recon-month="${m}" style="cursor:pointer;background:#B4231818;color:var(--bad);">⚠ ${THAI_MONTH_SHORT[m]}</span>`).join('')}</div>`:''}
-        <div style="overflow-x:auto;"><table class="qtable"><thead><tr><th>ผลตอบแทน</th><th class="r">แอปคำนวณ</th><th class="r">ได้จริง</th><th class="r">ผล</th></tr></thead><tbody>
-          ${appItemsFor(rm).map(it=>{ const st = statusOf(it.v, act[it.key]); return `<tr>
-            <td style="color:var(--navy-deep);">${it.label}</td>
-            <td class="r">${THB(it.v)}</td>
-            <td class="r"><input type="text" inputmode="decimal" class="recon-in" data-actual-pay="${selYear}-${rm}|${it.key}" value="${act[it.key]!==undefined?esc(formatThousands(String(act[it.key]))):''}" placeholder="—"></td>
-            <td class="r" style="color:${st.c};font-weight:700;white-space:nowrap;">${st.t}</td>
-          </tr>`; }).join('')}
-        </tbody></table></div>
-        <div style="font-size:13px;color:var(--muted);margin-top:6px;">DPO และค่าสร้างและรักษาตัวแทนอยู่ในเดือนสุดท้ายของไตรมาส · โบนัสส่วนเกินโควตาอยู่ในเดือนมิถุนายนและธันวาคม</div>
-        `}
-      </div>`;
-      }
       return boxABeforeExplain + (()=>{
         const now7 = new Date();
         const curQ7 = Math.floor(umViewAsOfMonth/3)+1;
@@ -2634,14 +2568,14 @@ const DEFAULT_STATE = {
   agents: { "ตัวแทนคนที่ 1": JSON.parse(JSON.stringify(DEFAULT_AGENT_DATA)) },
   currentAgent: "ตัวแทนคนที่ 1",
   umGoal: { targetFYC: 0, startMonth: 0, endMonth: 11, position: "", compareA: "", compareB: "", monthOverrides: {}, directOverrides: {}, newAgentPremiums: {}, viewAsOfMonth: null },
-  recruits: [], // ท่อสรรหาตัวแทน (ผู้สนใจ → ออกบัตร → เข้าทีม)
+  recruits: [], // ว่าที่ตัวแทนใหม่ (ผู้สนใจ → ออกบัตร → เข้าทีม)
   teamUMs: {}, // ติดตาม UM คนอื่นในทีม เป็นข้อมูลแยกต่างหากล้วนๆ ไม่ถูกดึงไปใช้คำนวณผลประโยชน์ใดๆ ทั้งสิ้น
 };
 let state = loadState();
 let activeTab = "goals";
 let activeSection = "um"; // "um" หรือ "agent" — แถบใหญ่บนสุด, ต้องจิ้มเข้า "ตัวแทน" ก่อนถึงจะเห็นแท็บย่อย
 let selYear = new Date().getFullYear();
-let entryForm = { date: todayIso(), fyc: "", note: "", billing: "" };
+let entryForm = { date: todayIso(), fyc: "", note: "", billing: "", approved: false };
 let editingId = null;
 let editDraft = { date:"", fyc:"", note:"" };
 let newTrainingDraft = { courseName: "", date: "", renewal: false };
@@ -2660,8 +2594,7 @@ let mainAppState = null; // เก็บ state จริงของพี่เ
 let activeTeamUmName = null; // ถ้าไม่ใช่ null แปลว่ากำลังอยู่ในบริบทของ UM คนอื่น (state ตอนนี้ชี้ไปที่ข้อมูลของ UM คนนั้นแทน)
 let addTeamUmMode = false;
 let newTeamUmNameInput = "";
-let collapsedBoxes = { agentComp:false, allUmDash:false, explain:true, monthlyCalc:true, newAgent:true, compare:true, compareBars:true, pendingReport:false, cardExpiry:false, serviceFeeTimeline:true, umCompHistory:true, agentCompHistory:true, deadlines:false, coaching:true, recruits:true, recon:true };
-let reconMonth = null; // เดือนที่กำลังเทียบยอดจริง (null = เดือนที่ดูอยู่)
+let collapsedBoxes = { agentComp:false, allUmDash:false, explain:true, monthlyCalc:true, newAgent:true, compare:true, compareBars:true, pendingReport:false, cardExpiry:false, serviceFeeTimeline:true, umCompHistory:true, agentCompHistory:true, deadlines:false, coaching:true, recruits:true };
 let openCoachAgent = null;
 let coachDraft = { date: "", note: "", followUp: "" };
 let recruitDraft = { name: "", phone: "" }; // ย่อไว้ตั้งแต่แรก กดหัวข้อเพื่อขยายดูรายละเอียด (pendingReport, cardExpiry เปิดไว้ก่อน เพราะเป็นเรื่องที่ต้องรีบดู)
@@ -2681,7 +2614,7 @@ function syncAgentFormState(){
   // ไม่งั้นช่องกรอกเป้าหมาย/ฟอร์มบันทึกผลงานจะค้างค่าของตัวแทนคนก่อนหน้าไว้
   goalsFycInput = formatThousands(String(getAgentTargetFYC()));
   annualGoalsFycInput = formatThousands(String(getAgentAnnualTargetFYC()));
-  entryForm = { date: todayIso(), fyc: "", note: "", billing: "" };
+  entryForm = { date: todayIso(), fyc: "", note: "", billing: "", approved: false };
   editingId = null;
   editDraft = { date:"", fyc:"", note:"" };
   newTrainingDraft = { courseName: "", date: "", renewal: false };
@@ -3362,6 +3295,9 @@ function renderEntryTab(){
         <label class="field full"><span>หมายเหตุ (ไม่บังคับ)</span>
           <input type="text" id="f-note" value="${esc(entryForm.note)}" placeholder="ชื่อลูกค้า / เลขกรมธรรม์">
         </label>
+        <label class="full" style="display:flex;align-items:center;gap:8px;font-size:18px;cursor:pointer;">
+          <input type="checkbox" id="f-approved" ${entryForm.approved?'checked':''} style="width:20px;height:20px;"> อนุมัติแล้ว <span style="font-size:14px;color:var(--muted);">(ไม่ติ๊ก = บันทึกเป็นรอพิจารณา)</span>
+        </label>
         <div id="form-error"></div>
         <div class="full" style="display:flex;align-items:center;gap:12px;">
           <button type="button" class="btn-primary" id="btn-submit-entry">＋ บันทึกรายการ</button>
@@ -3799,22 +3735,6 @@ function bindEvents(){
       if (e){ e.pendingReason = el.value; saveState(); }
     };
   });
-  const reconSel = document.getElementById("recon-month");
-  if (reconSel) reconSel.onchange = ()=>{ reconMonth = Number(reconSel.value); render(); };
-  document.querySelectorAll("[data-recon-month]").forEach(el=>{ el.onclick = ()=>{ reconMonth = Number(el.dataset.reconMonth); render(); }; });
-  document.querySelectorAll("[data-actual-pay]").forEach(el=>{
-    el.onfocus = (e)=>e.target.select();
-    el.oninput = (e)=>{ e.target.value = formatThousands(stripCommas(e.target.value)); };
-    el.onblur = (e)=>{
-      const [k,item] = el.dataset.actualPay.split("|");
-      const raw = stripCommas(e.target.value).trim();
-      if (!state.umGoal.actualPay) state.umGoal.actualPay = {};
-      const rec = state.umGoal.actualPay[k] || (state.umGoal.actualPay[k] = {});
-      const before = rec[item];
-      if (raw==='' || isNaN(Number(raw))) delete rec[item]; else rec[item] = Number(raw);
-      if (before!==rec[item]){ saveState(); render(); }
-    };
-  });
   document.querySelectorAll("[data-coach-open]").forEach(el=>{
     el.onclick = ()=>{ const n = el.dataset.coachOpen; openCoachAgent = openCoachAgent===n ? null : n; coachDraft = { date: todayIso(), note: "", followUp: "" }; render(); };
   });
@@ -3850,7 +3770,7 @@ function bindEvents(){
   const findRecruit = id=>(state.recruits||[]).find(r=>r.id===id);
   document.querySelectorAll("[data-recruit-stage]").forEach(el=>{ el.onchange = ()=>{ const r = findRecruit(el.dataset.recruitStage); if (r){ r.stage = el.value; saveState(); render(); } }; });
   document.querySelectorAll("[data-recruit-note]").forEach(el=>{ el.onblur = ()=>{ const r = findRecruit(el.dataset.recruitNote); if (r && r.note!==el.value){ r.note = el.value; saveState(); } }; });
-  document.querySelectorAll("[data-recruit-del]").forEach(el=>{ el.onclick = ()=>{ const r = findRecruit(el.dataset.recruitDel); if (!r || !confirm(`ลบ "${r.name}" ออกจากท่อสรรหาใช่ไหม?`)) return; state.recruits = state.recruits.filter(x=>x!==r); saveState(); render(); }; });
+  document.querySelectorAll("[data-recruit-del]").forEach(el=>{ el.onclick = ()=>{ const r = findRecruit(el.dataset.recruitDel); if (!r || !confirm(`ลบ "${r.name}" ออกจากรายชื่อว่าที่ตัวแทนใช่ไหม?`)) return; state.recruits = state.recruits.filter(x=>x!==r); saveState(); render(); }; });
   document.querySelectorAll("[data-recruit-join]").forEach(el=>{
     el.onclick = ()=>{
       const r = findRecruit(el.dataset.recruitJoin); if (!r) return;
@@ -4243,6 +4163,8 @@ function bindEvents(){
   }
   const fNote = document.getElementById("f-note");
   if (fNote){ fNote.oninput = (e)=>{ entryForm.note = e.target.value; }; fNote.onfocus=(e)=>e.target.select(); }
+  const fApproved = document.getElementById("f-approved");
+  if (fApproved) fApproved.onchange = (e)=>{ entryForm.approved = e.target.checked; };
   document.querySelectorAll('input[name="f-billing"]').forEach(r=>{
     r.onchange = (e)=>{ entryForm.billing = e.target.value; render(); };
   });
@@ -4788,19 +4710,19 @@ function submitEntry(){
   const n = schedule.length;
   const baseNote = entryForm.note.trim();
   const policyId = `p_${Date.now()}`;
-  // วันที่ก่อนเดือนกันยา 2569 ถือเป็นการคีย์ย้อนหลัง (ผลงานเก่าที่เกิดขึ้นจริงไปแล้ว) จึงถือว่าอนุมัติอัตโนมัติ ไม่ต้องรอพิจารณา
-  const isBackfill = entryForm.date < "2026-09-01";
+  // ทุกรายการเริ่มเป็นรอพิจารณา เว้นแต่ติ๊ก "อนุมัติแล้ว" ในฟอร์ม (ใช้ตอนคีย์งานเก่าที่อนุมัติไปแล้ว)
+  const isApproved = !!entryForm.approved;
   const list = schedule.map((s,i)=>({
     id: Date.now()+i,
     date: addMonthsToDate(entryForm.date, s.offset),
     fyc: s.amount,
     note: n>1 ? `${baseNote}${baseNote?" ":""}(${installmentLabel(entryForm.billing, i, n)})` : baseNote,
     policyId, installmentIndex:i, installmentTotal:n, billingMode: entryForm.billing,
-    ...(i===0 && !isBackfill ? { pending: true } : {}), // เฉพาะงวดต้นฉบับที่มีสถานะรอพิจารณาของตัวเอง งวดต่อเนื่องอื่นๆ อิงตามงวดต้นฉบับเสมอ ไม่มีสถานะแยกของตัวเอง
+    ...(i===0 && !isApproved ? { pending: true } : {}), // เฉพาะงวดต้นฉบับที่มีสถานะรอพิจารณาของตัวเอง งวดต่อเนื่องอื่นๆ อิงตามงวดต้นฉบับเสมอ ไม่มีสถานะแยกของตัวเอง
   }));
   agent().entries.push(...list);
   saveState();
-  entryForm = { ...entryForm, fyc:"", note:"", billing:"" };
+  entryForm = { ...entryForm, fyc:"", note:"", billing:"", approved:false };
   render();
   const justAdded = document.getElementById("just-added");
   if (justAdded){
