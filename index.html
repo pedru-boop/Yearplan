@@ -110,7 +110,11 @@
   .qcard{border-radius:12px; padding:14px; position:relative;}
   .qcard .badge-current{position:absolute; top:-11px; left:12px; background:var(--gold); color:var(--navy-deep); font-size:15.75px; font-weight:700; padding:2px 9px; border-radius:999px;}
   .qcard .head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-weight:700; color:var(--navy-deep); font-size:20.25px;}
-  .ask-card{padding:12px 14px;}
+  .proj-row .lab,.proj-row .val{color:var(--gold) !important;}
+.proj-box{background:#FBF6E8;border:1px dashed var(--gold);border-radius:8px;padding:8px 10px;font-size:15px;color:#5A3A00;margin-top:6px;}
+.proj-card{border:1.5px dashed var(--gold);}
+.proj-item{border-top:1px solid #123F6B14;padding:8px 0;font-size:15px;line-height:1.5;}
+.ask-card{padding:12px 14px;}
 .ask-chip{cursor:pointer;background:#123F6B12;color:var(--navy);}
 .ask-result{margin-top:10px;max-height:65vh;overflow-y:auto;}
 .ask-sec{border-top:1px solid #123F6B14;padding:8px 0;}
@@ -191,7 +195,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.03-6</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.06-1</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -494,6 +498,20 @@ function teamMaintenance(root, y, uptoMonth){
   return { byMonth, total: byMonth.reduce((a,b)=>a+b,0), detail, missingPos };
 }
 
+// ===== ยอดคาดการณ์ "ถ้างานรอพิจารณาผ่านทั้งหมด" (ตัวเลขหลักทุกจุดใช้ยอดอนุมัติแล้วเท่านั้น) =====
+function projEntries(entries){ return (entries||[]).some(e=>e.pending) ? entries.map(e=>e.pending?{...e,pending:false}:e) : (entries||[]); }
+function projAgent(ag){ return { ...ag, entries: projEntries(ag.entries) }; }
+function compProjDiff(ag){
+  if (!(ag.entries||[]).some(e=>e.pending)) return [];
+  const a = agentCompStatus(ag), pr = agentCompStatus(projAgent(ag));
+  return pr.map(pi=>({ title: pi.title, a: a.find(x=>x.title===pi.title), p: pi })).filter(x=>!x.a || x.a.text!==x.p.text || x.a.ok!==x.p.ok);
+}
+function projRow(approved, pend, goal){
+  if (!(pend>0)) return '';
+  const tot = approved+pend, pct = goal>0 ? Math.round(tot/goal*100) : null;
+  return `<div class="tech-row proj-row"><span class="lab">⏳ ถ้ารออนุมัติผ่านทั้งหมด</span><span class="val">${THB(tot)}${pct!==null?` (${pct}%)`:''}${goal>0?` · ${tot>=goal?'✅ ถึงเป้า':`ขาด ${THB(goal-tot)}`}`:''}</span></div>`;
+}
+
 // ===== งานรอพิจารณา: สาเหตุที่ค้าง =====
 const PENDING_REASONS = ["รอพิจารณา","ขอเอกสารเพิ่ม","ตรวจสุขภาพ","รอชำระเบี้ย","อื่นๆ"];
 
@@ -699,10 +717,16 @@ function programStatus(st, y){
         }
       }
     }
-    const na = umNewAgents20k(st, y), naOk = na.filter(x=>x.ok).length;
+    const na = umNewAgents20k(st, y);
+    const naManual = (f.newAgentsManual||{})[y];
+    const naAuto = na.filter(x=>x.ok).length;
+    const naOk = (naManual!==undefined && naManual!==null && naManual!=='') ? Number(naManual) : naAuto;
+    const naProjAuto = umNewAgents20k({ ...st, agents: Object.fromEntries(Object.entries(st.agents||{}).map(([n,a])=>[n,projAgent(a)])) }, y).filter(x=>x.ok).length;
+    const naProj = (naManual!==undefined && naManual!==null && naManual!=='') ? Number(naManual) : naProjAuto;
     const cfycOk = !!p0 && cfyc>=p0.cfycYear;
+    const projPass = failedPrev.length===0 && !!p0 && (cfyc+pend)>=p0.cfycYear && naProj>=2 && mult>0;
     const reward = (mult && p0) ? mult*p0.cfycMonth : 0;
-    return { type, y, pos:p0, cfyc, pend, need: p0?Math.max(0,p0.cfycYear-cfyc):null, na, naOk, mult, note, reward, failedPrev, cfycOk,
+    return { type, y, pos:p0, cfyc, pend, need: p0?Math.max(0,p0.cfycYear-cfyc):null, na, naOk, naAuto, naManual, naProj, projPass, mult, note, reward, failedPrev, cfycOk,
       pass: failedPrev.length===0 && cfycOk && naOk>=2 && mult>0 };
   }
   const g = pg.growth || {};
@@ -715,7 +739,9 @@ function programStatus(st, y){
   const tier = GROWTH_TIERS.find(t=>growth>=t.min) || null;
   const reward = tier ? (cfyc-base)*tier.rate/100 : 0;
   const nt = [...GROWTH_TIERS].reverse().find(t=>growth<t.min);
-  return { type, y, cfyc, pend, base, quota, perf, growth, tier, reward, next: nt ? { ...nt, need: base*(1+nt.min/100)-cfyc } : null };
+  const cP = cfyc+pend, gP = (cP-base)/base*100, tP = GROWTH_TIERS.find(t=>gP>=t.min) || null;
+  return { type, y, cfyc, pend, base, quota, perf, growth, tier, reward, next: nt ? { ...nt, need: base*(1+nt.min/100)-cfyc } : null,
+    proj: pend>0 ? { cfyc:cP, growth:gP, tier:tP, reward: tP ? (cP-base)*tP.rate/100 : 0 } : null };
 }
 function programStatusHtml(s){
   if (!s || s.type==='none') return '';
@@ -725,26 +751,31 @@ function programStatusHtml(s){
     const L = [];
     if (s.failedPrev.length) L.push(`<div class="prog-line" style="color:var(--bad);font-weight:700;">⚠ ยังไม่ได้ยืนยันว่าผ่านเงื่อนไขปี ${s.failedPrev.map(toBE).join(', ')} — ถ้าไม่ผ่านถือว่าหมดสิทธิ</div>`);
     L.push(`<div class="prog-line">CFYC ปี ${toBE(s.y)}: <b>${THB(s.cfyc)}</b>${s.pos?` / โควตาปี ${THB(s.pos.cfycYear)} ${s.cfycOk?'<span style="color:var(--good);font-weight:700;">✓ ครบ</span>':`<span style="color:var(--bad);font-weight:700;">ขาด ${THB(s.need)}</span>`}`:''}${pendTxt}</div>`);
-    L.push(`<div class="prog-line">ตัวแทนใหม่ปีนี้ FYC ≥ 20,000: <b style="color:${s.naOk>=2?'var(--good)':'var(--bad)'};">${s.naOk}/2 คน</b>${s.na.length?`<div style="font-size:13px;color:var(--muted);">${s.na.map(x=>`${esc(x.name)} ${THB(x.fyc)}${x.ok?' ✓':` (ขาด ${THB(20000-x.fyc)})`}`).join(' · ')}</div>`:''}</div>`);
+    L.push(`<div class="prog-line">ตัวแทนใหม่ปีนี้ FYC ≥ 20,000: <b style="color:${s.naOk>=2?'var(--good)':'var(--bad)'};">${s.naOk}/2 คน</b>${s.naManual!==undefined&&s.naManual!==null&&s.naManual!==''?' <span style="font-size:13px;color:var(--muted);">(กรอกเอง)</span>':''}${s.na.length?`<div style="font-size:13px;color:var(--muted);">${s.na.map(x=>`${esc(x.name)} ${THB(x.fyc)}${x.ok?' ✓':` (ขาด ${THB(20000-x.fyc)})`}`).join(' · ')}</div>`:''}</div>`);
     if (s.mult) L.push(`<div class="prog-line">รางวัล: ${s.mult} เท่า × โควตาเดือน ${THB(s.pos.cfycMonth)} = <b style="color:var(--good);">${THB(s.reward)}</b></div>`);
     if (s.note) L.push(`<div class="prog-line" style="color:#8A4B00;">${s.note}</div>`);
-    L.push(`<div class="prog-line" style="font-weight:700;color:${s.pass?'var(--good)':'var(--navy)'};">${s.pass?'✅ ผ่านเงื่อนไขปีนี้แล้ว':'⏳ ยังไม่ผ่านเงื่อนไขปีนี้ (วัดผล ณ สิ้นปี)'}</div>`);
+    L.push(`<div class="prog-line" style="font-weight:700;color:${s.pass?'var(--good)':'var(--navy)'};">${s.pass?'✅ ผ่านเงื่อนไขปีนี้แล้ว (ยอดอนุมัติ)':'⏳ ยังไม่ผ่านเงื่อนไขปีนี้ (ยอดอนุมัติ · วัดผล ณ สิ้นปี)'}</div>`);
+    if (s.pend>0 && !s.pass) L.push(`<div class="proj-box">⏳ ถ้ารออนุมัติผ่านทั้งหมด: CFYC ${THB(s.cfyc+s.pend)}${s.pos?` ${(s.cfyc+s.pend)>=s.pos.cfycYear?'✓ ครบโควตา':`ขาด ${THB(s.pos.cfycYear-s.cfyc-s.pend)}`}`:''} · ตัวแทนใหม่ ${s.naProj}/2 → ${s.projPass?`<b style="color:var(--good);">ผ่าน ได้ ${THB(s.reward)}</b>`:'ยังไม่ผ่าน'}</div>`);
     return L.join('');
   }
   if (s.note) return `<div class="prog-line" style="color:#8A4B00;">${s.note}</div>`;
   return `<div class="prog-line">ฐานปี 2566: <b>${THB(s.base)}</b> <span style="font-size:13px;color:var(--muted);">(ใช้ค่าที่สูงกว่าระหว่างโควตา ${THB(s.quota)} กับผลงาน ${THB(s.perf)})</span></div>
     <div class="prog-line">CFYC ปี 2569: <b>${THB(s.cfyc)}</b>${pendTxt} · เติบโต <b style="color:${s.tier?'var(--good)':'var(--bad)'};">${s.growth.toFixed(1)}%</b></div>
     <div class="prog-line">${s.tier?`อัตรารางวัล ${s.tier.rate}% → รางวัลคาดการณ์ (${THB(s.cfyc)} − ${THB(s.base)}) × ${s.tier.rate}% = <b style="color:var(--good);">${THB(s.reward)}</b>`:'ยังไม่ถึงเกณฑ์ขั้นแรก (เติบโต 33%)'}</div>
+    ${s.proj?`<div class="proj-box">⏳ ถ้ารออนุมัติผ่านทั้งหมด: CFYC ${THB(s.proj.cfyc)} · เติบโต ${s.proj.growth.toFixed(1)}% → ${s.proj.tier?`อัตรา ${s.proj.tier.rate}% ได้ <b style="color:var(--good);">${THB(s.proj.reward)}</b>${s.proj.reward>s.reward?` (+${THB(s.proj.reward-s.reward)})`:''}`:'ยังไม่ถึงขั้นแรก'}</div>`:''}
     ${s.next?`<div class="prog-line" style="color:var(--navy);font-weight:700;">ขั้นถัดไป (เติบโต ${s.next.min}% → ${s.next.rate}%): ต้องทำ CFYC เพิ่มอีก ${THB(Math.max(0,s.next.need))}</div>`:'<div class="prog-line" style="color:var(--good);font-weight:700;">🏆 อยู่ขั้นสูงสุดแล้ว (50%)</div>'}`;
 }
 function renderProgramsCard(){
   if (activeTeamUmName) return '';
   const closed = collapsedBoxes.programs;
   const yearOpts = (sel)=>`<option value="">— ตำแหน่ง —</option>${UM_POSITIONS.map(p=>`<option value="${p.value}" ${p.value===sel?'selected':''}>${p.label}</option>`).join('')}`;
+  const fastOpen = selYear>=FAST_FIRST && selYear<=FAST_LAST, growthOpen = selYear===GROWTH_YEAR;
+  if (!fastOpen && !growthOpen) return '';
   const rows = progList().map(({key,label})=>{
     const st = progStOf(key); if (!st) return '';
     const pg = (st.umGoal && st.umGoal.program) || { type:'none' };
     const type = pg.type || 'none';
+    if ((type==='growth' && !growthOpen) || (type==='fast' && !fastOpen)) return '';
     const k = encodeURIComponent(key);
     const posLabel = (UM_POSITIONS.find(p=>p.value===(st.umGoal||{}).position)||{}).label || 'ยังไม่ระบุตำแหน่ง';
     const typeLabel = type==='fast' ? '🚀 Fast Achievement Bonus' : type==='growth' ? '📈 x2 Growth Bonus' : 'ไม่เข้าร่วม';
@@ -752,6 +783,9 @@ function renderProgramsCard(){
     if (type==='fast'){
       const f = pg.fast || {};
       inputs = `<div class="prog-grid">${[2025,2026,2027,2028].map(yy=>`<label class="field" style="margin:0;"><span>ตำแหน่งปี ${toBE(yy)}</span><select data-prog-pos="${k}|${yy}">${yearOpts((f.positions||{})[yy] || (yy===selYear?((st.umGoal||{}).position||''):''))}</select></label>`).join('')}</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0 2px;font-size:15px;">ตัวแทนใหม่ผ่าน FYC 20,000 ปี ${toBE(selYear)}:
+        ${(()=>{ const mv = (f.newAgentsManual||{})[selYear]; const isSet = mv!==undefined && mv!==null && mv!==''; return [0,1,2].map(v=>`<span class="stage-chip ${isSet&&Number(mv)===v?'on':''}" data-prog-na="${k}|${selYear}|${v}" style="cursor:pointer;font-weight:700;">${v} คน</span>`).join('') + `<span class="stage-chip ${!isSet?'on':''}" data-prog-na="${k}|${selYear}|" style="cursor:pointer;">นับจากข้อมูล</span>`; })()}
+      </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin:6px 0;">${[2025,2026,2027].filter(yy=>yy<selYear).map(yy=>`<label style="display:flex;gap:6px;align-items:center;font-size:15px;"><input type="checkbox" data-prog-pass="${k}|${yy}" ${(f.passed||{})[yy]?'checked':''}> ผ่านเงื่อนไขปี ${toBE(yy)}</label>`).join('')}</div>`;
     } else if (type==='growth'){
       const g = pg.growth || {};
@@ -766,7 +800,7 @@ function renderProgramsCard(){
         <div><b style="color:var(--navy);font-size:18px;">${esc(label)}</b><div style="font-size:13px;color:var(--muted);">${esc(posLabel)}</div></div>
         ${pg.locked && type!=='none'
           ? `<div style="text-align:right;"><span class="stage-chip on" style="font-weight:700;">${typeLabel} 🔒</span><div><span data-prog-unlock="${k}" style="font-size:13px;color:var(--muted);text-decoration:underline;cursor:pointer;">ปลดล็อก</span></div></div>`
-          : `<select data-prog-type="${k}" style="font-size:16px;"><option value="none" ${type==='none'?'selected':''}>ไม่เข้าร่วม</option><option value="fast" ${type==='fast'?'selected':''}>🚀 Fast Achievement</option><option value="growth" ${type==='growth'?'selected':''}>📈 x2 Growth</option></select>`}
+          : `<select data-prog-type="${k}" style="font-size:16px;"><option value="none" ${type==='none'?'selected':''}>ไม่เข้าร่วม</option>${fastOpen?`<option value="fast" ${type==='fast'?'selected':''}>🚀 Fast Achievement</option>`:''}${growthOpen?`<option value="growth" ${type==='growth'?'selected':''}>📈 x2 Growth</option>`:''}</select>`}
       </div>
       ${inputs}
       ${programStatusHtml(programStatus(st, selYear))}
@@ -774,10 +808,10 @@ function renderProgramsCard(){
   }).join('');
   return `<div class="card">
     <h3 data-toggle-box="programs" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-      <span>🚀 Fast / Growth Bonus (ปี ${toBE(selYear)})</span>
+      <span>${fastOpen&&growthOpen?'🚀 Fast / Growth Bonus':fastOpen?'🚀 Fast Achievement Bonus':'📈 x2 Growth Bonus'} (ปี ${toBE(selYear)})</span>
       <span style="color:var(--muted);font-size:18px;">${closed?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
     </h3>
-    ${closed?'':`<p class="sub">UM แต่ละคนเข้าร่วมได้โครงการเดียว เลือกแล้วล็อกไว้จนจบโครงการ (Fast ถึงปี 2571 · Growth วัดผลปี 2569) · CFYC ดึงจากผลงานทีมของ UM คนนั้น</p>${rows}`}
+    ${closed?'':`<p class="sub">${growthOpen?'UM แต่ละคนเข้าร่วมได้โครงการเดียว เลือกแล้วล็อกไว้จนจบโครงการ (Fast ถึงปี 2571 · Growth วัดผลปี 2569)':'วัดผลรางวัลถึงปี 2571'} · CFYC ดึงจากผลงานทีมของ UM คนนั้น · ตัวเลขหลักใช้ยอดอนุมัติแล้ว</p>${rows}`}
   </div>`;
 }
 
@@ -821,6 +855,7 @@ function answerQuestion(raw){
     const keys = [ev.name, ev.key, ...(EVENT_ALIASES[ev.key]||[])];
     if (!keys.some(k=>q.includes(askNorm(k)))) return;
     specific = true;
+    if (!(new Date(ev.start+"T00:00:00").getFullYear()===selYear || new Date(ev.end+"T00:00:00").getFullYear()===selYear)){ out.push(sec(`🏁 ${esc(ev.name)}`, `<div class="ask-empty">ไม่มีการแข่งขันนี้ในปี ${toBE(selYear)}</div>`)); return; }
     const st = compStatus(new Date(ev.start+"T00:00:00"), new Date(ev.end+"T23:59:59"));
     const got = [], notYet = [];
     scope.forEach(n=>{
@@ -828,7 +863,9 @@ function answerQuestion(raw){
       const ach = eventAchieved(effectiveEntries(ag.entries), ev);
       const all = eventAchieved(ag.entries, ev);
       const reached = ev.tiers.filter(t=>ach>=t).length;
-      const pendTxt = all>ach ? ` <span style="color:var(--gold);">(+รอพิจารณา ${THB(all-ach)})</span>` : '';
+      const allEff = eventAchieved(effectiveEntries(projEntries(ag.entries)), ev);
+      const rP = ev.tiers.filter(t=>allEff>=t).length;
+      const pendTxt = allEff>ach ? ` <span style="color:#8A4B00;">· ⏳ ถ้าอนุมัติครบ ${THB(allEff)} → ${rP?`ระดับ ${rP}`:'ยังไม่ติด'}</span>` : '';
       if (reached) got.push({ html:`<b>${esc(n)}</b> — ระดับ ${reached}/${ev.tiers.length} (${THB(ach)})${reached<ev.tiers.length?` · ขาดอีก ${THB(ev.tiers[reached]-ach)} ถึงระดับ ${reached+1}`:''}${pendTxt}`, v:ach });
       else notYet.push({ html:`<b>${esc(n)}</b> — ${THB(ach)} · ขาดอีก ${THB(ev.tiers[0]-ach)}${pendTxt}`, v:ach });
     });
@@ -852,7 +889,8 @@ function answerQuestion(raw){
     scope.forEach(n=>{
       const it = agentCompStatus(state.agents[n]).find(i=>i.title.startsWith(tp.prefix));
       if (!it){ none.push(esc(n)); return; }
-      const line = `<b>${esc(n)}</b> — ${it.text}`;
+      const d = compProjDiff(state.agents[n]).find(x=>x.title===it.title);
+      const line = `<b>${esc(n)}</b> — ${it.text}${d?` <span style="color:#8A4B00;">· ⏳ ถ้าอนุมัติครบ: ${d.p.ok&&!it.ok?'<b>ผ่าน</b> · ':''}${d.p.text}</span>`:''}`;
       (it.ok ? ok : it.near ? near : other).push(line);
     });
     out.push(sec(`${tp.title}${scopeNote}`,
@@ -937,6 +975,7 @@ function answerQuestion(raw){
     const rows = progList().filter(x=>!umMentioned.length || umMentioned.includes(x.key)).map(({key,label})=>{
       const st = progStOf(key); if (!st) return '';
       const s = programStatus(st, selYear);
+      if (s.out) return '';
       if (s.type==='none') return `<b>${esc(label)}</b> — ไม่เข้าร่วม`;
       return `<b>${esc(label)}</b> — ${s.type==='fast'?'🚀 Fast':'📈 Growth'}${programStatusHtml(s)}`;
     }).filter(Boolean);
@@ -963,7 +1002,7 @@ function answerQuestion(raw){
         L.push(`<b>รวมสะสม ${THB(b.salary+b.tenure+b.bonus3+(b.interim||0)+b.dpo+b.build+b.service+b.maint)}</b>`);
       }
       const ps = programStatus(st, selYear);
-      if (ps.type!=='none') L.push(`${ps.type==='fast'?'🚀 Fast':'📈 Growth'}${programStatusHtml(ps)}`);
+      if (ps.type!=='none' && !ps.out) L.push(`${ps.type==='fast'?'🚀 Fast':'📈 Growth'}${programStatusHtml(ps)}`);
       out.push(sec(`👔 ${esc(label)}`, li(L)));
     });
   }
@@ -1480,14 +1519,14 @@ function renderTeamTab(){
   const umAnnualAchievedPending = pendAnnual.fyc;
   const umAnnualAchievedTotal = umAnnualAchievedApproved + umAnnualAchievedPending;
   const umAnnualGoalFYC = getUmAnnualTargetFYC();
-  const umAnnualRemaining = Math.max(0, umAnnualGoalFYC-umAnnualAchievedTotal);
-  const umAnnualProgressPct = umAnnualGoalFYC>0 ? Math.max(0,(umAnnualAchievedTotal/umAnnualGoalFYC)*100) : 0;
+  const umAnnualRemaining = Math.max(0, umAnnualGoalFYC-umAnnualAchievedApproved);
+  const umAnnualProgressPct = umAnnualGoalFYC>0 ? Math.max(0,(umAnnualAchievedApproved/umAnnualGoalFYC)*100) : 0; // ใช้ยอดอนุมัติแล้วเท่านั้น
   const umAnnualProgressPctForRing = Math.min(100, umAnnualProgressPct);
 
   const umGoalFYC = getUmTargetFYC();
-  const umRemaining = Math.max(0, umGoalFYC-teamAchievedInUmPeriod);
-  const umProgressPct = umGoalFYC>0 ? Math.max(0,(teamAchievedInUmPeriod/umGoalFYC)*100) : 0; // ตัวเลขจริง ไม่ตัดเพดานที่ 100% เกินเป้าต้องโชว์เกิน 100% ได้
-  __umSummary = { agentCount: names.length, quietCount: rows.filter(r=>r.isQuiet).length, annualGoal: umAnnualGoalFYC, annualAchieved: umAnnualAchievedTotal, annualPct: umAnnualProgressPct, viewMonth: umViewAsOfMonth, monthCFYC: monthlyTeamCFYC[umViewAsOfMonth], cumAll: monthlyTeamCFYC.slice(0, umViewAsOfMonth+1).reduce((a,b)=>a+b,0), position: selectedPosition, yearPending: pendAnnual.fyc, yearPendingCount: pendAnnual.count };
+  const umRemaining = Math.max(0, umGoalFYC-teamAchievedApproved);
+  const umProgressPct = umGoalFYC>0 ? Math.max(0,(teamAchievedApproved/umGoalFYC)*100) : 0; // ใช้ยอดอนุมัติแล้วเท่านั้น // ตัวเลขจริง ไม่ตัดเพดานที่ 100% เกินเป้าต้องโชว์เกิน 100% ได้
+  __umSummary = { agentCount: names.length, quietCount: rows.filter(r=>r.isQuiet).length, annualGoal: umAnnualGoalFYC, annualAchieved: umAnnualAchievedApproved, annualProj: umAnnualAchievedTotal, annualPct: umAnnualProgressPct, viewMonth: umViewAsOfMonth, monthCFYC: monthlyTeamCFYC[umViewAsOfMonth], cumAll: monthlyTeamCFYC.slice(0, umViewAsOfMonth+1).reduce((a,b)=>a+b,0), position: selectedPosition, yearPending: pendAnnual.fyc, yearPendingCount: pendAnnual.count };
   const umProgressPctForRing = Math.min(100, umProgressPct); // ใช้คำนวณวงแหวนภาพเท่านั้น กันวงแหวนวาดเกินรอบ
   const ringR = 44, ringC = 2*Math.PI*ringR;
   const umAnnualRingOffset = ringC - (umAnnualProgressPctForRing/100)*ringC;
@@ -1586,8 +1625,8 @@ function renderTeamTab(){
               <div class="tech-row"><span class="lab">เป้าหมายทั้งปี</span><span class="val">${THB(umAnnualGoalFYC)}</span></div>
               <div class="tech-row"><span class="lab">อนุมัติแล้ว (ทั้งปี)</span><span class="val good">${THB(umAnnualAchievedApproved)}</span></div>
               <div class="tech-row"><span class="lab" style="color:var(--gold);">รอพิจารณา (คงค้างสะสมถึง${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val" style="color:var(--gold);">${pendLabel(pendAnnual)}</span></div>
-              <div class="tech-row" style="border-top:1px dashed #ffffff33;padding-top:6px;"><span class="lab" style="font-weight:700;">รวมทั้งหมด (ทั้งปี)</span><span class="val" style="font-weight:700;">${THB(umAnnualAchievedTotal)}</span></div>
-              <div class="tech-row"><span class="lab">ยังขาดอีก (ทั้งปี)</span><span class="val ${umAnnualRemaining>0?'warn':''}">${THB(umAnnualRemaining)}</span></div>
+              <div class="tech-row"><span class="lab">ยังขาดอีก (ทั้งปี · นับเฉพาะอนุมัติแล้ว)</span><span class="val ${umAnnualRemaining>0?'warn':''}">${THB(umAnnualRemaining)}</span></div>
+              ${projRow(umAnnualAchievedApproved, umAnnualAchievedPending, umAnnualGoalFYC)}
             </div>
           </div>
         </div>
@@ -1626,11 +1665,12 @@ function renderTeamTab(){
             </div>
             <div class="tech-row"><span class="lab">ทำได้แล้ว (เดือนก่อนหน้า + อนุมัติแล้วเดือน${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val good">${THB(teamAchievedApproved)}${umGoalFYC>0?` (${Math.round(Math.max(0,(teamAchievedApproved/umGoalFYC)*100))}%)`:''}</span></div>
             <div class="tech-row"><span class="lab" style="color:var(--gold);">รอพิจารณา (คงค้างสะสม ${THAI_MONTH_NAMES[umStartMonth]}–${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val" style="color:var(--gold);">${pendLabel(pendPeriod)}${umGoalFYC>0?` (${Math.round(Math.max(0,(teamAchievedPending/umGoalFYC)*100))}%)`:''}</span></div>
-            <div class="tech-row" style="border-top:1px dashed #123F6B22;padding-top:6px;"><span class="lab" style="font-weight:700;">รวมทั้งหมด</span><span class="val" style="font-weight:700;">${THB(teamAchievedInUmPeriod)}${umGoalFYC>0?` (${Math.round(umProgressPct)}%)`:''}</span></div>
-            <div class="tech-row"><span class="lab">ยังขาดอีก</span><span class="val ${umRemaining>0?'warn':''}">${THB(umRemaining)}</span></div>
+            <div class="tech-row"><span class="lab">ยังขาดอีก (นับเฉพาะอนุมัติแล้ว)</span><span class="val ${umRemaining>0?'warn':''}">${THB(umRemaining)}</span></div>
+            ${projRow(teamAchievedApproved, teamAchievedPending, umGoalFYC)}
           </div>
         </div>
         ${umGoalFYC>0 && umProgressPct>=100?`<div style="margin-top:14px;background:#1F7A4F55;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;font-weight:700;">🎉 ถึงเป้าหมาย UM แล้ว!</div>`
+          :umGoalFYC>0 && teamAchievedInUmPeriod>=umGoalFYC?`<div style="margin-top:14px;background:#C69A3B33;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;">⏳ ถ้างานรอพิจารณาผ่านทั้งหมด จะถึงเป้าหมาย UM — ยอดที่อนุมัติแล้วยังขาดอีก ${THB(umRemaining)}</div>`
           :umGoalFYC>0 && umProgressPct>=80?`<div style="margin-top:14px;background:#C69A3B33;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;">🔥 ใกล้ถึงเป้าหมาย UM แล้ว! เหลืออีกแค่ ${THB(umRemaining)} (ขาดอีก ${Math.round(100-umProgressPct)}%)</div>`:''}
       </div>
     </div>
@@ -2017,6 +2057,22 @@ function renderTeamTab(){
             placeholder="0" style="width:140px;padding:5px 8px;font-size:18px;text-align:center;margin-bottom:6px;">
           <div id="combined-hypothetical-result" style="font-size:14px;color:var(--muted);"></div>
         </div>
+        ${(()=>{
+          const pendM = Array(12).fill(0);
+          for (let m=0;m<=umViewAsOfMonth;m++) pendM[m] = names.reduce((sum,n)=>sum+mPend(state.agents[n].entries,selYear,m),0);
+          const pendTot = pendM.reduce((a,b)=>a+b,0);
+          if (!(pendTot>0)) return '';
+          const A = computeUmItemsForPosition(selectedPosition, monthlyTeamCFYC, monthsElapsed, monthlyDirectAgentFYC);
+          const P = computeUmItemsForPosition(selectedPosition, monthlyTeamCFYC.map((v,m)=>v+pendM[m]), monthsElapsed, monthlyDirectAgentFYC.map((v,m)=>v+pendM[m]));
+          let tbP = 0;
+          names.forEach(name=>{ const pe = effectiveEntries(projEntries(state.agents[name].entries)); for (let q=1;q<=4;q++){ const qm=[(q-1)*3,(q-1)*3+1,(q-1)*3+2]; const qe = pe.filter(e=>{ const d=D(e.date); return d.getFullYear()===selYear && qm.includes(d.getMonth()); }); const nc = qe.filter(isOrigin).length, qf = qe.reduce((sum,e)=>sum+e.fyc,0); if (nc>=2){ const t = TEAM_BUILDING_TIERS.find(t=>qf>=t.minFyc); if (t) tbP += t.reward; } } });
+          const rows = [["เงินเดือน",A.item1,P.item1],["ค่าขยายงาน",A.item2,P.item2],["โบนัสส่วนเกินโควตา",A.item3+A.interimItem3,P.item3+P.interimItem3],["DPO",A.item6,P.item6],["ค่าสร้างและรักษาตัวแทน",teamBuildingReward,tbP]];
+          const diff = rows.reduce((sum,r)=>sum+(r[2]-r[1]),0);
+          const changed = rows.filter(r=>Math.abs(r[2]-r[1])>=1);
+          return `<div class="proj-box" style="margin-top:14px;"><div style="font-weight:700;color:#8A4B00;margin-bottom:4px;">⏳ ถ้างานรอพิจารณาผ่านทั้งหมด (+${THB(pendTot)})</div>
+            ${changed.length ? changed.map(r=>`<div class="tech-row"><span class="lab">${r[0]}</span><span class="val">${THB(r[1])} → <b style="color:var(--good);">${THB(r[2])}</b></span></div>`).join('') : '<div style="font-size:14px;color:var(--muted);">ผลประโยชน์ยังไม่เปลี่ยน</div>'}
+            ${diff>=1?`<div style="font-weight:700;color:var(--good);margin-top:4px;">ได้เพิ่มรวม +${THB(diff)}</div>`:''}</div>`;
+        })()}
         <div style="margin-top:14px;padding-top:10px;border-top:2px solid #123F6B22;display:flex;justify-content:space-between;align-items:center;">
           <span style="font-weight:700;color:var(--navy);">สรุปรวมสะสม (ไม่รวมค่าเสริมมือ) ถึงเดือน${THAI_MONTH_NAMES[umViewAsOfMonth]}</span>
           <span style="font-weight:800;font-size:23px;color:var(--good);">${THB(Math.min(umViewAsOfMonth+1, Math.floor(cumulativeTeamCFYC/selectedPosition.cfycMonth))*selectedPosition.salary + monthlyTeamCFYC.slice(0,umViewAsOfMonth+1).reduce((s,v)=>s+v*selectedPosition.tenurePct/100,0) + profitBonus + salesCompReward + teamBuildingReward + maint.total)}</span>
@@ -2351,7 +2407,9 @@ function renderTeamTab(){
           else if (today>=warnFrom) alerts.push(`🔔 บัตรตัวแทนใกล้หมดอายุ (เหลือ ${Math.ceil((expDate-today)/86400000)} วัน)`);
         }
         // การแข่งขัน/ผลประโยชน์ของตัวแทน — รายงานเฉพาะรายการที่มีผลงานเข้ามาแล้ว (ยังไม่มีงานในช่วงนั้น = ไม่รายงาน)
-        agentCompStatus(ag).forEach(it=>alerts.push({ comp:true, ...it }));
+        const pdiff = compProjDiff(ag);
+        agentCompStatus(ag).forEach(it=>{ const d = pdiff.find(x=>x.title===it.title); alerts.push({ comp:true, ...it, text: it.text + (d?` <span style="color:#8A4B00;">· ⏳ ถ้าอนุมัติครบ: ${d.p.ok&&!it.ok?'<b>ผ่าน</b> · ':''}${d.p.text}</span>`:'') }); });
+        pdiff.filter(d=>!d.a).forEach(d=>alerts.push({ comp:true, ...d.p, ok:false, near:true, text:`<span style="color:#8A4B00;">⏳ ถ้าอนุมัติครบ: ${d.p.ok?'<b>ผ่าน</b> · ':''}${d.p.text}</span>` }));
         return { name, alerts };
       }).filter(a=>a.alerts.length>0);
       if (!agentAlerts.length) return '';
@@ -2684,6 +2742,9 @@ function renderSpecialEventsSection(entries){
   const cardOf = ev=>{
     const achieved = eventAchieved(entries, ev);
     const reachedCount = ev.tiers.filter(t=>achieved>=t).length;
+    const achievedProj = eventAchieved(effectiveEntries(projEntries(agent().entries)), ev);
+    const reachedProj = ev.tiers.filter(t=>achievedProj>=t).length;
+    const projLine = achievedProj>achieved ? `<div class="proj-box" style="margin-top:8px;">⏳ ถ้ารออนุมัติผ่านทั้งหมด: <b>${THB(achievedProj)}</b> → ${reachedProj>reachedCount?`<b style="color:var(--good);">ผ่านระดับ ${reachedProj}/${ev.tiers.length}</b>`:reachedProj>0?`ระดับ ${reachedProj}/${ev.tiers.length} (เท่าเดิม)`:'ยังไม่ถึงระดับ 1'}${ev.tiers[reachedProj]!==undefined?` · ขาดอีก ${THB(ev.tiers[reachedProj]-achievedProj)} ถึงระดับ ${reachedProj+1}`:''}</div>` : '';
     const nextTier = ev.tiers[reachedCount];
     const tiersHtml = ev.tiers.map((t,i)=>{
       const reached = achieved>=t;
@@ -2706,6 +2767,7 @@ function renderSpecialEventsSection(entries){
       <div style="font-size:17px;color:var(--muted);margin:4px 0 10px;">ผลงานสะสมในช่วงแข่งขัน: <b style="color:var(--navy-deep);">${THB(achieved)}</b></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">${tiersHtml}</div>
       ${statusLine}
+      ${projLine}
     </div>`;
   };
   const active = eventsThisYear.filter(ev=>evStatus(ev)==='active');
@@ -3337,6 +3399,8 @@ function renderGoalsTab(){
   const progressPctForRing = Math.min(100, progressPct);
   // ผลงานทั้งปี (ม.ค.-ธ.ค. เสมอ) แยกจากผลงานช่วงเป้าหมายพิเศษด้านบน เพื่อไม่ให้สับสนว่าเลขไหนคือขอบเขตไหน
   const achievedFullYear = effectiveEntries(getYearEntries()).reduce((s,e)=>s+e.fyc,0);
+  const projFullYear = effectiveEntries(projEntries(agent().entries)).filter(e=>D(e.date).getFullYear()===selYear).reduce((s,e)=>s+e.fyc,0);
+  const projPeriod = effectiveEntries(projEntries(agent().entries)).filter(e=>{ const d=D(e.date); return d.getFullYear()===selYear && d.getMonth()>=startMonth && d.getMonth()<=endMonth; }).reduce((s,e)=>s+e.fyc,0);
   const annualRemaining = Math.max(0, annualGoalFYC-achievedFullYear);
   const annualProgressPct = annualGoalFYC>0 ? Math.max(0,(achievedFullYear/annualGoalFYC)*100) : 0; // ไม่ตัดเพดาน 100%
   const annualProgressPctForRing = Math.min(100, annualProgressPct);
@@ -3488,6 +3552,7 @@ function renderGoalsTab(){
             <div class="tech-row"><span class="lab">เป้าหมายทั้งปี (ม.ค. – ธ.ค.)</span><span class="val">${THB(annualGoalFYC)}</span></div>
             <div class="tech-row"><span class="lab">ทำได้แล้ว (ทั้งปี)</span><span class="val good">${THB(achievedFullYear)}</span></div>
             <div class="tech-row"><span class="lab">ยังขาดอีก (ทั้งปี)</span><span class="val ${annualRemaining>0?'warn':''}">${THB(annualRemaining)}</span></div>
+              ${projRow(achievedFullYear, projFullYear-achievedFullYear, annualGoalFYC)}
           </div>
         </div>
 
@@ -3519,6 +3584,7 @@ function renderGoalsTab(){
             <div class="tech-row"><span class="lab">เป้าหมายช่วงพิเศษ (${THAI_MONTH_NAMES[startMonth]} – ${THAI_MONTH_NAMES[endMonth]})</span><span class="val">${THB(goalFYC)}</span></div>
             <div class="tech-row"><span class="lab">ทำได้แล้ว (ช่วงนี้)</span><span class="val good">${THB(achieved)}</span></div>
             <div class="tech-row"><span class="lab">ยังขาดอีก (ช่วงนี้)</span><span class="val ${remaining>0?'warn':''}">${THB(remaining)}</span></div>
+            ${projRow(achieved, projPeriod-achieved, goalFYC)}
             <div class="tech-row"><span class="lab">เฉลี่ยต่อเดือนที่ต้องทำ (นับจากนี้)</span><span class="val highlight">${planEnded ? 'สิ้นสุดแผนแล้ว' : THB(avgMonthlyTargetNow)+'/เดือน'}</span></div>
           </div>
         </div>
@@ -3912,7 +3978,21 @@ function renderCompetitionsTab(){
     count: r.count, fyc: r.fyc, activeMonths: r.activeMonths
   }));
 
+  const compProjCard = (()=>{
+    const ag = agent(); const pend = (ag.entries||[]).filter(e=>e.pending && isOrigin(e));
+    if (!pend.length) return '';
+    const diffs = compProjDiff(ag); const pf = pend.reduce((sum,e)=>sum+e.fyc,0);
+    return `<div class="card proj-card"><h3>⏳ ถ้างานรอพิจารณาผ่านทั้งหมด</h3>
+      <p class="sub">รออนุมัติ ${pend.length} ราย · FYC ${THB(pf)} — ตัวเลขหลักในหน้านี้ใช้ยอดที่อนุมัติแล้วเท่านั้น</p>
+      ${diffs.length ? diffs.map(d=>`<div class="proj-item"><b style="color:var(--navy);">${d.title}</b>
+        <div>✅ อนุมัติแล้ว: ${d.a?d.a.text:'ยังไม่มีผลงาน'}</div>
+        <div style="color:#8A4B00;">⏳ ถ้าอนุมัติครบ: ${d.p.ok && !(d.a&&d.a.ok)?'<b style="color:var(--good);">ผ่าน</b> · ':''}${d.p.text}</div></div>`).join('')
+        : '<div class="ask-empty">ถึงอนุมัติครบ ผลการแข่งขันก็ยังไม่เปลี่ยน</div>'}
+    </div>`;
+  })();
+  const hideJoining = !!startDate && joiningMonths.length && !joiningMonths.some(j=>j.y===selYear);
   return `
+    ${compProjCard}
     <div class="card dark">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
         <div>
@@ -4055,7 +4135,7 @@ function renderCompetitionsTab(){
       })():''}
     </div>
 
-    <div class="card">
+    <div class="card" ${hideJoining?'style="display:none;"':''}>
       <h3>Joining Bonus (ตัวแทนใหม่)</h3>
       <p class="sub">จ่ายให้ตัวแทนใหม่ที่เข้าร่วมงานครั้งแรกเท่านั้น ภายใน 4 เดือนแรกนับจากเดือนที่มีผลงานขึ้นแรก (รบข. 4/2564)</p>
       <label class="field full"><span>เดือนที่มีผลงานขึ้นแรก (เดือนเริ่มงาน)</span>${renderDateInput('joining', startDate, false)}</label>
@@ -4137,6 +4217,9 @@ function bindEvents(){
   });
   document.querySelectorAll("[data-prog-pos]").forEach(el=>{
     el.onchange = ()=>{ const [k,yy] = el.dataset.progPos.split("|"); const st = progStOf(progKey(k)); if (!st) return; progOf(st).fast.positions[yy] = el.value; saveState(); render(); };
+  });
+  document.querySelectorAll("[data-prog-na]").forEach(el=>{
+    el.onclick = ()=>{ const [k,yy,v] = el.dataset.progNa.split("|"); const st = progStOf(progKey(k)); if (!st) return; const f = progOf(st).fast; if (!f.newAgentsManual) f.newAgentsManual = {}; if (v==='') delete f.newAgentsManual[yy]; else f.newAgentsManual[yy] = Number(v); saveState(); render(); };
   });
   document.querySelectorAll("[data-prog-pass]").forEach(el=>{
     el.onchange = ()=>{ const [k,yy] = el.dataset.progPass.split("|"); const st = progStOf(progKey(k)); if (!st) return; progOf(st).fast.passed[yy] = el.checked; saveState(); render(); };
@@ -5186,6 +5269,14 @@ async function boot(){
   render();
 }
 boot();
+
+// ทุกช่องกรอก: แตะแล้วล้างค่าเดิมทันที ถ้าไม่พิมพ์อะไรแล้วออก ให้คืนค่าเดิม (ไม่ต้องคอยลบเอง)
+(function(){
+  const SKIP = ['checkbox','radio','button','submit','reset','file','range','color','hidden','date','time','datetime-local','month','week'];
+  const ok = el => el && el.tagName==='INPUT' && !SKIP.includes((el.type||'text').toLowerCase()) && !el.readOnly && !el.disabled && el.id!=='entry-search';
+  document.addEventListener('focus', e=>{ const el = e.target; if (!ok(el)) return; el.dataset.prevVal = el.value; if (el.value!=='') el.value = ''; }, true);
+  document.addEventListener('blur', e=>{ const el = e.target; if (!ok(el)) return; const prev = el.dataset.prevVal; delete el.dataset.prevVal; if (prev!==undefined && prev!=='' && el.value.trim()==='') el.value = prev; }, true);
+})();
 </script>
 </body>
 </html>
