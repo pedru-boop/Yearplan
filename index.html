@@ -195,7 +195,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.06-1</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.10-1</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -219,7 +219,11 @@
 
 <script>
 /* ================= CONSTANTS ================= */
-const STORAGE_KEY = "ped-dashboard-v1";
+// APP_MODE: "um" = แอป UM เต็มรูปแบบ · "agent" = แอปตัวแทน (ถอดส่วน UM ออก ใช้หน้าตา/วิธีคีย์เหมือนแท็บตัวแทน)
+const APP_MODE = "um";
+const IS_AGENT_APP = APP_MODE === "agent";
+const STORAGE_KEY = IS_AGENT_APP ? "ped-agent-v1" : "ped-dashboard-v1";
+const META_KEY = IS_AGENT_APP ? "ped-agent-meta" : "ped-dashboard-meta";
 
 const QUARTERLY_TIERS = [
   { min: 12500, max: 49999, pct: 4 },
@@ -415,11 +419,45 @@ function addMonths(dateStr, n){
   d.setMonth(d.getMonth()+n);
   return d;
 }
-const SPECIAL_EVENTS = [
+const DEFAULT_SPECIAL_EVENTS = [
   { key: "kickoff", name: "Kick Off", start: "2026-08-30", end: "2026-11-30", tiers: [15000, 30000, 45000] },
   { key: "regional", name: "Regional", start: "2026-08-30", end: "2026-11-30", tiers: [45000] },
   { key: "beijing", name: "ปักกิ่ง", start: "2026-08-30", end: "2026-11-30", tiers: [75000] },
 ];
+// การแข่งขันที่ป้าเป็ดตั้งเอง (เพิ่ม/แก้/ลบได้ในแท็บ UM) — เก็บไว้ในข้อมูลหลัก ใช้ร่วมกันทุก UM
+function evRoot(){ return mainAppState || state; }
+function evList(){
+  const r = evRoot();
+  if (!Array.isArray(r.specialEvents)) r.specialEvents = JSON.parse(JSON.stringify(DEFAULT_SPECIAL_EVENTS));
+  return r.specialEvents.filter(ev=>ev && ev.start && ev.end && Array.isArray(ev.tiers) && ev.tiers.length);
+}
+function evAll(){ evList(); return evRoot().specialEvents; }
+function renderEventsSettingsCard(){
+  if (activeTeamUmName) return '';
+  const list = evAll();
+  const closed = collapsedBoxes.eventsSettings;
+  const stTxt = (ev)=>{ if (!ev.start||!ev.end) return '<span style="color:var(--bad);">ยังกรอกวันที่ไม่ครบ</span>'; const st=compStatus(new Date(ev.start+"T00:00:00"), new Date(ev.end+"T23:59:59")); return st==='active'?'<span style="color:var(--good);font-weight:700;">กำลังแข่ง</span>':st==='upcoming'?'<span style="color:#8A4B00;">ยังไม่เริ่ม</span>':'<span style="color:var(--muted);">จบแล้ว</span>'; };
+  return `<div class="card">
+    <h3 data-toggle-box="eventsSettings" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+      <span>🏁 ตั้งค่าการแข่งขัน (${list.length} รายการ)</span>
+      <span style="color:var(--muted);font-size:18px;">${closed?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
+    </h3>
+    ${closed?'':`<p class="sub">เพิ่ม/แก้ไขการแข่งขันที่บริษัทประกาศได้เอง · นับ FYC ของกรมธรรม์ที่ส่งในช่วงแข่ง และงวดที่นำส่งในช่วงแข่งเท่านั้น · เกณฑ์หลายขั้นคั่นด้วยจุลภาค เช่น 15000, 30000, 45000</p>
+    ${evAll().map((ev,i)=>`<div style="border:1px solid #123F6B1F;border-radius:10px;padding:10px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <input type="text" data-ev-name="${i}" value="${esc(ev.name||'')}" placeholder="ชื่อการแข่งขัน" style="flex:1;min-width:0;padding:6px 8px;font-weight:700;font-size:17px;">
+        <span data-ev-del="${i}" style="color:var(--bad);cursor:pointer;font-size:22px;padding:0 6px;">×</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        <label class="field" style="flex:1;min-width:140px;"><span>วันเริ่ม</span>${renderDateInput("ev-start|"+i, ev.start||"", true)}</label>
+        <label class="field" style="flex:1;min-width:140px;"><span>วันจบ</span>${renderDateInput("ev-end|"+i, ev.end||"", true)}</label>
+      </div>
+      <label class="field" style="margin-top:6px;"><span>เกณฑ์ FYC (บาท)</span><input type="text" inputmode="decimal" data-ev-tiers="${i}" value="${esc((ev.tiers||[]).map(t=>Number(t).toLocaleString('en-US')).join(', '))}" placeholder="15000, 30000"></label>
+      <div style="font-size:14px;margin-top:4px;">${stTxt(ev)}</div>
+    </div>`).join('') || '<div class="empty">ยังไม่มีการแข่งขัน</div>'}
+    <button class="btn-ghost" id="ev-add">+ เพิ่มการแข่งขัน</button>`}
+  </div>`;
+}
 // การแข่งขันเพิ่มเติม: กำลังแข่ง = แสดงเต็ม, ยังไม่เริ่ม = บรรทัดเดียว, จบแล้ว = ย้ายเข้าทำเนียบ
 function compStatus(start, end){ const now=new Date(); return now>end?'ended':(now<start?'upcoming':'active'); }
 function compSlot(history, start, end, title, html){
@@ -535,7 +573,7 @@ function renderDeadlinesCard(names, selectedPosition){
     add(new Date(y,5,30), '💎', 'ตัดรอบโบนัสส่วนเกินโควตางวดแรก', 'CFYC 6 เดือนแรกต้องเกินโควตาทั้งปี');
     add(new Date(y,11,31), '💎', 'ตัดยอดทั้งปี', 'โบนัสส่วนเกินโควตา (ส่วนที่เหลือ) · เป้าทั้งปี');
   }
-  SPECIAL_EVENTS.forEach(ev=>{
+  evList().forEach(ev=>{
     if (compStatus(new Date(ev.start+"T00:00:00"), new Date(ev.end+"T23:59:59"))==='active') add(new Date(ev.end+"T00:00:00"), '🏁', `จบการแข่งขัน ${ev.name}`, 'ผลงานต้องส่งภายในวันนี้');
   });
   if (y===PROMO_YEAR_NEW_AGENT) add(new Date(PROMO_YEAR_NEW_AGENT,10,30), '🏆', 'จบแข่งขันตัวแทนใหม่ สำหรับ UM', 'เบี้ยต้องรับจริงภายในวันนี้ (ทั้ง 2 รุ่น)');
@@ -545,8 +583,7 @@ function renderDeadlinesCard(names, selectedPosition){
     if (sd) add(addMonths(sd,12), '⏳', `ค่าเสริมมือ ${name} ครบ 12 เดือน`, 'FYC หลังวันนี้ไม่นับค่าเสริมมือแล้ว');
     const ri = renewalInfo(ag.license);
     if (ri && ri.stage!=='ok') add(ri.exp, '🪪', `บัตร ${name} หมดอายุ`, renewalShort(ri));
-    const fu = (ag.coaching||[]).filter(n=>n.followUp).sort((a,b)=>a.followUp<b.followUp?1:-1)[0];
-    if (fu) add(new Date(fu.followUp+"T00:00:00"), '🗣️', `นัดติดตาม ${name}`, esc((fu.note||'').slice(0,60)));
+    (ag.coaching||[]).filter(n=>n.followUp && !n.done).forEach(fu=>add(new Date(fu.followUp+"T00:00:00"), '🗣️', `นัดติดตาม ${name}`, esc((fu.note||'').slice(0,60))));
   });
   (state.recruits||[]).forEach(r=>{ if (r.stage!=='เข้าทีมแล้ว' && r.nextDate) add(new Date(r.nextDate+"T00:00:00"), '🌱', `ผู้สนใจ ${r.name}`, `ขั้น: ${esc(r.stage)}${r.note?` · ${esc(r.note.slice(0,40))}`:''}`); });
   items.sort((a,b)=>a.d-b.d);
@@ -580,8 +617,9 @@ function renderCoachingCard(names){
     const notes = (ag.coaching||[]).map((n,i)=>({...n, i})).sort((a,b)=>a.date<b.date?1:-1);
     const last = notes[0];
     const days = last ? Math.round((t0-new Date(last.date+"T00:00:00"))/86400000) : null;
-    const nextFu = notes.map(n=>n.followUp).filter(f=>f && f>=todayIso()).sort()[0] || '';
-    return { name, notes, days, nextFu };
+    const nextFu = notes.filter(n=>!n.done).map(n=>n.followUp).filter(f=>f && f>=todayIso()).sort()[0] || '';
+    const openCount = notes.filter(n=>!n.done).length;
+    return { name, notes, days, nextFu, openCount };
   }).sort((a,b)=>(b.days===null?99999:b.days)-(a.days===null?99999:a.days));
   const overdue = list.filter(x=>x.days===null || x.days>COACH_GAP_DAYS).length;
   const closed = collapsedBoxes.coaching;
@@ -601,6 +639,7 @@ function renderCoachingCard(names){
           <span style="text-align:right;font-size:14px;">
             <div style="color:${late?'var(--bad)':'var(--good)'};font-weight:700;">${x.days===null?'ยังไม่เคยบันทึก':x.days===0?'คุยวันนี้':`คุยล่าสุด ${x.days} วันก่อน`}</div>
             ${x.nextFu?`<div style="color:var(--muted);">นัดถัดไป ${fmtTH(new Date(x.nextFu+"T00:00:00"),{day:"numeric",month:"short"})}</div>`:''}
+            ${x.openCount?`<div style="color:#8A4B00;">ค้างดำเนินการ ${x.openCount} เรื่อง</div>`:''}
           </span>
         </div>
         ${open?`<div style="margin-top:10px;padding:10px;background:#F5F8FC;border-radius:8px;">
@@ -615,7 +654,10 @@ function renderCoachingCard(names){
               <b style="color:var(--navy-deep);font-size:15px;">${fmtTH(new Date(n.date+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"})}${n.followUp?` <span style="color:var(--muted);font-weight:400;">→ นัด ${fmtTH(new Date(n.followUp+"T00:00:00"),{day:"numeric",month:"short"})}</span>`:''}</b>
               <span data-coach-del="${enc}|${n.i}" style="color:var(--bad);cursor:pointer;padding:0 6px;">×</span>
             </div>
-            <div style="font-size:15px;white-space:pre-wrap;">${esc(n.note)}</div>
+            <div style="font-size:15px;white-space:pre-wrap;${n.done?'text-decoration:line-through;color:var(--muted);':''}">${esc(n.note)}</div>
+            <label style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:4px;font-size:15px;cursor:pointer;color:${n.done?'var(--good)':'var(--navy)'};font-weight:600;">
+              <input type="checkbox" data-coach-done="${enc}|${n.i}" ${n.done?'checked':''} style="width:20px;height:20px;"> ${n.done?'ดำเนินการเรียบร้อยแล้ว':'ดำเนินการแล้ว'}
+            </label>
           </div>`).join('')}</div>`:''}
         </div>`:''}
       </div>`;
@@ -700,20 +742,26 @@ function programStatus(st, y){
     const failedPrev = []; for (let yy=FAST_FIRST; yy<y; yy++) if (!(f.passed||{})[yy]) failedPrev.push(yy);
     const p0 = UM_POSITIONS.find(p=>p.value===posOf(y));
     let mult = null, note = '';
+    // ตามประกาศ 84/2568: ตำแหน่งลดลงจากปีก่อน = หมดสิทธิ
+    // ปี 69: รักษา/เลื่อนตำแหน่ง (หรือเพิ่งแต่งตั้ง ม.ค. 69) = 6 เท่า (4.3.1, 4.3.2)
+    // ปี 70: รักษา = 3 เท่า (4.4.1) · เลื่อน = 12 เท่า (4.4.2)
+    // ปี 71: รักษา = 3 เท่า (4.5.1) · เลื่อน = 12 เท่า (4.5.2) · เลื่อนทั้งปี 70 และ 71 = 20 เท่า (4.5.3)
     if (!p0) note = `ยังไม่ระบุตำแหน่งปี ${toBE(y)}`;
-    else if (y===2026) mult = 6;
     else {
       const r = posRank(posOf(y)), r1 = posRank(posOf(y-1));
-      if (r1<0) note = `ยังไม่ระบุตำแหน่งปี ${toBE(y-1)}`;
-      else if (r<r1){ mult = 0; note = 'ตำแหน่งลดลงจากปีก่อน — หมดสิทธิ'; }
+      if (y===2026){
+        if (r1>=0 && r<r1){ mult = 0; note = 'ตำแหน่งปี 2569 ลดลงจากปี 2568 — หมดสิทธิ (ข้อ 4.3.3)'; }
+        else { mult = 6; if (r1<0) note = 'ไม่ได้ระบุตำแหน่งปี 2568 — ถือว่าแต่งตั้งเป็น UM รอบ ม.ค. 2569 (ข้อ 4.3.1)'; }
+      }
+      else if (r1<0) note = `ยังไม่ระบุตำแหน่งปี ${toBE(y-1)}`;
+      else if (r<r1){ mult = 0; note = `ตำแหน่งปี ${toBE(y)} ลดลงจากปี ${toBE(y-1)} — หมดสิทธิ`; }
       else if (y===2027) mult = r>r1 ? 12 : 3;
       else {
-        const r69 = posRank(posOf(2026));
-        if (r69<0) note = 'ยังไม่ระบุตำแหน่งปี 2569';
+        if (r===r1) mult = 3;
         else {
-          const up70 = r1>r69, up71 = r>r1;
-          mult = up70&&up71 ? 20 : (!up70&&up71 ? 12 : (!up70&&!up71 ? 3 : null));
-          if (mult===null) note = 'กรณีเลื่อนตำแหน่งปี 70 แล้วรักษาตำแหน่งปี 71 ไม่ได้ระบุในประกาศ — ตรวจสอบกับบริษัท';
+          const r69 = posRank(posOf(2026));
+          if (r69<0){ mult = 12; note = 'ไม่ได้ระบุตำแหน่งปี 2569 — คิดแบบเลื่อนตำแหน่งปี 71 อย่างเดียว (12 เท่า) ถ้าปี 70 เลื่อนด้วยจะได้ 20 เท่า'; }
+          else mult = (r1>r69) ? 20 : 12;
         }
       }
     }
@@ -743,7 +791,20 @@ function programStatus(st, y){
   return { type, y, cfyc, pend, base, quota, perf, growth, tier, reward, next: nt ? { ...nt, need: base*(1+nt.min/100)-cfyc } : null,
     proj: pend>0 ? { cfyc:cP, growth:gP, tier:tP, reward: tP ? (cP-base)*tP.rate/100 : 0 } : null };
 }
-function programStatusHtml(s){
+// ===== Growth: ลองคำนวณ "ถ้าทำ CFYC เพิ่มอีก X บาท จะได้รางวัลเพิ่มเท่าไหร่" =====
+let growthWhatIf = {}; // key UM → ตัวเลขที่กรอก
+function growthCalc(base, cfyc){
+  const g = base>0 ? (cfyc-base)/base*100 : 0;
+  const t = GROWTH_TIERS.find(x=>g>=x.min) || null;
+  return { growth:g, tier:t, reward: t ? (cfyc-base)*t.rate/100 : 0 };
+}
+function growthWhatIfText(base, cfyc, addRaw){
+  const add = Number(String(addRaw||'').replace(/,/g,''))||0;
+  if (!(add>0)) return '<span style="color:var(--muted);">กรอกยอด CFYC ที่จะทำเพิ่ม เพื่อดูรางวัลที่เพิ่มขึ้น</span>';
+  const now = growthCalc(base, cfyc), nx = growthCalc(base, cfyc+add), diff = nx.reward-now.reward;
+  return `CFYC รวม ${THB(cfyc+add)} · เติบโต ${nx.growth.toFixed(1)}% → ${nx.tier?`อัตรา ${nx.tier.rate}% ได้ <b>${THB(nx.reward)}</b>`:'ยังไม่ถึงขั้นแรก (33%)'}<br><b style="color:${diff>0?'var(--good)':'var(--muted)'};font-size:17px;">${diff>0?`ได้รางวัลเพิ่ม +${THB(diff)} บาท`:'รางวัลยังไม่เพิ่ม'}</b>${nx.tier&&(!now.tier||nx.tier.rate>now.tier.rate)?` <span style="color:var(--good);">(ขยับขั้นเป็น ${nx.tier.rate}%)</span>`:''}`;
+}
+function programStatusHtml(s, key){
   if (!s || s.type==='none') return '';
   if (s.out) return `<div class="prog-line" style="color:var(--muted);">${s.msg}</div>`;
   const pendTxt = s.pend>0 ? ` <span style="color:var(--gold);">(+รอพิจารณา ${THB(s.pend)})</span>` : '';
@@ -763,7 +824,12 @@ function programStatusHtml(s){
     <div class="prog-line">CFYC ปี 2569: <b>${THB(s.cfyc)}</b>${pendTxt} · เติบโต <b style="color:${s.tier?'var(--good)':'var(--bad)'};">${s.growth.toFixed(1)}%</b></div>
     <div class="prog-line">${s.tier?`อัตรารางวัล ${s.tier.rate}% → รางวัลคาดการณ์ (${THB(s.cfyc)} − ${THB(s.base)}) × ${s.tier.rate}% = <b style="color:var(--good);">${THB(s.reward)}</b>`:'ยังไม่ถึงเกณฑ์ขั้นแรก (เติบโต 33%)'}</div>
     ${s.proj?`<div class="proj-box">⏳ ถ้ารออนุมัติผ่านทั้งหมด: CFYC ${THB(s.proj.cfyc)} · เติบโต ${s.proj.growth.toFixed(1)}% → ${s.proj.tier?`อัตรา ${s.proj.tier.rate}% ได้ <b style="color:var(--good);">${THB(s.proj.reward)}</b>${s.proj.reward>s.reward?` (+${THB(s.proj.reward-s.reward)})`:''}`:'ยังไม่ถึงขั้นแรก'}</div>`:''}
-    ${s.next?`<div class="prog-line" style="color:var(--navy);font-weight:700;">ขั้นถัดไป (เติบโต ${s.next.min}% → ${s.next.rate}%): ต้องทำ CFYC เพิ่มอีก ${THB(Math.max(0,s.next.need))}</div>`:'<div class="prog-line" style="color:var(--good);font-weight:700;">🏆 อยู่ขั้นสูงสุดแล้ว (50%)</div>'}`;
+    ${s.next?`<div class="prog-line" style="color:var(--navy);font-weight:700;">ขั้นถัดไป (เติบโต ${s.next.min}% → ${s.next.rate}%): ต้องทำ CFYC เพิ่มอีก ${THBC(Math.max(0,s.next.need))}</div>`:'<div class="prog-line" style="color:var(--good);font-weight:700;">🏆 อยู่ขั้นสูงสุดแล้ว (50%)</div>'}
+    ${key?`<div class="proj-box" style="margin-top:8px;">
+      <div style="font-weight:700;color:var(--navy);margin-bottom:6px;">🧮 ลองคำนวณ: ถ้าทำ CFYC เพิ่มอีก</div>
+      <div style="display:flex;gap:8px;align-items:center;"><input type="text" inputmode="decimal" data-growth-whatif="${key}" data-base="${s.base}" data-cfyc="${s.cfyc}" value="${esc(growthWhatIf[key]||'')}" placeholder="0" style="flex:1;min-width:0;padding:6px 8px;font-size:17px;text-align:right;"><span>บาท</span></div>
+      <div data-growth-whatif-out="${key}" style="margin-top:6px;line-height:1.6;">${growthWhatIfText(s.base, s.cfyc, growthWhatIf[key])}</div>
+    </div>`:''}`;
 }
 function renderProgramsCard(){
   if (activeTeamUmName) return '';
@@ -803,7 +869,7 @@ function renderProgramsCard(){
           : `<select data-prog-type="${k}" style="font-size:16px;"><option value="none" ${type==='none'?'selected':''}>ไม่เข้าร่วม</option>${fastOpen?`<option value="fast" ${type==='fast'?'selected':''}>🚀 Fast Achievement</option>`:''}${growthOpen?`<option value="growth" ${type==='growth'?'selected':''}>📈 x2 Growth</option>`:''}</select>`}
       </div>
       ${inputs}
-      ${programStatusHtml(programStatus(st, selYear))}
+      ${programStatusHtml(programStatus(st, selYear), k)}
     </div>`;
   }).join('');
   return `<div class="card">
@@ -832,7 +898,8 @@ function renderAskBox(){
       : `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${ASK_CHIPS.map(c=>`<span class="stage-chip ask-chip" data-ask="${esc(c)}">${esc(c)}</span>`).join('')}</div>`}
   </div>`;
 }
-function answerQuestion(raw){
+function answerQuestion(raw){ return withDueView(()=>__answerQuestionRaw(raw)); }
+function __answerQuestionRaw(raw){
   const q = askNorm(raw);
   if (!q) return '';
   const names = Object.keys(state.agents||{});
@@ -851,7 +918,7 @@ function answerQuestion(raw){
   let specific = false;
 
   // 1) การแข่งขันพิเศษ
-  SPECIAL_EVENTS.forEach(ev=>{
+  evList().forEach(ev=>{
     const keys = [ev.name, ev.key, ...(EVENT_ALIASES[ev.key]||[])];
     if (!keys.some(k=>q.includes(askNorm(k)))) return;
     specific = true;
@@ -1027,7 +1094,7 @@ function answerQuestion(raw){
       const notes = (ag.coaching||[]).slice().sort((a,b)=>a.date<b.date?1:-1);
       const L = [`FYC ปี ${toBE(selYear)}: <b>${THB(yv)}</b>${yp>0?` <span style="color:var(--gold);">(+รอพิจารณา ${THB(yp)})</span>`:''}`];
       items.forEach(i=>L.push(`${i.ok?'✅':i.near?'🔥':'⏳'} ${i.title}: ${i.text}`));
-      SPECIAL_EVENTS.forEach(ev=>{ const a = eventAchieved(effectiveEntries(en), ev); if (a>0){ const r = ev.tiers.filter(t=>a>=t).length; L.push(`🏁 ${esc(ev.name)}: ${THB(a)} · ${r?`ระดับ ${r}/${ev.tiers.length}`:`ขาดอีก ${THB(ev.tiers[0]-a)}`}`); } });
+      evList().forEach(ev=>{ const a = eventAchieved(effectiveEntries(en), ev); if (a>0){ const r = ev.tiers.filter(t=>a>=t).length; L.push(`🏁 ${esc(ev.name)}: ${THB(a)} · ${r?`ระดับ ${r}/${ev.tiers.length}`:`ขาดอีก ${THB(ev.tiers[0]-a)}`}`); } });
       if (ri) L.push(`🪪 บัตรหมดอายุ ${fmtTH(ri.exp,{day:"numeric",month:"short",year:"numeric"})} ${renewalShort(ri)}`);
       if (notes[0]) L.push(`🗣️ คุยล่าสุด ${fmtTH(new Date(notes[0].date+"T00:00:00"),{day:"numeric",month:"short"})}${notes[0].note?` · ${esc(notes[0].note.slice(0,50))}`:''}`);
       out.push(sec(`👤 ${esc(n)}`, li(L)));
@@ -1046,7 +1113,8 @@ function eventAchieved(entries, ev){
   const eligiblePolicyIds = new Set(
     entries.filter(x => isOrigin(x) && D(x.date) >= s && D(x.date) <= e).map(x => x.policyId)
   );
-  return entries.filter(x => eligiblePolicyIds.has(x.policyId)).reduce((sum,x)=>sum+x.fyc,0);
+  // นับเฉพาะ FYC ที่นำส่ง (วันที่งวด) อยู่ในช่วงแข่งขันเท่านั้น — งวดที่ตกหลังวันจบการแข่งขันไม่นับ
+  return entries.filter(x => eligiblePolicyIds.has(x.policyId) && D(x.date) >= s && D(x.date) <= e).reduce((sum,x)=>sum+x.fyc,0);
 }
 /* ===== แจ้งเตือนการแข่งขันของตัวแทนแต่ละคน (แสดงในแท็บ UM) — ใช้เกณฑ์เดียวกับแท็บ ตัวแทน > 🏆 ผลงาน ===== */
 function agentCompStatus(ag){
@@ -1058,7 +1126,7 @@ function agentCompStatus(ag){
   const r = qResults[curQ-1];
   const items = []; // { ok, near, title, text, has } — has=false = ยังไม่มีผลงานในช่วงนั้น ไม่ต้องรายงาน
   const qHas = r.count>0 || r.fyc>0;
-  const shortTxt = (cases, fyc, extra)=>[cases>0?`${cases} ราย`:'', fyc>0?THB(fyc):'', extra||''].filter(Boolean).join(' + ');
+  const shortTxt = (cases, fyc, extra)=>[cases>0?`${cases} ราย`:'', fyc>0?THBC(fyc):'', extra||''].filter(Boolean).join(' + ');
   const NEAR = 10000; // ขาดไม่เกินนี้ถือว่า "ใกล้แล้ว"
 
   // 1) โบนัสไตรมาส (เงินรางวัลตัวแทน) — 3 ราย + FYC 12,500 + ความยั่งยืน ≥ 75%
@@ -1066,12 +1134,12 @@ function agentCompStatus(ag){
     const persist = (ag.persistQuarterly||{})[`${selYear}-Q${curQ}`] ?? 80;
     const cs = Math.max(0,3-r.count), fs = Math.max(0,12500-r.fyc);
     const ok = cs===0 && fs===0 && persist>=75;
-    const idx = QUARTERLY_TIERS.findIndex(t=>r.fyc>=t.min && r.fyc<=t.max);
+    const idx = tierIdxByMin(QUARTERLY_TIERS, r.fyc);
     const next = QUARTERLY_TIERS[idx+1];
     if (ok){
       const pct = QUARTERLY_TIERS[idx].pct;
       items.push({ has:qHas, ok:true, near: next && next.min-r.fyc<=NEAR, title:`โบนัสไตรมาส Q${curQ}`,
-        text:`ได้แล้ว ${pct}% ≈ ${THB(r.fyc*pct/100)}${next?` · ขาดอีก <b>${THB(next.min-r.fyc)}</b> ขยับเป็น ${next.pct}%`:' · ขั้นสูงสุดแล้ว'}` });
+        text:`ได้แล้ว ${pct}% ≈ ${THB(r.fyc*pct/100)}${next?` · ขาดอีก <b>${THBC(next.min-r.fyc)}</b> ขยับเป็น ${next.pct}%`:' · ขั้นสูงสุดแล้ว'}` });
     } else {
       items.push({ has:qHas, ok:false, near: cs<=1 && fs<=NEAR && persist>=75, title:`โบนัสไตรมาส Q${curQ}`,
         text:`ขาดอีก <b>${shortTxt(cs,fs,persist<75?'ความยั่งยืน ≥75%':'')}</b> จะได้ 4%` });
@@ -1090,14 +1158,14 @@ function agentCompStatus(ag){
   const aCases = yearEntries.filter(isOrigin).length, aFyc = yearEntries.reduce((s,e)=>s+e.fyc,0);
   const aHas = aCases>0 || aFyc>0;
   {
-    const persist = (ag.persistQuarterly||{})[`annual-${selYear}`] ?? 90;
+    const persist = (ag.persistQuarterly||{})[`annual-${selYear}`] ?? 80;
     const band = persist>=90?'high':persist>=85?'mid':'low';
     const cs=Math.max(0,ANNUAL_BONUS_GATE_CASES-aCases), fs=Math.max(0,ANNUAL_BONUS_GATE_FYC-aFyc);
     if (cs===0 && fs===0){
-      const idx = ANNUAL_TIER_RANGES.findIndex(t=>aFyc>=t.min && aFyc<=t.max);
+      const idx = tierIdxByMin(ANNUAL_TIER_RANGES, aFyc);
       const next = ANNUAL_TIER_RANGES[idx+1];
       items.push({ has:aHas, ok:true, near: next && next.min-aFyc<=NEAR, title:`โบนัสปี ${toBE(selYear)}`,
-        text:`ได้แล้ว ${ANNUAL_BANDS[band].pct[idx]}%${next?` · ขาดอีก <b>${THB(next.min-aFyc)}</b> ขยับเป็น ${ANNUAL_BANDS[band].pct[idx+1]}%`:' · ขั้นสูงสุดแล้ว'}` });
+        text:`ได้แล้ว ${ANNUAL_BANDS[band].pct[idx]}%${next?` · ขาดอีก <b>${THBC(next.min-aFyc)}</b> ขยับเป็น ${ANNUAL_BANDS[band].pct[idx+1]}%`:' · ขั้นสูงสุดแล้ว'}` });
     } else items.push({ has:aHas, ok:false, near: cs<=2 && fs<=NEAR, title:`โบนัสปี ${toBE(selYear)}`, text:`ขาดอีก <b>${shortTxt(cs,fs)}</b> จะเริ่มได้ ${ANNUAL_BANDS[band].pct[0]}%` });
     // เกณฑ์รางวัลต่อเนื่องทั้งปี 24 ราย + 160,000
     const gc=Math.max(0,ANNUAL_GATE_CASES-aCases), gf=Math.max(0,ANNUAL_GATE_FYC-aFyc);
@@ -1122,7 +1190,7 @@ function agentCompStatus(ag){
     }
   }
   // 5) การแข่งขันพิเศษที่กำลังดำเนินอยู่
-  SPECIAL_EVENTS.forEach(ev=>{
+  evList().forEach(ev=>{
     const s0=new Date(ev.start+"T00:00:00"), e0=new Date(ev.end+"T23:59:59");
     if (!(s0.getFullYear()===selYear || e0.getFullYear()===selYear)) return;
     const ach = eventAchieved(entries, ev);
@@ -1130,7 +1198,7 @@ function agentCompStatus(ag){
     const running = now>=s0 && now<=e0;
     if (!running) return; // จบแล้ว/ยังไม่เริ่ม ไม่ขึ้นหน้าหลัก (ที่จบแล้วดูได้ในทำเนียบการแข่งขัน)
     items.push({ has: ach>0, ok: reached>0, near: running && next!==undefined && next-ach<=NEAR, title:`${ev.name}${running?'':' (จบแล้ว)'}`,
-      text:`${reached>0?`ได้ระดับ ${reached}${ev.tiers.length>1?`/${ev.tiers.length}`:''}`:'ยังไม่ถึง'}${next!==undefined?(running?` · ขาดอีก <b>${THB(next-ach)}</b> ถึง${reached>0?'ระดับถัดไป':''} ${THB(next)}`:''):' · ครบทุกระดับ 🎉'}` });
+      text:`${reached>0?`ได้ระดับ ${reached}${ev.tiers.length>1?`/${ev.tiers.length}`:''}`:'ยังไม่ถึง'}${next!==undefined?(running?` · ขาดอีก <b>${THBC(next-ach)}</b> ถึง${reached>0?'ระดับถัดไป':''} ${THB(next)}`:''):' · ครบทุกระดับ 🎉'}` });
   });
   return items.filter(i=>i.has);
 }
@@ -1244,6 +1312,8 @@ function computeUmSummary(st){
 function renderAllUmDashboard(){
   const list = [{ name:"ของฉันเอง", own:true, st: state }]
     .concat(Object.keys(state.teamUMs).filter(n=>state.teamUMs[n] && state.teamUMs[n].agents).map(n=>({ name:n, st: state.teamUMs[n] })));
+  // ย่ออยู่ = ไม่ต้องคำนวณทุก UM (ช่วยให้แอปเร็วขึ้นบนมือถือ)
+  if (collapsedBoxes.allUmDash) return `<div class="card"><h3 data-toggle-box="allUmDash" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;"><span>📊 ภาพรวมทุก UM (${list.length})</span><span style="color:var(--muted);font-size:18px;">▶ แตะเพื่อดู</span></h3></div>`;
   const rows = list.map(x=>({ ...x, s: computeUmSummary(x.st) })).filter(x=>x.s);
   if (!rows.length) return "";
   // เรียงคนที่เสี่ยงเสียรายได้ขึ้นก่อน: ขาดโควตาสะสมมากสุด แล้วตามด้วย % เป้าทั้งปีน้อยสุด
@@ -1356,9 +1426,55 @@ function licenseStatus(exp){
   if (today>=warnFrom){ const h=`<b style="color:#B45309;">${label}</b><br>${pill('#F5B25B33','#8A4B00',`เหลือ ${daysLeft} วัน`)}`; return { rank:0, html:h, short:h }; }
   const h=`<span style="color:var(--good);font-weight:600;">${label}</span>`; return { rank:1, html:h, short:h };
 }
+function renderLicenseBlockHtml(){
+  // ข้อมูลบัตรตัวแทนและการอบรม (ย้ายมาอยู่แท็บจัดการตัวแทน) — ทำงานกับตัวแทนที่เลือกอยู่ (agent())
+  return `
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+        <label class="field" style="flex:1;min-width:150px;"><span>รหัสตัวแทน (Code)</span>
+          <input type="text" id="license-agent-code" value="${esc(agent().license.agentCode)}">
+        </label>
+        <label class="field" style="flex:1;min-width:150px;"><span>เลขที่บัตรตัวแทน</span>
+          <input type="text" id="license-card-number" value="${esc(agent().license.cardNumber)}">
+        </label>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+        <label class="field" style="flex:1;min-width:150px;"><span>วันที่ออกบัตร</span>
+          ${renderDateInput("license-issue", agent().license.cardIssueDate)}
+        </label>
+        <label class="field" style="flex:1;min-width:150px;"><span>วันหมดอายุบัตร</span>
+          ${renderDateInput("license-expiry", agent().license.cardExpiryDate)}
+        </label>
+      </div>
+      ${renewalAlertHtml(renewalInfo(agent().license))}
+
+      <div style="border-top:1px dashed #123F6B22;padding-top:12px;">
+        <div id="training-toggle" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:600;color:var(--navy);font-size:18px;">📚 ประวัติการอบรม (${agent().license.trainings.length} รายการ)</span>
+          <span id="training-arrow" style="font-size:14px;color:var(--muted);">${trainingSectionOpen?'▲ ซ่อน':'▼ แตะเพื่อดู'}</span>
+        </div>
+        <div id="training-content" style="display:${trainingSectionOpen?'block':'none'};margin-top:10px;">
+          ${agent().license.trainings.length?agent().license.trainings.map((t,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #123F6B0D;">
+            <div>
+              <div style="font-weight:600;color:var(--navy-deep);">${esc(t.courseName)} <span class="renew-chip ${isRenewalTraining(t)?'on':''}" data-toggle-renewal="${i}">🔁 อบรมต่อบัตร</span></div>
+              <div style="font-size:14px;color:var(--muted);">${t.trainingDate?fmtTH(new Date(t.trainingDate+"T00:00:00"),{day:"numeric",month:"short",year:"numeric"}):'ไม่ระบุวันที่'}</div>
+            </div>
+            <span data-remove-training="${i}" style="color:var(--bad);cursor:pointer;font-size:20px;padding:4px 8px;">×</span>
+          </div>`).join(""):`<div class="empty" style="padding:8px 0;">ยังไม่มีประวัติการอบรม</div>`}
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:flex-start;">
+            <input type="text" id="new-training-name" placeholder="ชื่อหลักสูตร" value="${esc(newTrainingDraft.courseName)}" style="flex:2;min-width:150px;padding:6px 8px;">
+            <div style="flex:1;min-width:150px;">${renderDateInput("new-training", newTrainingDraft.date, true)}</div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:16px;white-space:nowrap;"><input type="checkbox" id="new-training-renewal" ${newTrainingDraft.renewal?'checked':''}> อบรมต่อบัตร</label>
+            <button id="add-training-btn" class="btn" style="padding:6px 14px;">+ เพิ่ม</button>
+          </div>
+        </div>
+      </div>
+    `;
+}
 let editLicenseAgent = null; // ชื่อตัวแทนที่กำลังเปิดแก้ข้อมูลบัตรในแท็บจัดการตัวแทน
 function renderManageAgentsTab(){
   const names = Object.keys(state.agents);
+  if (editLicenseAgent && !state.agents[editLicenseAgent]) editLicenseAgent = null;
+  if (editLicenseAgent && state.currentAgent!==editLicenseAgent){ state.currentAgent = editLicenseAgent; syncAgentFormState(); }
   const rows = names.map(name=>{
     const ag = state.agents[name];
     const lic = ag.license || {};
@@ -1407,14 +1523,8 @@ function renderManageAgentsTab(){
         ${editing?`<tr style="border-bottom:1px solid #123F6B14;"><td colspan="5" style="padding:0 6px 10px;">
           <div style="background:#123F6B08;border-radius:8px;padding:10px;">
             <div style="font-weight:700;color:var(--navy);margin-bottom:6px;">📝 ${esc(r.name)}</div>
-            <div style="display:flex;flex-wrap:wrap;gap:10px;">
-              <label class="field" style="flex:1;min-width:140px;"><span>รหัสตัวแทน (Code)</span>
-                <input type="text" data-mlic="agentCode" data-agent="${enc}" value="${esc(r.lic.agentCode)}"></label>
-              <label class="field" style="flex:1;min-width:140px;"><span>เลขที่บัตรตัวแทน</span>
-                <input type="text" data-mlic="cardNumber" data-agent="${enc}" value="${esc(r.lic.cardNumber)}"></label>
-              <label class="field" style="flex:1;min-width:140px;"><span>วันหมดอายุบัตร</span>
-                ${renderDateInput("mlic-exp|"+enc, r.lic.cardExpiryDate)}</label>
-            </div>
+            <div style="font-size:14px;color:var(--muted);margin-bottom:8px;">FYC ปี ${toBE(selYear)} ${THB(r.yearFyc)} · ${r.originCount} ราย · วันที่มีผลงานขึ้นแรก ${(state.agents[r.name].competitions||{}).firstSaleDate?fmtTH(new Date(state.agents[r.name].competitions.firstSaleDate+"T00:00:00"),{day:"numeric",month:"short",year:"numeric"}):'ยังไม่ระบุ'}</div>
+            ${renderLicenseBlockHtml()}
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
               <button class="btn-primary" data-edit-license="${esc(r.name)}">✓ เสร็จ</button>
               <button class="btn-ghost" data-rename-agent="${esc(r.name)}">✏️ เปลี่ยนชื่อ</button>
@@ -1697,7 +1807,7 @@ function renderTeamTab(){
       const inQ = allPend.filter(e=>D(e.date)>=qStartP);
       const pendWarn = [];
       if (selYear===t0p.getFullYear() && qDaysLeftP<=14 && inQ.length) pendWarn.push(`⏰ อีก ${qDaysLeftP} วันจบไตรมาส — งานไตรมาสนี้ยังไม่อนุมัติ ${inQ.length} ราย (${THB(inQ.reduce((s,e)=>s+e.fyc,0))}) ถ้าไม่ทันจะไม่นับ DPO/ค่าสร้างฯ/คุณวุฒิไตรมาสนี้`);
-      SPECIAL_EVENTS.forEach(ev=>{ const ee=new Date(ev.end+"T00:00:00"); const dl=Math.round((ee-t0p)/86400000); if (dl>=0 && dl<=14){ const n=allPend.filter(e=>D(e.date)>=new Date(ev.start+"T00:00:00") && D(e.date)<=ee).length; if (n) pendWarn.push(`🏁 ${esc(ev.name)} จบในอีก ${dl} วัน — มีงานในช่วงแข่งรออนุมัติ ${n} ราย`); } });
+      evList().forEach(ev=>{ const ee=new Date(ev.end+"T00:00:00"); const dl=Math.round((ee-t0p)/86400000); if (dl>=0 && dl<=14){ const n=allPend.filter(e=>D(e.date)>=new Date(ev.start+"T00:00:00") && D(e.date)<=ee).length; if (n) pendWarn.push(`🏁 ${esc(ev.name)} จบในอีก ${dl} วัน — มีงานในช่วงแข่งรออนุมัติ ${n} ราย`); } });
       return `<div class="card">
         <h3 data-toggle-box="pendingReport" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
           <span>📋 รายงานผลงานที่รอพิจารณา</span>
@@ -1727,6 +1837,7 @@ function renderTeamTab(){
     ${renderDeadlinesCard(names, selectedPosition)}
 
     ${renderProgramsCard()}
+    ${renderEventsSettingsCard()}
 
     ${selectedPosition?(()=>{
       const now = new Date();
@@ -1864,7 +1975,7 @@ function renderTeamTab(){
       const monthOverrides = state.umGoal.monthOverrides || {};
       const directOverrides = state.umGoal.directOverrides || {};
 
-      const boxABeforeExplain = `
+      const boxABeforeExplain = `<div class="card">
       <h3 style="margin:4px 0 4px;">🎯 ควบคุมผลงานเพื่อ DPO (${selectedPosition.label})</h3>
         ${tierToggle('dpo-ctrl', dpoTiersHtml(salesCompThreshold, null))}
       <p class="sub" style="margin-top:0;">DPO คำนวณจากตัวแทนตรงเท่านั้น เทียบกับเกณฑ์ขั้นต่ำ ${THB(salesCompThreshold)}/ไตรมาส — คอลัมน์เป้าใช้โควตา/เดือนของตำแหน่ง คอลัมน์ CFYC และตัวแทนตรงแก้ไขเองได้ ค่าเริ่มต้นดึงจากผลงานที่คีย์ไว้จริง</p>
@@ -1957,7 +2068,7 @@ function renderTeamTab(){
           </div>`;
         }).join("")}
       </div>
-      `;
+      </div>`;
       explainAndCalcHtml = `
       <div class="card">
         <h3 data-toggle-box="explain" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
@@ -2156,6 +2267,8 @@ function renderTeamTab(){
           const alreadyQualifies = newCases>=2 && tier; // ถือว่า "สำเร็จแล้ว" เฉพาะจากยอดที่อนุมัติจริงเท่านั้น รอพิจารณายังไม่นับว่าผ่าน
           const hasSomeActivity = newCases>0 || qFyc>0 || casesPending>0 || fycPending>0;
           if (alreadyQualifies || !hasSomeActivity) return;
+          // ยังไม่มีผลงานรายใหม่เลย (ทั้งอนุมัติแล้วและรอพิจารณา) = ไม่นับการแข่งขัน ไม่ต้องแจ้งเตือน แม้จะมี FYC จากงวดต่อเนื่อง
+          if (newCases===0 && casesPending===0) return;
           // ประมาณการรางวัล คิดจาก FYC รวมทั้งที่อนุมัติแล้วและรออนุมัติ เพื่อให้ UM เห็นว่าถ้าอนุมัติของที่ค้างอยู่ครบ จะขยับไปถึงระดับไหน
           const fycCombined = qFyc + fycPending;
           const estTier = TEAM_BUILDING_TIERS.find(t=>fycCombined>=t.minFyc) || TEAM_BUILDING_TIERS[TEAM_BUILDING_TIERS.length-1];
@@ -2433,37 +2546,7 @@ function renderTeamTab(){
       </div>`;
     })()}
 
-    ${(()=>{
-      const now = new Date();
-      const cardList = names.map(name=>{
-        const ag = state.agents[name];
-        const exp = ag.license?.cardExpiryDate;
-        if (!exp) return null;
-        const expDate = new Date(exp+"T00:00:00");
-        const daysLeft = Math.ceil((expDate-now)/86400000);
-        return { name, expDate, daysLeft, ri: renewalInfo(ag.license) };
-      }).filter(x=>x).sort((a,b)=>a.daysLeft-b.daysLeft);
-      if (!cardList.length) return '';
-      return `<div class="card">
-        <h3 data-toggle-box="cardExpiry" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-          <span>🪪 บัตรตัวแทนทั้งทีม (เรียงตามความเร่งด่วน)</span>
-          <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.cardExpiry?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
-        </h3>
-        <p class="sub">บัตรหมดอายุ = ขายไม่ได้ กระทบ CFYC ทั้งทีมโดยตรง — เตือนอบรมต่อบัตรตั้งแต่ ${RENEWAL_WARN_DAYS} วันก่อนหมดอายุ</p>
-        ${collapsedBoxes.cardExpiry?'':cardList.map(c=>{
-          const urgent = c.daysLeft<=30;
-          const expired = c.daysLeft<0;
-          const color = expired?'var(--bad)':urgent?'var(--bad)':c.daysLeft<=60?'var(--gold)':'var(--muted)';
-          return `<div data-switch-agent="${esc(c.name)}" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #123F6B0D;cursor:pointer;">
-            <span><span style="font-weight:600;color:var(--navy);font-size:18px;">${esc(c.name)}</span>${c.ri && c.ri.stage!=='ok'?`<div style="font-size:13px;">${renewalShort(c.ri)}</div>`:''}</span>
-            <span style="text-align:right;">
-              <div style="color:${color};font-weight:700;font-size:17px;">${expired?'❌ หมดอายุแล้ว':urgent?`🔴 เหลือ ${c.daysLeft} วัน`:`เหลือ ${c.daysLeft} วัน`}</div>
-              <div style="color:var(--muted);font-size:14px;">${fmtTH(c.expDate,{day:"numeric",month:"short",year:"numeric"})}</div>
-            </span>
-          </div>`;
-        }).join("")}
-      </div>`;
-    })()}
+    <!-- กล่องบัตรตัวแทนทั้งทีม ย้ายไปอยู่แท็บ "จัดการตัวแทน" แล้ว -->
 
     ${renderCoachingCard(names)}
 
@@ -2610,7 +2693,8 @@ function renderTeamTab(){
     </div>
   `;
 }
-function generatePrintReport(){
+function generatePrintReport(){ return withDueView(__generatePrintReportRaw); }
+function __generatePrintReportRaw(){
   const name = state.currentAgent;
   const ag = agent();
   const entries = effectiveEntries(ag.entries);
@@ -2634,7 +2718,7 @@ function generatePrintReport(){
     return { q: r.q, count: r.count, fyc: r.fyc, qualifies: r.qualifies, bReward };
   });
   const annualPersistKey = `annual-${selYear}`;
-  const annualPersist = ag.persistQuarterly[annualPersistKey] ?? 90;
+  const annualPersist = ag.persistQuarterly[annualPersistKey] ?? 80;
   const annualBand = annualPersist>=90?'high':annualPersist>=85?'mid':'low';
   const annualBonusPct = annualBonusGate ? annualPct(annualFYC, annualBand) : 0;
   const annualBonusGross = annualBonusGate ? (annualFYC*annualBonusPct)/100 : 0;
@@ -2733,7 +2817,7 @@ function generatePrintReport(){
 
 function renderSpecialEventsSection(entries){
   const thDate = (iso)=> fmtTH(new Date(iso+"T00:00:00"),{day:"numeric",month:"short",year:"numeric"});
-  const eventsThisYear = SPECIAL_EVENTS.filter(ev=>{
+  const eventsThisYear = evList().filter(ev=>{
     const s = new Date(ev.start+"T00:00:00"), e = new Date(ev.end+"T00:00:00");
     return s.getFullYear()===selYear || e.getFullYear()===selYear;
   });
@@ -2798,6 +2882,8 @@ const THAI_WEEKDAY_NAMES = ["อา","จ","อ","พ","พฤ","ศ","ส"];
 
 /* ================= HELPERS ================= */
 const THB = n => Math.floor(n||0).toLocaleString("th-TH");
+// ยอดที่ "ขาด" ปัดขึ้นเสมอ (ขาด 0.50 บาทต้องไม่โชว์ว่าขาด 0)
+const THBC = n => { n=n||0; if (n>0 && n<1) return n.toFixed(2); return Math.ceil(n).toLocaleString("th-TH"); };
 const toBE = y => y + 543;
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
@@ -2948,9 +3034,11 @@ function getQuarter(dateStr){
 function monthKey(dateStr){ const d=D(dateStr); return `${d.getFullYear()}-${d.getMonth()}`; }
 function monthsOfQuarter(year,q){ const startM=(q-1)*3; return [0,1,2].map(i=>`${year}-${startM+i}`); }
 
-function quarterlyPct(fyc){ const t=QUARTERLY_TIERS.find(t=>fyc>=t.min && fyc<=t.max); return t?t.pct:0; }
+// หาขั้นจาก "ขั้นต่ำ ≤ FYC" เท่านั้น — ต่ำกว่าเกณฑ์แม้ 50 สตางค์ = ไม่ได้ · ไม่มีช่องว่างระหว่างขั้นเวลามีเศษสตางค์
+function tierIdxByMin(arr, fyc){ let idx=-1; for (let i=0;i<arr.length;i++) if ((fyc||0)>=arr[i].min) idx=i; return idx; }
+function quarterlyPct(fyc){ const i=tierIdxByMin(QUARTERLY_TIERS, fyc); return i>=0?QUARTERLY_TIERS[i].pct:0; }
 function annualPct(fyc, band){
-  const idx = ANNUAL_TIER_RANGES.findIndex(r=>fyc>=r.min && fyc<=r.max);
+  const idx = tierIdxByMin(ANNUAL_TIER_RANGES, fyc);
   return idx===-1 ? 0 : ANNUAL_BANDS[band].pct[idx];
 }
 
@@ -3033,7 +3121,9 @@ let mainAppState = null; // เก็บ state จริงของพี่เ
 let activeTeamUmName = null; // ถ้าไม่ใช่ null แปลว่ากำลังอยู่ในบริบทของ UM คนอื่น (state ตอนนี้ชี้ไปที่ข้อมูลของ UM คนนั้นแทน)
 let addTeamUmMode = false;
 let newTeamUmNameInput = "";
-let collapsedBoxes = { agentComp:false, allUmDash:false, explain:true, monthlyCalc:true, newAgent:true, compare:true, compareBars:true, pendingReport:false, cardExpiry:false, serviceFeeTimeline:true, umCompHistory:true, agentCompHistory:true, deadlines:false, coaching:true, recruits:true, programs:false };
+// เปิดแอปใหม่ทุกครั้ง = ย่อทุกกล่องไว้ก่อน (กล่องที่ไม่มีในรายการก็ถือว่าย่อ) — แตะหัวข้อเพื่อขยาย/ย่อ
+let collapsedBoxes = new Proxy({}, { get:(t,k)=> (k in t) ? t[k] : true });
+let genericCollapsed = {}; // กล่องในแท็บ UM ที่ไม่มีปุ่มย่อของตัวเอง: key = ชื่อหัวข้อ, ค่าเริ่มต้น = ย่อ
 let openCoachAgent = null;
 let coachDraft = { date: "", note: "", followUp: "" };
 let recruitDraft = { name: "", phone: "" }; // ย่อไว้ตั้งแต่แรก กดหัวข้อเพื่อขยายดูรายละเอียด (pendingReport, cardExpiry เปิดไว้ก่อน เพราะเป็นเรื่องที่ต้องรีบดู)
@@ -3088,7 +3178,7 @@ function loadState(){
   }catch(e){ return JSON.parse(JSON.stringify(DEFAULT_STATE)); }
 }
 /* ===== IndexedDB — พื้นที่เก็บใหญ่กว่า localStorage มาก (หลายร้อย MB ขึ้นไป) ===== */
-const IDB_NAME = "ped-dashboard", IDB_STORE = "kv";
+const IDB_NAME = IS_AGENT_APP ? "ped-agent" : "ped-dashboard", IDB_STORE = "kv";
 let __idbP = null, __useIdb = false, __booted = false;
 const metaCache = {};
 function idbOpen(){
@@ -3108,7 +3198,7 @@ function idbPut(key,val){ return idbOpen().then(db=>new Promise((res,rej)=>{ con
 function setMeta(k,v){
   metaCache[k] = v;
   if (__useIdb) idbPut("meta", {...metaCache}).catch(()=>{});
-  else { try{ localStorage.setItem("ped-dashboard-meta", JSON.stringify(metaCache)); }catch(e){} }
+  else { try{ localStorage.setItem(META_KEY, JSON.stringify(metaCache)); }catch(e){} }
 }
 function rootStateForSave(){
   if (activeTeamUmName && mainAppState){ mainAppState.teamUMs[activeTeamUmName] = state; return mainAppState; }
@@ -3191,11 +3281,33 @@ function formatThousands(raw){
 function stripCommas(v){ return v.replace(/,/g,""); }
 
 /* ================= RENDER ROOT ================= */
+// ===== นับผลงานตามจริง: งวดที่ยังไม่ถึงกำหนด (วันที่ในอนาคต) ยังไม่นับเป็นผลงาน =====
+// ระหว่างคำนวณ/วาดหน้าจอ จะสลับ entries ของทุกตัวแทนให้เหลือเฉพาะงวดที่ถึงกำหนดแล้ว แล้วคืนค่าเดิมทันทีหลังวาดเสร็จ (ข้อมูลจริงไม่ถูกแก้)
+let __dueOrig = null;
+function allAgentObjs(){
+  const out = new Set();
+  [state, mainAppState].forEach(root=>{
+    if (!root) return;
+    Object.values(root.agents||{}).forEach(a=>a&&out.add(a));
+    Object.values(root.teamUMs||{}).forEach(u=>{ if (u&&u.agents) Object.values(u.agents).forEach(a=>a&&out.add(a)); });
+  });
+  return out;
+}
+function fullEntries(ag){ return (__dueOrig && __dueOrig.get(ag)) || (ag&&ag.entries) || []; }
+function withDueView(fn){
+  if (__dueOrig) return fn();
+  const today = todayIso();
+  __dueOrig = new Map();
+  allAgentObjs().forEach(ag=>{ const all = ag.entries||[]; __dueOrig.set(ag, all); ag.entries = all.filter(e=>String(e.date)<=today); });
+  try { return fn(); }
+  finally { __dueOrig.forEach((all,ag)=>{ ag.entries = all; }); __dueOrig = null; }
+}
 function render(){
   __rc = new WeakMap();
-  try { __renderInner(); } finally { __rc = null; }
+  try { withDueView(__renderInner); } finally { __rc = null; }
 }
 function __renderInner(){
+  if (IS_AGENT_APP) activeSection = "agent";
   if (activeTeamUmName && activeSection!=="um") activeSection = "um"; // อยู่ในบริบท UM คนอื่น ต้องเห็นแค่แถบ UM เท่านั้น
   renderTeamUmBanner();
   renderAgentPicker();
@@ -3204,16 +3316,17 @@ function __renderInner(){
   const c = document.getElementById("tab-content");
   let body = "";
   if (activeSection==="um") body = renderBackupReminder() + renderTeamTab();
-  else if (activeSection==="manage") body = renderManageAgentsTab();
+  else if (activeSection==="manage") body = renderBackupReminder() + renderManageAgentsTab();
   else if (activeSection==="teamUm") body = renderBackupReminder() + renderTeamUmTab();
   else if (activeTab==="goals") body = renderGoalsTab();
   else if (activeTab==="entry") body = renderEntryTab();
   else if (activeTab==="competitions") body = renderCompetitionsTab();
-  c.innerHTML = renderAskBox() + body;
+  c.innerHTML = IS_AGENT_APP ? (renderBackupReminder() + body) : (renderAskBox() + body);
   bindEvents();
+  if (activeSection==="um") enhanceCollapsibleCards(c);
   positionOpenCalendars();
 }
-// เตือนแบ็กอัพทุก 7 วัน (เฉพาะหน้าของตัวเอง ไม่แสดงตอนดู UM คนอื่น)
+// เตือนแบ็กอัพทุก 3 วัน (เฉพาะหน้าของตัวเอง ไม่แสดงตอนดู UM คนอื่น)
 let backupReminderSnoozed = false;
 function renderBackupReminder(){
   if (activeTeamUmName || backupReminderSnoozed) return "";
@@ -3222,16 +3335,57 @@ function renderBackupReminder(){
   if (!hasData) return "";
   const last = metaCache.lastBackupAt ? new Date(metaCache.lastBackupAt) : null;
   const days = last ? Math.floor((Date.now()-last.getTime())/86400000) : null;
-  if (days!==null && days<7) return "";
+  if (days!==null && days<3) return ""; // เตือนทุก 3 วัน (เดิม 7 วัน)
   const msg = days===null ? "ยังไม่เคยแบ็กอัพข้อมูลเลย" : `ไม่ได้แบ็กอัพมา ${days} วันแล้ว (ล่าสุด ${fmtTH(last,{day:"numeric",month:"short",year:"numeric"})})`;
   return `<div style="background:#FFF4E5;border:1px solid #F5B25B;border-radius:10px;padding:10px 12px;margin-bottom:12px;">
     <div style="font-weight:700;color:#8A4B00;">💾 ${msg}</div>
-    <div style="font-size:14px;color:#8A4B00;margin-top:2px;">ถ้าล้างเบราว์เซอร์ เปลี่ยนมือถือ หรือเครื่องหาย ข้อมูลทุกตัวแทนและทุก UM จะหายหมด — ควรเก็บไฟล์ไว้ใน Google Drive/LINE Keep ทุกสัปดาห์</div>
+    <div style="font-size:14px;color:#8A4B00;margin-top:2px;">ถ้าล้างเบราว์เซอร์ เปลี่ยนมือถือ หรือเครื่องหาย ข้อมูลทุกตัวแทนและทุก UM จะหายหมด — ควรเก็บไฟล์ไว้ใน Google Drive/LINE Keep ทุก 3 วัน</div>
     <div style="display:flex;gap:8px;margin-top:8px;">
       <button class="btn-primary" id="btn-backup-now">📤 แบ็กอัพเลย</button>
       <button class="btn-ghost" id="btn-backup-later">ไว้ทีหลัง</button>
     </div>
   </div>`;
+}
+
+// ===== ทำให้ทุกกล่องในแท็บ UM ย่อ/ขยายได้ด้วยการแตะหัวข้อ =====
+function gcKey(h){ return 'gc:'+(h.textContent||'').replace(/[\d,.\s()\-–:·%฿\/]/g,'').slice(0,40); }
+function enhanceCollapsibleCards(root){
+  root.querySelectorAll('.card').forEach(card=>{
+    if (card.classList.contains('ask-card')) return;
+    const tb = card.querySelector('[data-toggle-box]');
+    if (tb){ // กล่องที่มีปุ่มย่อของตัวเองอยู่แล้ว — ตอนย่อ ซ่อนคำอธิบายที่ค้างอยู่ด้วย
+      if (collapsedBoxes[tb.dataset.toggleBox]) Array.from(tb.parentElement.children).forEach(sib=>{ if (sib!==tb && !sib.classList.contains('grid-bg')) sib.style.display='none'; });
+      return;
+    }
+    const h = card.querySelector('h3'); if (!h) return;
+    // หัวข้อที่อยู่ในแถวหัว (flex เล็กๆ) ให้ถือทั้งแถวเป็นหัว
+    let head = h;
+    const par = h.parentElement;
+    if (par && par!==card && par.children.length<=3 && !par.querySelector('table,input,select,textarea,.card')) head = par;
+    const key = gcKey(h);
+    const closed = (key in genericCollapsed) ? genericCollapsed[key] : true;
+    h.style.cursor = 'pointer';
+    if (!h.querySelector('.gc-ind')){
+      const ind = document.createElement('span');
+      ind.className = 'gc-ind';
+      ind.style.cssText = 'font-size:16px;font-weight:400;margin-left:8px;opacity:.7;white-space:nowrap;';
+      ind.textContent = closed ? '▶ แตะเพื่อดู' : '▼ ย่อ';
+      h.appendChild(ind);
+    }
+    if (closed){
+      let node = head;
+      while (node && node!==card){
+        const parent = node.parentElement;
+        Array.from(parent.children).forEach(sib=>{ if (sib!==node && !sib.classList.contains('grid-bg')) sib.style.display='none'; });
+        node = parent;
+      }
+      h.style.marginBottom = '0';
+    }
+    h.onclick = (ev)=>{
+      if (ev.target.closest('button,input,select,a,label')) return;
+      genericCollapsed[key] = !closed; render();
+    };
+  });
 }
 function renderTeamUmBanner(){
   let banner = document.getElementById("team-um-banner");
@@ -3270,6 +3424,12 @@ function renderAgentPicker(){
   const container = document.getElementById("agent-picker");
   if (activeSection!=="agent"){ container.style.display = "none"; container.innerHTML = ""; return; }
   container.style.display = "";
+  if (IS_AGENT_APP){
+    const sd = agent().competitions?.firstSaleDate || "";
+    container.innerHTML = `<div class="agent-picker"><span class="lbl">👤 ตัวแทน:</span> <b style="color:var(--navy);font-size:19px;">${esc(state.currentAgent)}</b> <button class="icon-btn" data-rename-agent="${esc(state.currentAgent)}" title="เปลี่ยนชื่อ">✏️</button></div>
+    <div style="font-size:15px;color:var(--muted);margin-top:4px;">📅 วันที่มีผลงานขึ้นแรก: ${sd?fmtTH(new Date(sd+"T00:00:00"),{day:"numeric",month:"short",year:"numeric"}):"ยังไม่ระบุ (ตั้งได้ที่แท็บผลงาน → Joining Bonus)"}</div>`;
+    return;
+  }
   const names = Object.keys(state.agents).sort((a,b)=>getAgentYearFyc(b,selYear)-getAgentYearFyc(a,selYear));
   const options = names.map(n=>`<option value="${esc(n)}" ${n===state.currentAgent?"selected":""}>${esc(n)}</option>`).join("");
   const startDate = agent().competitions?.firstSaleDate || "";
@@ -3288,6 +3448,7 @@ function renderTabNav(){
     : [["um","⭐ ทีมของฉัน"],["manage","👥 จัดการตัวแทน"],["agent","👤 ตัวแทน"],["teamUm","🧑‍💼 ทีม UM"]];
   let html = sections.map(([id,label])=>
     `<button data-section="${id}" class="${activeSection===id?'active':''}">${label}</button>`).join("");
+  if (IS_AGENT_APP) html = "";
   if (activeSection==="agent"){
     const subItems = [["goals","🎯 เป้าหมาย"],["entry","📋 บันทึกผลงาน"],["competitions","🏆 ผลงาน"]];
     html += `<div class="sub-tabs">${subItems.map(([id,label])=>
@@ -3483,49 +3644,7 @@ function renderGoalsTab(){
   })();
 
   return `
-    <div class="card">
-      <h3>🪪 ข้อมูลบัตรตัวแทนและการอบรม</h3>
-      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
-        <label class="field" style="flex:1;min-width:150px;"><span>รหัสตัวแทน (Code)</span>
-          <input type="text" id="license-agent-code" value="${esc(agent().license.agentCode)}">
-        </label>
-        <label class="field" style="flex:1;min-width:150px;"><span>เลขที่บัตรตัวแทน</span>
-          <input type="text" id="license-card-number" value="${esc(agent().license.cardNumber)}">
-        </label>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
-        <label class="field" style="flex:1;min-width:150px;"><span>วันที่ออกบัตร</span>
-          ${renderDateInput("license-issue", agent().license.cardIssueDate)}
-        </label>
-        <label class="field" style="flex:1;min-width:150px;"><span>วันหมดอายุบัตร</span>
-          ${renderDateInput("license-expiry", agent().license.cardExpiryDate)}
-        </label>
-      </div>
-      ${renewalAlertHtml(renewalInfo(agent().license))}
-
-      <div style="border-top:1px dashed #123F6B22;padding-top:12px;">
-        <div id="training-toggle" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-weight:600;color:var(--navy);font-size:18px;">📚 ประวัติการอบรม (${agent().license.trainings.length} รายการ)</span>
-          <span id="training-arrow" style="font-size:14px;color:var(--muted);">${trainingSectionOpen?'▲ ซ่อน':'▼ แตะเพื่อดู'}</span>
-        </div>
-        <div id="training-content" style="display:${trainingSectionOpen?'block':'none'};margin-top:10px;">
-          ${agent().license.trainings.length?agent().license.trainings.map((t,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #123F6B0D;">
-            <div>
-              <div style="font-weight:600;color:var(--navy-deep);">${esc(t.courseName)} <span class="renew-chip ${isRenewalTraining(t)?'on':''}" data-toggle-renewal="${i}">🔁 อบรมต่อบัตร</span></div>
-              <div style="font-size:14px;color:var(--muted);">${t.trainingDate?fmtTH(new Date(t.trainingDate+"T00:00:00"),{day:"numeric",month:"short",year:"numeric"}):'ไม่ระบุวันที่'}</div>
-            </div>
-            <span data-remove-training="${i}" style="color:var(--bad);cursor:pointer;font-size:20px;padding:4px 8px;">×</span>
-          </div>`).join(""):`<div class="empty" style="padding:8px 0;">ยังไม่มีประวัติการอบรม</div>`}
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:flex-start;">
-            <input type="text" id="new-training-name" placeholder="ชื่อหลักสูตร" value="${esc(newTrainingDraft.courseName)}" style="flex:2;min-width:150px;padding:6px 8px;">
-            <div style="flex:1;min-width:150px;">${renderDateInput("new-training", newTrainingDraft.date, true)}</div>
-            <label style="display:flex;align-items:center;gap:6px;font-size:16px;white-space:nowrap;"><input type="checkbox" id="new-training-renewal" ${newTrainingDraft.renewal?'checked':''}> อบรมต่อบัตร</label>
-            <button id="add-training-btn" class="btn" style="padding:6px 14px;">+ เพิ่ม</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
+    ${IS_AGENT_APP?`<div class="card"><h3>🪪 ข้อมูลบัตรตัวแทนและการอบรม</h3>${renderLicenseBlockHtml()}</div>`:''}
     <div class="card dark">
       <div class="grid-bg"></div>
       <div style="position:relative;">
@@ -3613,13 +3732,19 @@ function renderBillingPreviewHtml(){
   if (rawFyc<=0) return "";
   const schedule = buildInstallmentSchedule(entryForm.billing, rawFyc);
   const total = schedule.reduce((s,x)=>s+x.amount,0);
+  const baseDate = entryForm.date || todayIso();
+  const schedRows = schedule.map((x,i)=>`<span style="display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;border-radius:6px;background:#123F6B0D;">${fmtTH(new Date(addMonthsToDate(baseDate,x.offset)+"T00:00:00"),{month:"short",year:"2-digit"})} ${THB(x.amount)}</span>`).join('');
   if (entryForm.billing==="monthly"){
-    return `<div style="font-size:17.25px;color:var(--muted);margin-top:5px;line-height:1.6;">
-      เก็บล่วงหน้าเดือนแรก ${THB(rawFyc)} (2 เดือน) เว้น 1 เดือน จากนั้นเก็บทุกเดือนๆ ละ ${THB(rawFyc/2)} รวม ${schedule.length} งวด ตลอดปี ${THB(total)}
+    return `<div style="font-size:16px;color:var(--muted);margin-top:5px;line-height:1.6;">
+      งวดแรกเก็บล่วงหน้า 2 เดือน = <b>${THB(rawFyc)}</b> (ตัวเลขที่กรอก ต้องเป็น FYC ของ 2 เดือนรวมกัน) · เว้น 1 เดือน · จากนั้นเดือนละ ${THB(rawFyc/2)} · รวม ${schedule.length} งวด ${THB(total)}
+      <div style="margin-top:4px;">${schedRows}</div>
+      <div style="font-size:14px;">งวดที่ยังไม่ถึงเดือน จะยังไม่นับเป็นผลงานจนกว่าจะถึงเดือนนั้น</div>
     </div>`;
   }
   return `<div style="font-size:17.25px;color:var(--muted);margin-top:5px;">
     บันทึก ${mode.installments} งวด งวดละ ${THB(rawFyc)} ทุก ${mode.intervalMonths} เดือน รวมทั้งหมด ${THB(total)}
+    <div style="margin-top:4px;font-size:16px;">${schedRows}</div>
+    <div style="font-size:14px;">งวดที่ยังไม่ถึงเดือน จะยังไม่นับเป็นผลงานจนกว่าจะถึงเดือนนั้น</div>
   </div>`;
 }
 function billingModeOf(e){
@@ -3632,7 +3757,10 @@ function billingModeOf(e){
   return "annual";
 }
 function renderEntryTab(){
-  const entries = getYearEntries(); // ทั้งหมด รวมที่รอพิจารณาด้วย — ใช้แสดงตารางครบทุกแถว
+  const allAg = fullEntries(agent()); // รวมงวดที่ยังไม่ถึงกำหนดด้วย เพื่อแสดงตารางครบ (แต่ไม่นับในยอดรวม)
+  const todayStr = todayIso();
+  const isFutureE = (e)=>String(e.date)>todayStr;
+  const entries = allAg.filter(e=>D(e.date).getFullYear()===selYear); // ทั้งหมด รวมที่รอพิจารณาด้วย — ใช้แสดงตารางครบทุกแถว
   const sorted = [...entries].sort((a,b)=>D(b.date)-D(a.date));
 
   // ค้นหาจากหมายเหตุ (ชื่อลูกค้า/เลขกรมธรรม์) หรือชื่อเดือน (ไทย เต็มหรือย่อ) — พิมพ์ชื่อเดือนจะกรองเฉพาะเดือนนั้น ไม่ใช่ค้นข้อความ
@@ -3647,8 +3775,8 @@ function renderEntryTab(){
   // ยอดรวมทุกตัว (ที่แสดงบนสุดและแถวรวมท้ายตาราง) คำนวณจากผลลัพธ์ที่ค้นหา/กรองอยู่ตอนนี้เท่านั้น ไม่ใช่ทั้งปีเสมอไป
   // สำคัญ: ต้องเช็คสถานะอนุมัติจาก "ข้อมูลทั้งหมดของตัวแทน" ก่อน (เจอต้นฉบับแน่นอนไม่ว่าจะอยู่เดือนไหน) แล้วค่อยกรองลงมาเฉพาะผลค้นหาทีหลัง
   // ถ้ากรองก่อนแล้วค่อยเช็ค (เหมือนที่เคยทำ) งวดต่อเนื่องที่ต้นฉบับอยู่คนละเดือนกับที่ค้นหา จะหาต้นฉบับไม่เจอ แล้วตกหล่นจากยอดรวมไปอย่างผิดๆ
-  const effectiveIdSet = new Set(effectiveEntries(agent().entries).map(e=>e.id));
-  const effEntries = filtered.filter(e=>effectiveIdSet.has(e.id)); // เฉพาะที่นับผลจริงแล้ว ภายในผลลัพธ์ที่กรองอยู่ — ใช้สรุปยอดด้านบน
+  const effectiveIdSet = new Set(effectiveEntries(allAg).map(e=>e.id));
+  const effEntries = filtered.filter(e=>effectiveIdSet.has(e.id) && !isFutureE(e)); // งวดที่ยังไม่ถึงกำหนดไม่นับ // เฉพาะที่นับผลจริงแล้ว ภายในผลลัพธ์ที่กรองอยู่ — ใช้สรุปยอดด้านบน
   const totalFYC = effEntries.reduce((s,e)=>s+e.fyc,0);
   const originCount = effEntries.filter(isOrigin).length;
 
@@ -3674,7 +3802,7 @@ function renderEntryTab(){
     </tr>`;
     // เช็คสถานะ "รอพิจารณา" ที่แท้จริงของแต่ละงวด — งวดต่อเนื่องอิงตามงวดต้นฉบับเสมอ (ไม่มีสถานะของตัวเอง)
     const originPendingLookup = {};
-    agent().entries.forEach(en=>{ if (isOrigin(en)) originPendingLookup[en.policyId] = !!en.pending; });
+    allAg.forEach(en=>{ if (isOrigin(en)) originPendingLookup[en.policyId] = !!en.pending; });
     const effectivePendingOf = (en)=> (en.policyId in originPendingLookup) ? originPendingLookup[en.policyId] : !!en.pending;
     rows = `<div style="overflow-x:auto"><table>
       <thead><tr><th>วันที่</th><th>หมายเหตุ</th><th style="text-align:right">รายปี</th><th style="text-align:right">ราย 6 เดือน</th><th style="text-align:right">ราย 3 เดือน</th><th style="text-align:right">รายเดือน</th><th style="text-align:center">อนุมัติ</th><th></th></tr></thead>
@@ -3696,8 +3824,9 @@ function renderEntryTab(){
         const origin = isOrigin(e);
         const effPending = effectivePendingOf(e);
         if (!origin && effPending) return ''; // งวดต่อเนื่อง ยังไม่โผล่ในตารางเลยจนกว่าต้นฉบับจะอนุมัติ
-        return `<tr style="${effPending?'background:#FBF6E844;':''}">
-          <td style="${origin?'color:var(--navy);font-weight:600;':''}${effPending?'opacity:0.7;':''}">${fmtTH(D(e.date),{day:"numeric",month:"long",year:"numeric"})}</td>
+        const fut = isFutureE(e);
+        return `<tr style="${effPending?'background:#FBF6E844;':''}${fut?'opacity:0.55;':''}">
+          <td style="${origin?'color:var(--navy);font-weight:600;':''}${effPending?'opacity:0.7;':''}">${fmtTH(D(e.date),{day:"numeric",month:"long",year:"numeric"})}${fut?'<div style="font-size:13px;color:var(--muted);font-weight:400;">⏳ ยังไม่ถึงงวด (ยังไม่นับ)</div>':''}</td>
           <td style="color:var(--muted)">${esc(e.note)||"—"}</td>
           ${cell("annual")}${cell("semiannual")}${cell("quarterly")}${cell("monthly")}
           <td style="text-align:center;">
@@ -3716,7 +3845,7 @@ function renderEntryTab(){
     </table></div>`;
   }
 
-  const billingLabel = entryForm.billing==="" ? "ค่าคอมมิชชั่น" : (entryForm.billing==="annual" ? "ค่าคอมมิชชั่นปีแรก (FYC)" : "ค่าคอมมิชชั่นต่องวด");
+  const billingLabel = entryForm.billing==="" ? "ค่าคอมมิชชั่น" : (entryForm.billing==="annual" ? "ค่าคอมมิชชั่นปีแรก (FYC)" : entryForm.billing==="monthly" ? "FYC งวดแรก (รวม 2 เดือน)" : "ค่าคอมมิชชั่นต่องวด");
   const radiosHtml = BILLING_MODES.map(m=>{
     const sel = entryForm.billing===m.value;
     return `<label style="display:flex;align-items:center;justify-content:center;cursor:pointer;padding:10px 2px;border-radius:8px;border:1.5px solid ${sel?'var(--good)':'#123F6B22'};background:${sel?'var(--good)':'#fff'};font-weight:${sel?700:400};font-size:14px;transition:all .12s;flex:1;min-width:0;text-align:center;">
@@ -3756,7 +3885,7 @@ function renderEntryTab(){
         <span style="font-size:18.75px;color:var(--muted);">${originCount} ราย · FYC รวม <b style="color:var(--navy)">${THB(totalFYC)}</b></span>
       </div>
       ${q?`<p style="font-size:14px;color:var(--gold);margin:-6px 0 4px;font-weight:600;">🔍 ยอดด้านบนเป็นยอดเฉพาะผลลัพธ์ที่ค้นหาอยู่ ไม่ใช่ทั้งปี</p>`:''}
-      <p style="font-size:15px;color:var(--muted);margin:-4px 0 10px;">วันที่สีน้ำเงิน = วันที่ลูกค้าชำระเบี้ยจริง (งวดแรก) ส่วนงวดที่เข้าต่อเนื่องเป็นสีปกติ</p>
+      <p style="font-size:15px;color:var(--muted);margin:-4px 0 10px;">วันที่สีน้ำเงิน = วันที่ลูกค้าชำระเบี้ยจริง (งวดแรก) ส่วนงวดที่เข้าต่อเนื่องเป็นสีปกติ · แถวจาง = งวดที่ยังไม่ถึงกำหนด ยังไม่นับเป็นผลงานจนกว่าจะถึงเดือนนั้น</p>
       ${sorted.length>0?`<div style="margin-bottom:10px;position:relative;">
         <input type="text" id="entry-search" placeholder="🔍 ค้นหาจากหมายเหตุ หรือชื่อเดือน (เช่น สิงหา)" value="${esc(entrySearchQuery)}" style="width:100%;box-sizing:border-box;padding:8px 34px 8px 12px;">
         ${entrySearchQuery?`<span id="entry-search-clear" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:18px;">✕</span>`:''}
@@ -3829,7 +3958,7 @@ function renderCompetitionsTab(){
   });
   // โบนัสปี (เงินรางวัลตัวแทน ตาราง 4) สุทธิหลังหักส่วนที่จ่ายรายไตรมาสแล้ว
   const annualPersistKey = `annual-${selYear}`;
-  const annualPersist = agent().persistQuarterly[annualPersistKey] ?? 90;
+  const annualPersist = agent().persistQuarterly[annualPersistKey] ?? 80;
   const annualBand = annualPersist>=90?'high':annualPersist>=85?'mid':'low';
   const annualBonusPct = annualBonusGate ? annualPct(annualFYC, annualBand) : 0;
   const annualBonusGross = annualBonusGate ? (annualFYC*annualBonusPct)/100 : 0;
@@ -4096,6 +4225,7 @@ function renderCompetitionsTab(){
     </div>
 
     ${renderSpecialEventsSection(entries)}
+    ${IS_AGENT_APP?renderEventsSettingsCard():""}
 
     <div class="card">
       <h3>การแข่งขันคุณวุฒิไตรมาส ประจำปี ${toBE(selYear)}</h3>
@@ -4257,6 +4387,26 @@ function bindEvents(){
       saveState(); render();
     };
   });
+  document.querySelectorAll("[data-ev-name]").forEach(el=>{
+    el.onfocus = (e)=>e.target.select();
+    el.onchange = ()=>{ const ev=evAll()[Number(el.dataset.evName)]; if (!ev) return; ev.name = el.value.trim()||'การแข่งขัน'; saveState(); render(); };
+  });
+  document.querySelectorAll("[data-ev-tiers]").forEach(el=>{
+    el.onfocus = (e)=>e.target.select();
+    el.onchange = ()=>{ const ev=evAll()[Number(el.dataset.evTiers)]; if (!ev) return; ev.tiers = (el.value.match(/\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?/g)||[]).map(x=>Number(x.replace(/,/g,''))).filter(x=>x>0).sort((a,b)=>a-b); saveState(); render(); };
+  });
+  document.querySelectorAll("[data-ev-del]").forEach(el=>{
+    el.onclick = ()=>{ const i=Number(el.dataset.evDel), arr=evAll(); if (!arr[i] || !confirm(`ลบการแข่งขัน "${arr[i].name}" ใช่ไหม?`)) return; arr.splice(i,1); saveState(); render(); };
+  });
+  const evAdd = document.getElementById("ev-add");
+  if (evAdd) evAdd.onclick = ()=>{ const t=todayIso(); evAll().push({ key:'ev_'+Date.now(), name:'การแข่งขันใหม่', start:t, end:t, tiers:[] }); saveState(); render(); };
+  document.querySelectorAll("[data-coach-done]").forEach(el=>{
+    el.onchange = ()=>{
+      const [n,i] = el.dataset.coachDone.split("|"); const ag = state.agents[decodeURIComponent(n)];
+      if (!ag || !ag.coaching || !ag.coaching[Number(i)]) return;
+      ag.coaching[Number(i)].done = el.checked; saveState(); render();
+    };
+  });
   document.querySelectorAll("[data-coach-del]").forEach(el=>{
     el.onclick = ()=>{
       const [n,i] = el.dataset.coachDel.split("|"); const ag = state.agents[decodeURIComponent(n)];
@@ -4291,6 +4441,16 @@ function bindEvents(){
   });
   document.querySelectorAll("[data-tier-toggle]").forEach(el=>{
     el.onclick = (ev)=>{ ev.stopPropagation(); const k=el.dataset.tierToggle; openTiers[k]=!openTiers[k]; render(); };
+  });
+  document.querySelectorAll("[data-growth-whatif]").forEach(inp=>{
+    inp.onfocus = (e)=>e.target.select();
+    inp.oninput = ()=>{
+      const k = inp.dataset.growthWhatif;
+      const f = formatThousands(inp.value); if (f!==inp.value) inp.value = f;
+      growthWhatIf[k] = inp.value;
+      const out = document.querySelector(`[data-growth-whatif-out="${CSS.escape(k)}"]`);
+      if (out) out.innerHTML = growthWhatIfText(Number(inp.dataset.base)||0, Number(inp.dataset.cfyc)||0, inp.value);
+    };
   });
   document.querySelectorAll("[data-toggle-box]").forEach(el=>{
     el.onclick = ()=>{
@@ -4447,7 +4607,7 @@ function bindEvents(){
     el.onclick = ()=>{ const n=el.dataset.switchAgentComp; if(!state.agents[n]) return; state.currentAgent=n; syncAgentFormState(); activeSection="agent"; activeTab="competitions"; saveState(); window.scrollTo(0,0); render(); };
   });
   document.querySelectorAll("[data-edit-license]").forEach(btn=>{
-    btn.onclick = (ev)=>{ ev.stopPropagation(); const n=btn.dataset.editLicense; editLicenseAgent = (editLicenseAgent===n)?null:n; closeAllCalendars(); render(); };
+    btn.onclick = (ev)=>{ ev.stopPropagation(); const n=btn.dataset.editLicense; editLicenseAgent = (editLicenseAgent===n)?null:n; if (editLicenseAgent && state.agents[n]){ state.currentAgent = n; syncAgentFormState(); trainingSectionOpen = true; saveState(); } closeAllCalendars(); render(); };
   });
   document.querySelectorAll("[data-mlic]").forEach(el=>{
     el.onblur = (e)=>{ const ag=state.agents[decodeURIComponent(el.dataset.agent)]; if(!ag) return; if(!ag.license) ag.license={cardIssueDate:"",cardExpiryDate:"",cardNumber:"",agentCode:"",trainings:[]}; if (ag.license[el.dataset.mlic]!==e.target.value){ ag.license[el.dataset.mlic]=e.target.value.trim(); saveState(); } };
@@ -4876,7 +5036,7 @@ function bindEvents(){
     const blob = new Blob([JSON.stringify(full)],{type:"application/json"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href=url; a.download=`ped-dashboard-backup-${todayIso()}.json`;
+    a.href=url; a.download=`${IS_AGENT_APP?'agent':'ped-dashboard'}-backup-${todayIso()}.json`;
     a.click(); setTimeout(()=>URL.revokeObjectURL(url), 1000);
     setMeta("lastBackupAt", new Date().toISOString());
     showToast("ดาวน์โหลดไฟล์แบ็กอัพแล้ว — อย่าลืมเก็บไว้ใน Drive/LINE Keep");
@@ -5128,6 +5288,7 @@ function getIsoForPicker(id){
   if (id==="license-expiry") return agent().license.cardExpiryDate;
   if (id.startsWith("mlic-exp|")){ const ag=state.agents[decodeURIComponent(id.slice(9))]; return ag&&ag.license?ag.license.cardExpiryDate:""; }
   if (id==="new-training") return newTrainingDraft.date;
+  if (id.startsWith("ev-start|") || id.startsWith("ev-end|")){ const ev=evAll()[Number(id.split("|")[1])]; return ev ? (id.startsWith("ev-start|")?ev.start:ev.end)||"" : ""; }
   if (id==="coach-date") return coachDraft.date || todayIso();
   if (id==="coach-follow") return coachDraft.followUp;
   if (id.startsWith("recruit-next|") || id.startsWith("recruit-card|")){ const r=(state.recruits||[]).find(x=>x.id===id.split("|")[1]); return r ? (id.startsWith("recruit-next|") ? r.nextDate : r.cardDate) || "" : ""; }
@@ -5147,6 +5308,7 @@ function setIsoForPicker(id, iso){
   else if (id==="license-expiry"){ agent().license.cardExpiryDate = iso; saveState(); }
   else if (id.startsWith("mlic-exp|")){ const ag=state.agents[decodeURIComponent(id.slice(9))]; if (ag){ if(!ag.license) ag.license={cardIssueDate:"",cardExpiryDate:"",cardNumber:"",agentCode:"",trainings:[]}; ag.license.cardExpiryDate = iso; saveState(); } }
   else if (id==="new-training"){ newTrainingDraft.date = iso; }
+  else if (id.startsWith("ev-start|") || id.startsWith("ev-end|")){ const ev=evAll()[Number(id.split("|")[1])]; if (ev){ if (id.startsWith("ev-start|")) ev.start = iso; else ev.end = iso; saveState(); } }
   else if (id==="coach-date"){ coachDraft.date = iso; }
   else if (id==="coach-follow"){ coachDraft.followUp = iso; }
   else if (id.startsWith("recruit-next|") || id.startsWith("recruit-card|")){ const r=(state.recruits||[]).find(x=>x.id===id.split("|")[1]); if (r){ if (id.startsWith("recruit-next|")) r.nextDate = iso; else r.cardDate = iso; saveState(); } }
@@ -5248,7 +5410,7 @@ function refreshInputsAfterLoad(){
 }
 async function boot(){
   try{
-    try{ Object.assign(metaCache, JSON.parse(localStorage.getItem("ped-dashboard-meta")||"{}")); }catch(e){}
+    try{ Object.assign(metaCache, JSON.parse(localStorage.getItem(META_KEY)||"{}")); }catch(e){}
     const saved = await idbGet(STORAGE_KEY);
     __useIdb = true;
     const meta = await idbGet("meta");
@@ -5260,7 +5422,7 @@ async function boot(){
       await idbPut(STORAGE_KEY, state);
       await idbPut("meta", {...metaCache});
       const check = await idbGet(STORAGE_KEY);
-      if (check && check.agents){ try{ localStorage.removeItem(STORAGE_KEY); localStorage.removeItem("ped-dashboard-meta"); }catch(e){} }
+      if (check && check.agents){ try{ localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(META_KEY); }catch(e){} }
     }
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
   }catch(e){ __useIdb = false; } // เบราว์เซอร์ไม่รองรับ/โหมดส่วนตัว — ใช้ localStorage แบบเดิม
