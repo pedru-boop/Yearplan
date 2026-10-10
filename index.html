@@ -14,8 +14,26 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<script>
+// ตั้งค่าการอ่าน (ขนาด/ความหนา/แบบอักษร) — ใช้ก่อนวาดหน้าจอ กันกระพริบ
+(function(){ let u={}; try{ u=JSON.parse(localStorage.getItem("ped-ui")||"{}"); }catch(e){}
+  const z={1:1,2:1.12,3:1.25,4:1.4}[u.size||2]||1.12, w={1:400,2:500,3:600}[u.weight||2]||500;
+  const h=document.documentElement; h.style.setProperty("--z",z); h.style.setProperty("--fw",w); if ((u.font||"mali")==="sarabun") h.classList.add("ff-sarabun"); })();
+</script>
 <style>
+  #app > nav.tabs, #app > main{zoom:var(--z,1.12);}
+  header.top .inner{padding-top:58px !important;}
+  body{font-weight:var(--fw,500);}
+  html.ff-sarabun body *:not(.mono){font-family:'Sarabun','Noto Sans Thai',sans-serif !important;}
+  /* ตัวหนังสือเล็ก (ตั้งไว้ในแต่ละจุด) ให้ใหญ่ขึ้นขั้นต่ำ อ่านง่ายสำหรับทุกวัย */
+  #app [style*="font-size:11px"],#app [style*="font-size:12px"],#app [style*="font-size:13px"]{font-size:14px !important;}
+  #app [style*="font-size:14px"]{font-size:15px !important;}
+  #ui-panel{position:fixed;left:0;right:0;bottom:0;z-index:100;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.25);padding:18px 18px 26px;font-family:'Sarabun','Noto Sans Thai',sans-serif;max-width:560px;margin:0 auto;}
+  #ui-panel .row{margin-bottom:14px;} #ui-panel .lab{font-size:18px;font-weight:700;color:#082238;margin-bottom:6px;}
+  #ui-panel .seg{display:flex;gap:6px;} #ui-panel .seg button{flex:1;padding:10px 4px;border-radius:10px;border:1.5px solid #123F6B33;background:#fff;font-size:17px;color:#082238;cursor:pointer;font-family:inherit;}
+  #ui-panel .seg button.on{background:#0F56B2;color:#fff;border-color:#0F56B2;font-weight:700;}
+  #ui-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:99;}
   :root{
     --navy:#0F56B2; --navy-deep:#082238; --gold:#4FAE74; --gold-soft:#9CE3B8;
     --cream:#E7F2FB; --card:#FFFFFF; --ink:#1B2430; --muted:#000000;
@@ -46,7 +64,7 @@
   main{max-width:1080px; margin:0 auto; padding:20px 20px 64px;}
   .year-picker{display:flex; align-items:center; gap:10px; margin:22px 0 8px;}
   .agent-picker{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:16px;}
-  .agent-picker span.lbl{font-size:19.5px; color:#6B7280; font-weight:600;}
+  .agent-picker span.lbl{font-size:19.5px; color:#4B5563; font-weight:600;}
   .agent-picker select{padding:6px 12px; color:var(--navy-deep); background:var(--card); font-weight:600;}
   .add-agent-form{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;}
   .year-picker span{font-size:19.5px; color:var(--muted); font-weight:600;}
@@ -64,7 +82,7 @@
   .card h3{font-size:27px; color:var(--navy); font-weight:600; margin-bottom:4px;}
   h3{color:var(--navy);}
   .card.dark h3{color:#fff;}
-  .card .sub{font-size:18.75px; color:#6B7280; margin-top:-4px; margin-bottom:14px;}
+  .card .sub{font-size:18.75px; color:#4B5563; margin-top:-4px; margin-bottom:14px;}
   .card.dark .sub{color:#B9C4D6;}
   .card.dark .tech-row .val.good{color:#7EE8A8;}
   .field{display:flex; flex-direction:column; gap:5px;}
@@ -81,7 +99,7 @@
   td{padding:9px 10px; border-bottom:1px solid #123F6B0D;}
   .num{text-align:right; font-weight:600; color:var(--navy-deep);}
   .icon-btn{background:transparent; border:none; cursor:pointer; padding:4px; font-size:18px;}
-  .empty{text-align:center; padding:36px 12px; color:#6B7280; font-size:20.25px;}
+  .empty{text-align:center; padding:36px 12px; color:#4B5563; font-size:20.25px;}
   .err-box{background:#FBEEEC; border:1px solid #B4453B55; color:var(--bad); border-radius:8px; padding:8px 12px; font-size:19.5px; margin-top:8px;}
   .ok-badge{display:inline-flex; align-items:center; gap:5px; color:var(--good); font-size:19.5px; font-weight:600;}
   .mini-row{display:flex; justify-content:space-between; align-items:center; padding:3px 0; font-size:18.75px; color:var(--muted);}
@@ -98,12 +116,12 @@
   .ring-wrap{position:relative; width:108px; height:108px; flex-shrink:0;}
   .ring-wrap .center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
   .ring-wrap .pct{font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; color:var(--gold);}
-  .ring-wrap .lbl{font-size:14px; color:#6B7280;}
+  .ring-wrap .lbl{font-size:14px; color:#4B5563;}
   .card.dark .ring-wrap .lbl{color:#B9C4D6;}
   .goal-flex{display:flex; flex-wrap:wrap; align-items:center; gap:24px;}
   .income-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:14px;}
   .income-chip{background:#FFFFFF14; border:1px solid #FFFFFF26; border-radius:10px; padding:10px 12px;}
-  .income-chip .lbl{font-size:17.25px; color:#6B7280; margin-bottom:3px;}
+  .income-chip .lbl{font-size:17.25px; color:#4B5563; margin-bottom:3px;}
   .card.dark .income-chip .lbl{color:#B9C4D6;}
   .income-chip .val{font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:700; color:#fff;}
   .qgrid{display:grid; grid-template-columns:repeat(2, minmax(150px,1fr)); gap:12px; margin-bottom:16px;}
@@ -161,7 +179,7 @@
   .jbcard{border-radius:12px; padding:12px;}
   .jbcard .head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-weight:700; font-size:19.5px; color:var(--navy-deep);}
   .annual-box{border-radius:12px; padding:16px; border:1.5px solid #4FAE74;}
-  .foot-note{font-size:17.25px; color:#6B7280; margin-top:10px;}
+  .foot-note{font-size:17.25px; color:#4B5563; margin-top:10px;}
   .date-btn{display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; cursor:pointer; background:#fff; text-align:left;}
   .date-wrap{position:relative;}
   .calendar-pop{position:fixed; z-index:50; background:#fff; border-radius:12px; border:1px solid #123F6B22; box-shadow:0 8px 28px rgba(8,27,51,0.22); padding:12px; width:280px;}
@@ -191,11 +209,12 @@
     <div class="glow"></div>
     <div class="glow2"></div>
     <div style="position:absolute;top:14px;right:14px;z-index:5;display:flex;gap:6px;">
+      <button id="btn-ui-settings" title="ขนาดตัวอักษร" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 10px;color:#fff;font-size:17px;font-weight:700;cursor:pointer;">Aa</button>
       <button id="btn-export-header" title="แบ็กอัพข้อมูลทั้งหมด (ทุกตัวแทน + UM)" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📤 บันทึก</button>
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.10-1</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.10-2</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -1332,7 +1351,7 @@ function renderAllUmDashboard(){
       const fg = i<due ? 'var(--good)' : 'var(--gold)'; // ส่วนที่เกินเดือนปัจจุบัน (ทำล่วงหน้า) = สีทอง
       return `<div style="flex:1;min-width:0;">
         <div style="height:12px;background:${bg};border-radius:3px;overflow:hidden;${i===s.viewMonth?'outline:2px solid var(--navy);outline-offset:1px;':''}"><div style="height:100%;width:${Math.round(fill*100)}%;background:${fg};"></div></div>
-        <div style="font-size:10px;text-align:center;margin-top:3px;color:${i===s.viewMonth?'var(--navy)':'#6B7280'};font-weight:${i===s.viewMonth?700:400};white-space:nowrap;">${lab}</div>
+        <div style="font-size:10px;text-align:center;margin-top:3px;color:${i===s.viewMonth?'var(--navy)':'#4B5563'};font-weight:${i===s.viewMonth?700:400};white-space:nowrap;">${lab}</div>
       </div>`;
     }).join("");
     const status = diff>=0
@@ -1364,7 +1383,7 @@ function renderAllUmDashboard(){
     return `<div ${attr} style="border:1px solid #123F6B1F;border-radius:10px;padding:10px 12px;margin-bottom:10px;cursor:pointer;${x.own?'background:#FBF6E8;':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
         <div style="min-width:0;"><div style="font-weight:700;color:var(--navy);font-size:17px;">${x.own?'⭐ ':''}${esc(x.name)}</div>
-          <div style="font-size:13px;color:#6B7280;">${pos?pos.label:''}${pos?' · ':''}${s.agentCount} ตัวแทน</div></div>
+          <div style="font-size:13px;color:#4B5563;">${pos?pos.label:''}${pos?' · ':''}${s.agentCount} ตัวแทน</div></div>
         ${status}
       </div>
       <div style="display:flex;justify-content:space-between;font-size:14px;margin-top:8px;"><span>ทำได้ทั้งปี ${THB(s.annualAchieved)}${s.annualGoal>0?` / เป้า ${THB(s.annualGoal)}`:' · <span style="color:var(--muted);">ยังไม่ตั้งเป้า</span>'}</span><b style="color:${barColor};">${s.annualGoal>0?pct+'%':'—'}</b></div>
@@ -1395,12 +1414,12 @@ function renderTeamUmTab(){
         return `<div data-open-team-um="${esc(name)}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #123F6B0D;cursor:pointer;">
           <div>
             <div style="font-weight:700;color:var(--navy);font-size:18px;">${esc(name)}</div>
-            <div style="font-size:14px;color:#6B7280;">${pos?pos.label:'ยังไม่ระบุตำแหน่ง'} · ${agentCount} ตัวแทน</div>
+            <div style="font-size:14px;color:#4B5563;">${pos?pos.label:'ยังไม่ระบุตำแหน่ง'} · ${agentCount} ตัวแทน</div>
           </div>
           <div style="display:flex;align-items:center;gap:4px;">
             <button class="icon-btn" data-rename-team-um="${esc(name)}" title="เปลี่ยนชื่อ">✏️</button>
             <button class="icon-btn" data-delete-team-um="${esc(name)}" title="ลบ">🗑</button>
-            <span style="color:#6B7280;font-size:18px;">›</span>
+            <span style="color:#4B5563;font-size:18px;">›</span>
           </div>
         </div>`;
       }).join("")}
@@ -3179,22 +3198,31 @@ function loadState(){
 }
 /* ===== IndexedDB — พื้นที่เก็บใหญ่กว่า localStorage มาก (หลายร้อย MB ขึ้นไป) ===== */
 const IDB_NAME = IS_AGENT_APP ? "ped-agent" : "ped-dashboard", IDB_STORE = "kv";
-let __idbP = null, __useIdb = false, __booted = false;
+let __idbP = null, __useIdb = false, __booted = false, __bootFailed = false;
 const metaCache = {};
+// ===== ที่เก็บข้อมูลในเครื่อง (IndexedDB) — มีกำหนดเวลาเลิกรอ + ต่อใหม่อัตโนมัติ กันแอปค้าง (เจอบ่อยใน iPhone ตอนสลับแอป) =====
+function withTimeout(p, ms){ return new Promise((res,rej)=>{ const t=setTimeout(()=>rej(Object.assign(new Error("timeout"),{timeout:true})), ms); p.then(v=>{clearTimeout(t);res(v);}, e=>{clearTimeout(t);rej(e);}); }); }
+function idbReset(){ const p=__idbP; __idbP=null; if (p) p.then(db=>{ try{db.close();}catch(e){} }).catch(()=>{}); }
 function idbOpen(){
   if (__idbP) return __idbP;
-  __idbP = new Promise((res,rej)=>{
-    if (!window.indexedDB) return rej(new Error("no indexedDB"));
-    const r = indexedDB.open(IDB_NAME, 1);
+  __idbP = withTimeout(new Promise((res,rej)=>{
+    if (!window.indexedDB) return rej(Object.assign(new Error("no indexedDB"),{noIdb:true}));
+    let r; try{ r = indexedDB.open(IDB_NAME, 1); }catch(e){ return rej(Object.assign(e,{noIdb:true})); }
     r.onupgradeneeded = ()=>r.result.createObjectStore(IDB_STORE);
-    r.onsuccess = ()=>res(r.result);
+    r.onsuccess = ()=>{ const db=r.result; db.onclose=()=>{ __idbP=null; }; db.onversionchange=()=>{ try{db.close();}catch(e){} __idbP=null; }; res(db); };
     r.onerror = ()=>rej(r.error);
     r.onblocked = ()=>rej(new Error("blocked"));
-  });
+  }), 3000);
+  __idbP.catch(()=>{ __idbP=null; });
   return __idbP;
 }
-function idbGet(key){ return idbOpen().then(db=>new Promise((res,rej)=>{ const q=db.transaction(IDB_STORE,"readonly").objectStore(IDB_STORE).get(key); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); })); }
-function idbPut(key,val){ return idbOpen().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(IDB_STORE,"readwrite"); tx.objectStore(IDB_STORE).put(val,key); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); tx.onabort=()=>rej(tx.error||new Error("abort")); })); }
+function __idbGetOnce(key){ return idbOpen().then(db=>withTimeout(new Promise((res,rej)=>{ const q=db.transaction(IDB_STORE,"readonly").objectStore(IDB_STORE).get(key); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }),4000)); }
+function __idbPutOnce(key,val){ return idbOpen().then(db=>withTimeout(new Promise((res,rej)=>{ const tx=db.transaction(IDB_STORE,"readwrite"); tx.objectStore(IDB_STORE).put(val,key); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); tx.onabort=()=>rej(tx.error||new Error("abort")); }),6000)); }
+// ลองซ้ำได้ 3 ครั้ง (ต่อใหม่ทุกครั้งที่ไม่ตอบ) — ถ้าเบราว์เซอร์ไม่รองรับเลยจะเลิกทันที
+async function idbRetry(fn){ let last; for (let k=0;k<3;k++){ try{ return await fn(); }catch(e){ last=e; if (e&&e.noIdb) break; idbReset(); await new Promise(r=>setTimeout(r, 300*(k+1))); } } throw last; }
+function idbGet(key){ return idbRetry(()=>__idbGetOnce(key)); }
+function idbPut(key,val){ return idbRetry(()=>__idbPutOnce(key,val)); }
+document.addEventListener("visibilitychange", ()=>{ if (document.visibilityState==="visible") idbReset(); }); // กลับมาจากพื้นหลัง = ต่อใหม่สด
 function setMeta(k,v){
   metaCache[k] = v;
   if (__useIdb) idbPut("meta", {...metaCache}).catch(()=>{});
@@ -3208,11 +3236,12 @@ function rootStateForSave(){
 let __saveTimer = null;
 function saveState(){
   clearTimeout(__saveTimer);
-  __saveTimer = setTimeout(flushSave, 400);
+  __saveTimer = setTimeout(()=>{ if (window.requestIdleCallback) requestIdleCallback(flushSave, {timeout:1500}); else flushSave(); }, 400); // บันทึกตอนเครื่องว่าง ไม่แย่งจังหวะตอนกำลังแตะ
 }
 function flushSave(){
   if (__saveTimer===null) return;
   clearTimeout(__saveTimer); __saveTimer = null;
+  if (__bootFailed) return; // โหลดข้อมูลเดิมไม่สำเร็จ ห้ามบันทึกทับเด็ดขาด
   if (!__booted){ __saveTimer = setTimeout(flushSave, 200); return; } // ยังโหลดข้อมูลไม่เสร็จ ห้ามเขียนทับ
   const root = rootStateForSave();
   if (__useIdb){
@@ -3416,8 +3445,10 @@ function positionOpenCalendars(){
     let top = rect.bottom + 6;
     const popHeight = pop.offsetHeight || 320;
     if (top + popHeight > window.innerHeight - 8) top = Math.max(8, rect.top - popHeight - 6);
-    pop.style.top = top + "px";
-    pop.style.left = left + "px";
+    // ทั้งแอปถูกขยาย (zoom) — ตำแหน่ง fixed ต้องหารด้วยอัตราขยาย ไม่งั้นปฏิทินจะเด้งผิดที่
+    const zf = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--z')) || 1;
+    pop.style.top = (top/zf) + "px";
+    pop.style.left = (left/zf) + "px";
   });
 }
 function renderAgentPicker(){
@@ -5409,11 +5440,23 @@ function refreshInputsAfterLoad(){
   umAnnualGoalsFycInput = formatThousands(String(getUmAnnualTargetFYC()));
 }
 async function boot(){
+  const tc0 = document.getElementById("tab-content");
+  if (tc0) tc0.innerHTML = `<div class="card" style="text-align:center;padding:30px;"><div style="font-size:22px;font-weight:700;color:var(--navy);">⏳ กำลังโหลดข้อมูล…</div></div>`;
   try{
     try{ Object.assign(metaCache, JSON.parse(localStorage.getItem(META_KEY)||"{}")); }catch(e){}
-    const saved = await idbGet(STORAGE_KEY);
+    let saved;
+    try{ saved = await idbGet(STORAGE_KEY); }
+    catch(e){
+      if (!(e && e.noIdb)){
+        // ที่เก็บข้อมูลไม่ตอบ (ไม่ใช่ไม่มีข้อมูล) — ไม่เปิดแอปด้วยข้อมูลว่าง กันบันทึกทับข้อมูลจริง
+        __bootFailed = true;
+        if (tc0) tc0.innerHTML = `<div class="card" style="text-align:center;padding:24px;"><div style="font-size:21px;font-weight:700;color:var(--bad);margin-bottom:8px;">โหลดข้อมูลไม่สำเร็จ</div><div style="font-size:17px;margin-bottom:14px;">เครื่องยังไม่พร้อมอ่านข้อมูล (มักเกิดหลังสลับแอป) ข้อมูลยังอยู่ครบ</div><button class="btn-primary" onclick="location.reload()" style="font-size:20px;padding:10px 22px;">🔄 ลองใหม่</button></div>`;
+        return;
+      }
+      throw e;
+    }
     __useIdb = true;
-    const meta = await idbGet("meta");
+    let meta = null; try{ meta = await idbGet("meta"); }catch(e){}
     if (meta) Object.assign(metaCache, meta);
     if (saved){
       state = normalizeState(saved);
@@ -5430,6 +5473,31 @@ async function boot(){
   refreshInputsAfterLoad();
   render();
 }
+// ===== ปรับขนาด/ความหนา/แบบอักษร (จำไว้ในเครื่องนี้) =====
+function uiPrefs(){ try{ return JSON.parse(localStorage.getItem("ped-ui")||"{}"); }catch(e){ return {}; } }
+function uiApply(u){
+  const z={1:1,2:1.12,3:1.25,4:1.4}[u.size||2], w={1:400,2:500,3:600}[u.weight||2];
+  const h=document.documentElement; h.style.setProperty("--z",z); h.style.setProperty("--fw",w);
+  h.classList.toggle("ff-sarabun", (u.font||"mali")==="sarabun");
+  try{ localStorage.setItem("ped-ui", JSON.stringify(u)); }catch(e){}
+  positionOpenCalendars();
+}
+function uiOpenPanel(){
+  const u = uiPrefs(); const cur = { size:u.size||2, weight:u.weight||2, font:u.font||"mali" };
+  const seg = (key, opts)=>`<div class="seg">${opts.map(([v,l])=>`<button data-ui="${key}|${v}" class="${String(cur[key])===String(v)?'on':''}">${l}</button>`).join('')}</div>`;
+  let bd=document.getElementById("ui-backdrop"), pn=document.getElementById("ui-panel");
+  if (!bd){ bd=document.createElement("div"); bd.id="ui-backdrop"; document.body.appendChild(bd); }
+  if (!pn){ pn=document.createElement("div"); pn.id="ui-panel"; document.body.appendChild(pn); }
+  pn.innerHTML = `<div style="font-size:21px;font-weight:800;color:#082238;margin-bottom:12px;">🔠 ปรับการแสดงผล</div>
+    <div class="row"><div class="lab">ขนาดตัวอักษร</div>${seg("size",[[1,'ปกติ'],[2,'ใหญ่'],[3,'ใหญ่มาก'],[4,'ใหญ่พิเศษ']])}</div>
+    <div class="row"><div class="lab">ความหนา</div>${seg("weight",[[1,'บาง'],[2,'ปกติ'],[3,'หนา']])}</div>
+    <div class="row"><div class="lab">แบบอักษร</div>${seg("font",[["mali",'ลายมือ (Mali)'],["sarabun",'อ่านง่าย (Sarabun)']])}</div>
+    <button id="ui-close" style="width:100%;padding:12px;border-radius:10px;border:none;background:#2F7A4F;color:#fff;font-size:19px;font-weight:700;cursor:pointer;">✓ เสร็จ</button>`;
+  const close=()=>{ pn.remove(); bd.remove(); };
+  bd.onclick=close; pn.querySelector("#ui-close").onclick=close;
+  pn.querySelectorAll("[data-ui]").forEach(b=>{ b.onclick=(ev)=>{ ev.stopPropagation(); const [k,v]=b.dataset.ui.split("|"); const nu={...uiPrefs(), [k]: k==="font"?v:Number(v)}; uiApply(nu); uiOpenPanel(); }; });
+}
+document.getElementById("btn-ui-settings").onclick = (ev)=>{ ev.stopPropagation(); uiOpenPanel(); };
 boot();
 
 // ทุกช่องกรอก: แตะแล้วล้างค่าเดิมทันที ถ้าไม่พิมพ์อะไรแล้วออก ให้คืนค่าเดิม (ไม่ต้องคอยลบเอง)
