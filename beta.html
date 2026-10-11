@@ -517,6 +517,29 @@ form.entry-form{min-width:0;} form.entry-form > *{min-width:0;}
 .g-row > label > span{font-size:15px!important;line-height:1.3;}
 .g-row input{width:100%;min-width:0;font-size:20px!important;}
 .g-row select{width:100%;min-width:0;font-size:16px!important;padding:8px 4px!important;}
+
+/* ===== beta9: กราฟแท่งการแข่งขัน ===== */
+.cb{background:#fff;border:1.5px solid #D5DEEA;border-radius:12px;padding:10px 12px 8px;margin:8px 0;color:#1B2430;}
+.cb.ok{border-color:#2F9E5E;background:#F4FBF6;}
+.cb-row{cursor:pointer;} .cb-row:active .cb{background:#E3EEFF;}
+.cb-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;}
+.cb-name{font-size:17px;color:#0B2D5C;}
+.cb-val{font-size:15px;color:#374151;} .cb-val i{color:#8A4B00;font-style:normal;}
+.cb-track{position:relative;height:22px;background:#E6ECF4;border-radius:11px;margin:30px 0 22px;}
+.cb-fill{position:absolute;left:0;top:0;bottom:0;border-radius:11px;background:linear-gradient(90deg,#2B8FD6,#2F9E5E);}
+.cb.ok .cb-fill{background:linear-gradient(90deg,#2F9E5E,#43C77A);}
+.cb-pend{position:absolute;top:0;bottom:0;border-radius:0 11px 11px 0;background:repeating-linear-gradient(45deg,rgba(232,182,74,.55) 0 6px,rgba(232,182,74,.28) 6px 12px);}
+.cb-tk{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1.5px;background:#0B2D5C;border-radius:2px;opacity:.55;}
+.cb-tk.hit{background:#2F9E5E;opacity:1;}
+.cb-tk em{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-style:normal;font-size:22px;line-height:1;margin-bottom:2px;animation:cbpop .6s ease-out;}
+.cb-tk em.ghost{opacity:.35;filter:grayscale(.4);animation:none;}
+@keyframes cbpop{0%{transform:translateX(-50%) scale(.2);}70%{transform:translateX(-50%) scale(1.3);}100%{transform:translateX(-50%) scale(1);}}
+html.b-calm .cb-tk em{animation:none;}
+.cb-lb{position:absolute;top:calc(100% + 6px);transform:translateX(-50%);font-size:13px;font-weight:700;color:#374151;white-space:nowrap;}
+.cb-lb.r{transform:translateX(-100%);} .cb-lb.l{transform:none;}
+.cb-note{font-size:15px;color:#374151;line-height:1.45;}
+.cb-warn{color:#C8173F;font-weight:700;}
+.pp-um .cb{border-color:#E8B64A;background:#FFFBF0;}
 </style>
 </head>
 <body>
@@ -531,7 +554,7 @@ form.entry-form{min-width:0;} form.entry-form > *{min-width:0;}
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta8</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta9</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -855,9 +878,8 @@ function renderAgentCompCard(names){
     ${arr.sort((a,b)=>(b.it.ok-a.it.ok)||(b.it.near-a.it.near)).map(({n,it})=>`<div class="pp-row ${it.ok?'ok':''}" data-pp-agent="${esc(n)}"><span class="rk">${it.ok?'✅':it.near?'🔥':'⏳'}</span><div class="w"><b>${esc(n)}</b><small>${it.text}</small></div><span class="go">›</span></div>`).join('')}
   </div>`).join('');
   return `<div class="card"><h3>🏆 การแข่งขันของตัวแทน</h3>
-    <p class="sub">แสดงเฉพาะตัวแทนที่มีงานรายใหม่ในช่วงนั้น (อนุมัติแล้วหรือรอพิจารณา) · แตะชื่อเพื่อเปิดผลงานของคนนั้น</p>
-    <div class="pp-sec">🏁 การแข่งขันพิเศษที่กำลังแข่ง</div>${evHtml}
-    ${fixed?`<div class="pp-sec">🏅 รางวัลประจำ (โบนัส · คุณวุฒิ · Joining)</div>${fixed}`:''}
+    <p class="sub">เฉพาะการแข่งขันตามประกาศ (ไม่รวมรางวัลจากตารางค่าคอม) · แสดงเฉพาะคนที่มีงานรายใหม่ในช่วงแข่ง · แท่งเข้ม = อนุมัติแล้ว · แท่งจาง = ถ้ารออนุมัติผ่าน · 🎉 = ถึงเกณฑ์ · แตะชื่อเพื่อเปิดผลงาน</p>
+    ${evHtml}
   </div>`;
 }
 function renderUmEventsCard(names){
@@ -874,10 +896,7 @@ function renderUmEventsCard(names){
         <div style="flex:1;min-width:0;"><b style="color:var(--navy);font-size:18px;">${evLink(ev)}</b>
         <div style="font-size:14px;color:var(--muted);">ระดับ UM: ${evUnit(ev)} ${ev.umTiers.map(THB).join(' / ')}${ev.umRewardText?` · ${esc(ev.umRewardText)}`:''} · เหลือ ${dl} วัน</div></div></div>
       ${(ev.umTierLabels||[]).length?`<div style="margin:6px 0;">${ev.umTiers.map((t,k)=>`<div style="font-size:14.5px;padding:2px 0;color:${v>=t?'var(--good)':'var(--muted)'};${v>=t?'font-weight:700;':''}">${v>=t?'✔':'○'} ${THB(t)} — ${esc(ev.umTierLabels[k]||'')}</div>`).join('')}</div>`:''}
-      <div class="tech-row"><span class="lab">${evUnit(ev)} ทีม (ขายเอง + ตัวแทนตรง)</span><span class="val ${p.ok?'good':''}">${THB(v)}</span></div>
-      <div style="font-size:17px;font-weight:700;color:${p.ok?'var(--good)':'var(--navy)'};">${p.ok?`✅ ${esc(p.label)}`:'⏳ ยังไม่ถึง'}${p.next!==undefined?` · ขาดอีก ${THB(p.need)}${p.nextLabel?` ถึง ${esc(p.nextLabel)}`:''}`:''}</div>
-      ${vp>v?`<div class="proj-box">⏳ ถ้ารออนุมัติผ่านทั้งหมด: ${THB(vp)} → ${pP.ok?pP.label:'ยังไม่ถึง'}</div>`:''}
-      ${miss?`<div style="font-size:15px;color:var(--bad);font-weight:700;margin-top:6px;">⚠ ยังไม่ได้คีย์เบี้ยประกันต่อปี ${miss} เคส — ยอด FYP อาจต่ำกว่าความจริง</div>`:''}
+      ${evBar('ทีม (ขายเอง + ตัวแทนตรง)', v, vp, ev, true, miss?`ยังไม่คีย์เบี้ย ${miss} เคส`:'')}
     </div>`;
   }).join('');
   return `<div class="card"><h3>🏁 การแข่งขันระดับ UM (กำลังแข่ง)</h3><p class="sub">รวมผลงานขายเองและตัวแทนตรงทุกคนในทีม · ตัวเลขหลักใช้ยอดอนุมัติแล้ว</p>${rows}</div>`;
@@ -6595,6 +6614,31 @@ function posterProgressOpen(pv, p){
   box.innerHTML = `<button type="button" class="pp-back" data-pp-back>← กลับไปดูโปสเตอร์</button><div class="pp-t">📊 ความคืบหน้าของทีม</div><div class="pp-hint">แสดงเฉพาะคนที่มียอดแล้ว · แตะชื่อเพื่อเปิดผลงานของคนนั้น</div>${html}`;
   pv.appendChild(box);
 }
+// กราฟแท่งแนวนอน: เข้ม = อนุมัติแล้ว · จาง = ถ้ารออนุมัติผ่าน · ขีด = เกณฑ์ · 🎉 ถึงเกณฑ์ / 🏆 ขั้นสุดท้าย
+function cbK(v){ v = Number(v)||0; if (v>=1e6) return (Math.round(v/1e5)/10)+'M'; if (v>=1000) return (Math.round(v/100)/10).toString().replace(/\.0$/,'')+'K'; return String(Math.round(v)); }
+function evBar(label, v, vp, ev, um, warn){
+  vp = Math.max(v, vp||0);
+  const every = evMode(ev)==='every' && !um;
+  let ticks, max;
+  if (every){
+    const step = Number(ev.tiers[0])||1, n = Math.floor(vp/step)+1;
+    max = n*step; ticks = Array.from({length:n}, (_,i)=>(i+1)*step);
+  } else {
+    ticks = ((um ? ev.umTiers : ev.tiers)||[]).slice();
+    const top = ticks[ticks.length-1]||1;
+    max = Math.max(top*1.06, vp*1.04);
+  }
+  const p = evProg(v, ev, um), pct = x=>Math.max(0, Math.min(100, x/max*100));
+  const last = ticks[ticks.length-1];
+  const tk = ticks.map(t=>{ const hit = v>=t, soon = !hit && vp>=t; const x = pct(t); const edge = x>88 ? 'r' : x<12 ? 'l' : '';
+    return `<i class="cb-tk ${hit?'hit':''} ${soon?'soon':''}" style="left:${x}%">${hit?`<em>${(!every && t===last)?'🏆':'🎉'}</em>`:soon?'<em class="ghost">🎉</em>':''}</i><span class="cb-lb ${edge}" style="left:${x}%">${cbK(t)}</span>`; }).join('');
+  const status = p.next===undefined ? '🏆 ครบทุกขั้นแล้ว!' : `${p.ok?`✅ ${esc(p.label)} · `:''}ขาดอีก <b>${THB(p.need)}</b>`;
+  return `<div class="cb ${p.ok?'ok':''}">
+    <div class="cb-top"><b class="cb-name">${esc(label)}</b><span class="cb-val">${evUnit(ev)} <b>${THB(v)}</b>${vp>v?` <i>(+รอ ${THB(vp-v)})</i>`:''}</span></div>
+    <div class="cb-track"><div class="cb-pend" style="left:${pct(v)}%;width:${pct(vp)-pct(v)}%"></div><div class="cb-fill" style="width:${pct(v)}%"></div>${tk}</div>
+    <div class="cb-note">${status}${warn?` · <span class="cb-warn">${esc(warn)}</span>`:''}</div>
+  </div>`;
+}
 function evProgressListHtml(evs){
   const f = iso=>fmtTH(new Date(iso+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"});
   return withDueView(()=>evs.map(ev=>{
@@ -6603,10 +6647,10 @@ function evProgressListHtml(evs){
       .filter(r=>r.v>0 || r.vp>0).sort((a,b)=>(b.v-a.v)||(b.vp-a.vp));
     const st = compStatus(...evRange(ev));
     let um = '';
-    if ((ev.umTiers||[]).length){ const tv = rows.reduce((s,r)=>s+r.v,0), tp = evProg(tv, ev, true); um = `<div class="pp-um">👔 ระดับ UM (ขายเอง+ตัวแทนตรง): <b>${THB(tv)}</b> · ${tp.ok?esc(tp.label):'ยังไม่ถึง'}${tp.next!==undefined?` · ขาดอีก ${THB(tp.need)}`:''}</div>`; }
+    if ((ev.umTiers||[]).length){ const tv = rows.reduce((s,r)=>s+r.v,0), tvp = rows.reduce((s,r)=>s+Math.max(r.v,r.vp),0); um = `<div class="pp-um">${evBar('👔 ระดับ UM (ขายเอง+ตัวแทนตรง)', tv, tvp, ev, true, '')}</div>`; }
     return `<div class="pp-ev"><h4>🏁 ${esc(ev.name)}</h4>
       <div class="pp-rule">${evRuleTxt(ev)}<br>${f(ev.start)} – ${f(ev.end)} · ${st==='ended'?'จบแล้ว':st==='upcoming'?'ยังไม่เริ่ม':'กำลังแข่ง'} · มียอด ${rows.length} คน · ติดแล้ว ${rows.filter(r=>r.p.ok).length} คน</div>${um}
-      ${rows.length ? rows.map((r,k)=>`<div class="pp-row ${r.p.ok?'ok':''}" data-pp-agent="${esc(r.n)}"><span class="rk">${k+1}</span><div class="w"><b>${esc(r.n)}</b><small>${evUnit(ev)} ${THB(r.v)}${r.vp>r.v?` <i>(+รออนุมัติ ${THB(r.vp-r.v)})</i>`:''}<br>${r.p.ok?`✅ ${esc(r.p.label)} · `:''}${evNextTxt(r.p, ev)}${r.miss?` · <i style="color:#C8173F;">ยังไม่คีย์เบี้ย ${r.miss} เคส</i>`:''}</small></div><span class="go">›</span></div>`).join('') : '<div class="pp-empty">ยังไม่มีตัวแทนที่มียอดในการแข่งขันนี้</div>'}
+      ${rows.length ? rows.map((r,k)=>`<div class="cb-row" data-pp-agent="${esc(r.n)}">${evBar(`${k+1}. ${r.n}`, r.v, r.vp, ev, false, r.miss?`ยังไม่คีย์เบี้ย ${r.miss} เคส`:'')}</div>`).join('') : '<div class="pp-empty">ยังไม่มีตัวแทนที่มีงานรายใหม่ในช่วงแข่ง</div>'}
     </div>`;
   }).join(''));
 }
