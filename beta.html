@@ -579,7 +579,7 @@ p.sub:not(.card *):not(#pv *),.foot-note:not(.card *){color:var(--b-ink)!importa
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta11</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta12</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -816,6 +816,12 @@ function evList(){
   if (!r.evSeed2610){ // เพิ่มการแข่งขันตามโปสเตอร์ ต.ค. 69 ให้ครั้งเดียว (ลบ/แก้เองได้ภายหลัง)
     r.evSeed2610 = true;
     EV_SEED_2610.forEach(s=>{ if (!r.specialEvents.some(ev=>ev && ev.key===s.key)) r.specialEvents.push(JSON.parse(JSON.stringify(s))); });
+  }
+  if (!r.evSeed2610c){ // แยก 3 การแข่งขัน: ปักกิ่ง (ตั๋ว, ไม่มีโปสเตอร์) · Pocket Money · iPhone 18 Pro
+    r.evSeed2610c = true;
+    const bj = r.specialEvents.find(x=>x && x.key==='beijing'); if (bj){ bj.name = 'ปักกิ่ง (ตั๋ว)'; bj.noPoster = true; delete bj.posters; }
+    const pm = r.specialEvents.find(x=>x && x.key==='pocketmoney'); if (pm) pm.posters = ["2026-10_pocket-money-beijing.jpg"];
+    if (!r.specialEvents.some(x=>x && x.key==='iphone')) r.specialEvents.push({ key:"iphone", name:"iPhone 18 Pro", start:"2026-10-01", end:"2026-10-31", basis:"fyp", mode:"every", tiers:[1500000], rewardText:"iPhone 18 Pro 256GB 1 เครื่อง (อนุมัติภายใน 30 พ.ย. 69)", posters:["2026-10_beijing-iphone.jpg"] });
   }
   if (!r.evSeed2610b){ // ปรับ Kick Off / Regional ให้ครบตามโปสเตอร์ (ระดับตัวแทน + UM) ครั้งเดียว
     r.evSeed2610b = true;
@@ -1423,7 +1429,7 @@ function renderProgramsCard(){
 // ===== ถาม-ตอบในแอป (ค้นหาด้วยคำสำคัญ ตอบจากตัวเลขที่แอปคำนวณ) =====
 let askQuery = "", askResult = "";
 const ASK_CHIPS = ["ใครใกล้ได้โบนัสไตรมาส","Kick Off ใครติดบ้าง","ใครติดอะไรบ้าง","งานรอพิจารณา","บัตรใกล้หมดอายุ","ผลงานเดือนนี้","ผลประโยชน์ UM","Fast / Growth","เส้นตาย"];
-const EVENT_ALIASES = { kickoff:["คิกออฟ","คิ๊กออฟ","คิ้กออฟ","คิกอ็อฟ"], regional:["รีเจียน","รีจินอล","รีจินัล"], beijing:["beijing","ปักกิ่ง"] };
+const EVENT_ALIASES = { kickoff:["คิกออฟ","คิ๊กออฟ","คิ้กออฟ","คิกอ็อฟ"], regional:["รีเจียน","รีจินอล","รีจินัล"], beijing:["beijing","ปักกิ่ง","ตั๋วปักกิ่ง"], iphone:["ไอโฟน","iphone"], pocketmoney:["พ็อกเก็ตมันนี่","pocket"] };
 const MONTH_KEYS = ["มกรา","กุมภา","มีนา","เมษา","พฤษภา","มิถุนา","กรกฎา","สิงหา","กันยา","ตุลา","พฤศจิ","ธันวา"];
 function askNorm(s){ return String(s||'').toLowerCase().replace(/\s+/g,''); }
 function renderAskBox(){
@@ -6563,6 +6569,7 @@ function posterLoad(force){
 }
 // จับคู่โปสเตอร์กับการแข่งขัน: ที่เลือกเองในตั้งค่าก่อน ไม่งั้นจับจากชื่อ (ไม่สนตัวพิมพ์/ช่องว่าง)
 function posterMatches(name, key, ev){
+  if (ev && ev.noPoster) return [];
   if (ev && Array.isArray(ev.posters) && ev.posters.length){
     const want = ev.posters.map(pBase);
     return posterList.filter(p=>want.includes(pBase(p.file)));
