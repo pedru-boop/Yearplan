@@ -427,7 +427,7 @@ html.b-calm .b-podw,html.b-calm .b-orbit,html.b-calm .b-badge,html.b-calm .b-grp
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta2</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta3</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -661,9 +661,72 @@ function evRoot(){ return mainAppState || state; }
 function evList(){
   const r = evRoot();
   if (!Array.isArray(r.specialEvents)) r.specialEvents = JSON.parse(JSON.stringify(DEFAULT_SPECIAL_EVENTS));
+  if (!r.evSeed2610){ // เพิ่มการแข่งขันตามโปสเตอร์ ต.ค. 69 ให้ครั้งเดียว (ลบ/แก้เองได้ภายหลัง)
+    r.evSeed2610 = true;
+    EV_SEED_2610.forEach(s=>{ if (!r.specialEvents.some(ev=>ev && ev.key===s.key)) r.specialEvents.push(JSON.parse(JSON.stringify(s))); });
+  }
   return r.specialEvents.filter(ev=>ev && ev.start && ev.end && Array.isArray(ev.tiers) && ev.tiers.length);
 }
+const EV_SEED_2610 = [
+  { key:"pocketmoney", name:"Pocket Money เที่ยวปักกิ่ง", start:"2026-10-01", end:"2026-10-31", basis:"fyc", mode:"every", tiers:[25000], reward:2500, rewardText:"แคชเชียร์เช็ค", posters:["2026-10_pocket-money-beijing.jpg"] },
+  { key:"cao", name:"CAO Challenge", start:"2026-10-01", end:"2026-10-31", basis:"fyp", mode:"tier", tiers:[50000], rewardText:"เสื้อโปโล BLA North", umTiers:[100000], umRewardText:"เสื้อโปโล BLA North", posters:["2026-10_cao-challenge.jpg"] },
+];
+// ===== แบบการแข่งขัน: นับจาก FYC/FYP · ขั้นบันได/ทุกๆ · เกณฑ์ระดับ UM =====
+function evBasis(ev){ return ev && ev.basis==='fyp' ? 'fyp' : 'fyc'; }
+function evMode(ev){ return ev && ev.mode==='every' ? 'every' : 'tier'; }
+function evUnit(ev){ return evBasis(ev)==='fyp' ? 'FYP' : 'FYC'; }
+function evRange(ev){ return [new Date(ev.start+"T00:00:00"), new Date(ev.end+"T23:59:59")]; }
+// FYP = เบี้ยประกันต่อปีของกรมธรรม์ที่ส่งงานในช่วงแข่ง (ช่อง "เบี้ยประกันต่อปี" ตอนบันทึกผลงาน)
+function eventValue(entries, ev){
+  if (evBasis(ev)!=='fyp') return eventAchieved(entries, ev);
+  const [s,e] = evRange(ev);
+  return (entries||[]).filter(x=>isOrigin(x) && D(x.date)>=s && D(x.date)<=e).reduce((sum,x)=>sum+(Number(x.premium)||0),0);
+}
+function eventMissingPrem(entries, ev){
+  if (evBasis(ev)!=='fyp') return 0;
+  const [s,e] = evRange(ev);
+  return (entries||[]).filter(x=>isOrigin(x) && D(x.date)>=s && D(x.date)<=e && !(Number(x.premium)>0)).length;
+}
+function evProg(v, ev, tiers){
+  const t = tiers || ev.tiers || [];
+  if (evMode(ev)==='every' && !tiers){
+    const step = Number(t[0])||0; if (!step) return { n:0, ok:false, levels:null, next:undefined, need:0, label:'ยังไม่ตั้งเกณฑ์' };
+    const n = Math.floor(v/step), next = (n+1)*step, amt = ev.reward ? n*Number(ev.reward) : null;
+    return { n, ok:n>0, levels:null, next, need:next-v, amt, label: n>0 ? `ได้ ${n} ครั้ง${amt!==null?` = ${THB(amt)}`:''}` : 'ยังไม่ถึง' };
+  }
+  const n = t.filter(x=>v>=x).length, next = t[n];
+  return { n, ok:n>0, levels:t.length, next, need: next!==undefined ? next-v : 0, label: n>0 ? (t.length>1?`ระดับ ${n}/${t.length}`:'ผ่านแล้ว') : 'ยังไม่ถึง' };
+}
+function evRuleTxt(ev){
+  const rw = ev.rewardText ? ` · ${esc(ev.rewardText)}` : '';
+  return evMode(ev)==='every'
+    ? `${evUnit(ev)} ทุกๆ ${THB(ev.tiers[0])}${ev.reward?` ได้ ${THB(ev.reward)}`:''}${rw}`
+    : `${evUnit(ev)} ${ev.tiers.map(THB).join(' / ')}${rw}`;
+}
+function evNextTxt(p, ev){ return p.next===undefined ? 'ครบทุกระดับ 🎉' : `ขาดอีก ${THB(p.need)} ${evMode(ev)==='every'?`ได้ครั้งที่ ${p.n+1}`:`ถึง${p.n?'ระดับถัดไป':''} ${THB(p.next)}`}`; }
 function evAll(){ evList(); return evRoot().specialEvents; }
+// การแข่งขันระดับ UM (ขายเอง + ตัวแทนตรง = รวมทุกคนในทีมของ UM คนนี้)
+function renderUmEventsCard(names){
+  const now = new Date();
+  const evs = evList().filter(ev=>Array.isArray(ev.umTiers) && ev.umTiers.length).filter(ev=>{ const [s,e]=evRange(ev); return now>=s && now<=e; });
+  if (!evs.length) return '';
+  const rows = evs.map(ev=>{
+    let v=0, vp=0, miss=0;
+    names.forEach(n=>{ const en = state.agents[n].entries||[]; v += eventValue(effectiveEntries(en), ev); vp += eventValue(effectiveEntries(projEntries(en)), ev); miss += eventMissingPrem(en, ev); });
+    const p = evProg(v, ev, ev.umTiers), pP = evProg(vp, ev, ev.umTiers);
+    const dl = Math.round((evRange(ev)[1]-now)/86400000);
+    return `<div style="border:1px solid #123F6B1F;border-radius:10px;padding:10px;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:10px;">${posterThumbs(posterMatches(ev.name, ev.key, ev))}
+        <div style="flex:1;min-width:0;"><b style="color:var(--navy);font-size:18px;">${esc(ev.name)}</b>
+        <div style="font-size:14px;color:var(--muted);">ระดับ UM: ${evUnit(ev)} ${ev.umTiers.map(THB).join(' / ')}${ev.umRewardText?` · ${esc(ev.umRewardText)}`:''} · เหลือ ${dl} วัน</div></div></div>
+      <div class="tech-row"><span class="lab">${evUnit(ev)} ทีม (ขายเอง + ตัวแทนตรง)</span><span class="val ${p.ok?'good':''}">${THB(v)}</span></div>
+      <div style="font-size:17px;font-weight:700;color:${p.ok?'var(--good)':'var(--navy)'};">${p.ok?`✅ ${p.label}`:'⏳ ยังไม่ถึง'}${p.next!==undefined?` · ขาดอีก ${THB(p.need)}`:''}</div>
+      ${vp>v?`<div class="proj-box">⏳ ถ้ารออนุมัติผ่านทั้งหมด: ${THB(vp)} → ${pP.ok?pP.label:'ยังไม่ถึง'}</div>`:''}
+      ${miss?`<div style="font-size:15px;color:var(--bad);font-weight:700;margin-top:6px;">⚠ ยังไม่ได้คีย์เบี้ยประกันต่อปี ${miss} เคส — ยอด FYP อาจต่ำกว่าความจริง</div>`:''}
+    </div>`;
+  }).join('');
+  return `<div class="card"><h3>🏁 การแข่งขันระดับ UM (กำลังแข่ง)</h3><p class="sub">รวมผลงานขายเองและตัวแทนตรงทุกคนในทีม · ตัวเลขหลักใช้ยอดอนุมัติแล้ว</p>${rows}</div>`;
+}
 function renderEventsSettingsCard(){
   if (activeTeamUmName) return '';
   const list = evAll();
@@ -674,7 +737,7 @@ function renderEventsSettingsCard(){
       <span>🏁 ตั้งค่าการแข่งขัน (${list.length} รายการ)</span>
       <span style="color:var(--muted);font-size:18px;">${closed?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
     </h3>
-    ${closed?'':`<p class="sub">เพิ่ม/แก้ไขการแข่งขันที่บริษัทประกาศได้เอง · นับ FYC ของกรมธรรม์ที่ส่งในช่วงแข่ง และงวดที่นำส่งในช่วงแข่งเท่านั้น · เกณฑ์หลายขั้นคั่นด้วยจุลภาค เช่น 15000, 30000, 45000</p>
+    ${closed?'':`<p class="sub">เพิ่ม/แก้ไขการแข่งขันที่บริษัทประกาศได้เอง · FYC นับกรมธรรม์ที่ส่งในช่วงแข่ง และงวดที่นำส่งในช่วงแข่งเท่านั้น · FYP นับเบี้ยประกันต่อปีของกรมธรรม์ที่ส่งในช่วงแข่ง · แบบ "ทุกๆ" ได้รางวัลซ้ำทุกครั้งที่ครบยอด</p>
     ${evAll().map((ev,i)=>`<div style="border:1px solid #123F6B1F;border-radius:10px;padding:10px;margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
         <input type="text" data-ev-name="${i}" value="${esc(ev.name||'')}" placeholder="ชื่อการแข่งขัน" style="flex:1;min-width:0;padding:6px 8px;font-weight:700;font-size:17px;">
@@ -684,7 +747,16 @@ function renderEventsSettingsCard(){
         <label class="field" style="flex:1;min-width:140px;"><span>วันเริ่ม</span>${renderDateInput("ev-start|"+i, ev.start||"", true)}</label>
         <label class="field" style="flex:1;min-width:140px;"><span>วันจบ</span>${renderDateInput("ev-end|"+i, ev.end||"", true)}</label>
       </div>
-      <label class="field" style="margin-top:6px;"><span>เกณฑ์ FYC (บาท)</span><input type="text" inputmode="decimal" data-ev-tiers="${i}" value="${esc((ev.tiers||[]).map(t=>Number(t).toLocaleString('en-US')).join(', '))}" placeholder="15000, 30000"></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+        <label class="field" style="flex:1;min-width:130px;"><span>นับจาก</span><select data-ev-f="basis|${i}"><option value="fyc" ${evBasis(ev)==='fyc'?'selected':''}>FYC</option><option value="fyp" ${evBasis(ev)==='fyp'?'selected':''}>FYP (เบี้ยปีแรก)</option></select></label>
+        <label class="field" style="flex:1;min-width:130px;"><span>แบบรางวัล</span><select data-ev-f="mode|${i}"><option value="tier" ${evMode(ev)==='tier'?'selected':''}>ขั้นบันได</option><option value="every" ${evMode(ev)==='every'?'selected':''}>ทุกๆ (ได้ซ้ำ)</option></select></label>
+      </div>
+      <label class="field" style="margin-top:6px;"><span>${evMode(ev)==='every'?`ทุกๆ ${evUnit(ev)} (บาท)`:`เกณฑ์ ${evUnit(ev)} (บาท) หลายขั้นคั่นด้วยจุลภาค`}</span><input type="text" inputmode="decimal" data-ev-tiers="${i}" value="${esc((ev.tiers||[]).map(t=>Number(t).toLocaleString('en-US')).join(', '))}" placeholder="${evMode(ev)==='every'?'25000':'15000, 30000'}"></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+        ${evMode(ev)==='every'?`<label class="field" style="flex:1;min-width:130px;"><span>ได้ครั้งละ (บาท)</span><input type="text" inputmode="decimal" data-ev-f="reward|${i}" value="${ev.reward?Number(ev.reward).toLocaleString('en-US'):''}" placeholder="2500"></label>`:''}
+        <label class="field" style="flex:2;min-width:160px;"><span>รางวัล (ข้อความ ไม่บังคับ)</span><input type="text" data-ev-f="rewardText|${i}" value="${esc(ev.rewardText||'')}" placeholder="เช่น เสื้อโปโล"></label>
+      </div>
+      <label class="field" style="margin-top:6px;"><span>เกณฑ์ระดับ UM ${evUnit(ev)} ขายเอง+ตัวแทนตรง (เว้นว่างถ้าไม่มี)</span><input type="text" inputmode="decimal" data-ev-f="umTiers|${i}" value="${esc((ev.umTiers||[]).map(t=>Number(t).toLocaleString('en-US')).join(', '))}" placeholder="เช่น 100000"></label>
       <div style="font-size:14px;margin-top:4px;">${stTxt(ev)}</div>
       <div class="p-evrow">${posterThumbs(posterMatches(ev.name, ev.key, ev)) || '<span style="color:var(--muted);font-size:14px;">ยังไม่มีโปสเตอร์</span>'}
         <button type="button" class="btn-ghost" data-ev-poster="${i}" style="font-size:15px;padding:5px 10px;">🖼 เลือกโปสเตอร์</button>
@@ -1163,17 +1235,17 @@ function __answerQuestionRaw(raw){
     const got = [], notYet = [];
     scope.forEach(n=>{
       const ag = state.agents[n];
-      const ach = eventAchieved(effectiveEntries(ag.entries), ev);
-      const all = eventAchieved(ag.entries, ev);
-      const reached = ev.tiers.filter(t=>ach>=t).length;
-      const allEff = eventAchieved(effectiveEntries(projEntries(ag.entries)), ev);
-      const rP = ev.tiers.filter(t=>allEff>=t).length;
-      const pendTxt = allEff>ach ? ` <span style="color:#8A4B00;">· ⏳ ถ้าอนุมัติครบ ${THB(allEff)} → ${rP?`ระดับ ${rP}`:'ยังไม่ติด'}</span>` : '';
-      if (reached) got.push({ html:`<b>${esc(n)}</b> — ระดับ ${reached}/${ev.tiers.length} (${THB(ach)})${reached<ev.tiers.length?` · ขาดอีก ${THB(ev.tiers[reached]-ach)} ถึงระดับ ${reached+1}`:''}${pendTxt}`, v:ach });
-      else notYet.push({ html:`<b>${esc(n)}</b> — ${THB(ach)} · ขาดอีก ${THB(ev.tiers[0]-ach)}${pendTxt}`, v:ach });
+      const ach = eventValue(effectiveEntries(ag.entries), ev);
+      const p = evProg(ach, ev);
+      const allEff = eventValue(effectiveEntries(projEntries(ag.entries)), ev);
+      const pP = evProg(allEff, ev);
+      const miss = eventMissingPrem(ag.entries, ev);
+      const pendTxt = (allEff>ach ? ` <span style="color:#8A4B00;">· ⏳ ถ้าอนุมัติครบ ${THB(allEff)} → ${pP.ok?pP.label:'ยังไม่ติด'}</span>` : '') + (miss?` <span style="color:var(--bad);">· ยังไม่คีย์เบี้ย ${miss} เคส</span>`:'');
+      if (p.ok) got.push({ html:`<b>${esc(n)}</b> — ${p.label} (${THB(ach)}) · ${evNextTxt(p, ev)}${pendTxt}`, v:ach });
+      else notYet.push({ html:`<b>${esc(n)}</b> — ${THB(ach)} · ${evNextTxt(p, ev)}${pendTxt}`, v:ach });
     });
     got.sort((a,b)=>b.v-a.v); notYet.sort((a,b)=>b.v-a.v);
-    out.push(sec(`${posterThumbs(posterMatches(ev.name, ev.key, ev))} 🏁 ${esc(ev.name)} (${st==='ended'?'จบแล้ว':st==='upcoming'?'ยังไม่เริ่ม':'กำลังแข่ง'} · เกณฑ์ ${ev.tiers.map(THB).join(' / ')})${scopeNote}`,
+    out.push(sec(`${posterThumbs(posterMatches(ev.name, ev.key, ev))} 🏁 ${esc(ev.name)} (${st==='ended'?'จบแล้ว':st==='upcoming'?'ยังไม่เริ่ม':'กำลังแข่ง'} · ${evRuleTxt(ev)})${scopeNote}`,
       `<div class="ask-sub">✅ ติดแล้ว ${got.length} คน</div>${li(got.map(x=>x.html))}<div class="ask-sub">⏳ ยังไม่ติด ${notYet.length} คน</div>${li(notYet.map(x=>x.html))}`));
   });
 
@@ -1330,7 +1402,7 @@ function __answerQuestionRaw(raw){
       const notes = (ag.coaching||[]).slice().sort((a,b)=>a.date<b.date?1:-1);
       const L = [`FYC ปี ${toBE(selYear)}: <b>${THB(yv)}</b>${yp>0?` <span style="color:var(--gold);">(+รอพิจารณา ${THB(yp)})</span>`:''}`];
       items.forEach(i=>L.push(`${i.ok?'✅':i.near?'🔥':'⏳'} ${i.title}: ${i.text}`));
-      evList().forEach(ev=>{ const a = eventAchieved(effectiveEntries(en), ev); if (a>0){ const r = ev.tiers.filter(t=>a>=t).length; L.push(`🏁 ${esc(ev.name)}: ${THB(a)} · ${r?`ระดับ ${r}/${ev.tiers.length}`:`ขาดอีก ${THB(ev.tiers[0]-a)}`}`); } });
+      evList().forEach(ev=>{ const a = eventValue(effectiveEntries(en), ev); if (a>0){ const p = evProg(a, ev); L.push(`🏁 ${esc(ev.name)}: ${evUnit(ev)} ${THB(a)} · ${p.ok?p.label+' · ':''}${evNextTxt(p, ev)}`); } });
       if (ri) L.push(`🪪 บัตรหมดอายุ ${fmtTH(ri.exp,{day:"numeric",month:"short",year:"numeric"})} ${renewalShort(ri)}`);
       if (notes[0]) L.push(`🗣️ คุยล่าสุด ${fmtTH(new Date(notes[0].date+"T00:00:00"),{day:"numeric",month:"short"})}${notes[0].note?` · ${esc(notes[0].note.slice(0,50))}`:''}`);
       out.push(sec(`👤 ${esc(n)}`, li(L)));
@@ -1431,12 +1503,13 @@ function agentCompStatus(ag){
   evList().forEach(ev=>{
     const s0=new Date(ev.start+"T00:00:00"), e0=new Date(ev.end+"T23:59:59");
     if (!(s0.getFullYear()===selYear || e0.getFullYear()===selYear)) return;
-    const ach = eventAchieved(entries, ev);
-    const reached = ev.tiers.filter(t=>ach>=t).length, next = ev.tiers[reached];
+    const ach = eventValue(entries, ev);
+    const p = evProg(ach, ev);
     const running = now>=s0 && now<=e0;
     if (!running) return; // จบแล้ว/ยังไม่เริ่ม ไม่ขึ้นหน้าหลัก (ที่จบแล้วดูได้ในทำเนียบการแข่งขัน)
-    items.push({ has: ach>0, ok: reached>0, near: running && next!==undefined && next-ach<=NEAR, title:`${ev.name}${running?'':' (จบแล้ว)'}`,
-      text:`${reached>0?`ได้ระดับ ${reached}${ev.tiers.length>1?`/${ev.tiers.length}`:''}`:'ยังไม่ถึง'}${next!==undefined?(running?` · ขาดอีก <b>${THBC(next-ach)}</b> ถึง${reached>0?'ระดับถัดไป':''} ${THB(next)}`:''):' · ครบทุกระดับ 🎉'}` });
+    const miss = eventMissingPrem(ag.entries, ev);
+    items.push({ has: ach>0 || miss>0, ok: p.ok, near: p.next!==undefined && p.need<=NEAR, title:`${ev.name}`,
+      text:`${evUnit(ev)} ${THB(ach)} · ${p.ok?p.label+' · ':''}${p.next!==undefined?`ขาดอีก <b>${THBC(p.need)}</b>${evMode(ev)==='every'?` ได้ครั้งที่ ${p.n+1}`:''}`:'ครบทุกระดับ 🎉'}${miss?` · <span style="color:var(--bad);">ยังไม่คีย์เบี้ย ${miss} เคส</span>`:''}` });
   });
   return items.filter(i=>i.has);
 }
@@ -2075,6 +2148,7 @@ function renderTeamTab(){
     ${renderDeadlinesCard(names, selectedPosition)}
 
     ${renderProgramsCard()}
+    ${renderUmEventsCard(names)}
     ${renderEventsSettingsCard()}
 
     ${selectedPosition?(()=>{
@@ -3062,33 +3136,55 @@ function renderSpecialEventsSection(entries){
   if (!eventsThisYear.length) return '';
   const evStatus = ev=>compStatus(new Date(ev.start+"T00:00:00"), new Date(ev.end+"T23:59:59"));
   const cardOf = ev=>{
-    const achieved = eventAchieved(entries, ev);
-    const reachedCount = ev.tiers.filter(t=>achieved>=t).length;
-    const achievedProj = eventAchieved(effectiveEntries(projEntries(agent().entries)), ev);
-    const reachedProj = ev.tiers.filter(t=>achievedProj>=t).length;
-    const projLine = achievedProj>achieved ? `<div class="proj-box" style="margin-top:8px;">⏳ ถ้ารออนุมัติผ่านทั้งหมด: <b>${THB(achievedProj)}</b> → ${reachedProj>reachedCount?`<b style="color:var(--good);">ผ่านระดับ ${reachedProj}/${ev.tiers.length}</b>`:reachedProj>0?`ระดับ ${reachedProj}/${ev.tiers.length} (เท่าเดิม)`:'ยังไม่ถึงระดับ 1'}${ev.tiers[reachedProj]!==undefined?` · ขาดอีก ${THB(ev.tiers[reachedProj]-achievedProj)} ถึงระดับ ${reachedProj+1}`:''}</div>` : '';
-    const nextTier = ev.tiers[reachedCount];
-    const tiersHtml = ev.tiers.map((t,i)=>{
-      const reached = achieved>=t;
-      return `<div style="flex:1;min-width:90px;border-radius:10px;padding:10px;text-align:center;background:${reached?'#F1F8F3':'var(--cream)'};border:1.5px solid ${reached?'var(--good)':'#123F6B22'};">
-        <div style="font-size:15px;color:var(--muted);">ระดับ ${i+1}</div>
-        <div style="font-weight:700;color:${reached?'var(--good)':'var(--navy-deep)'};font-size:18px;">${THB(t)}</div>
-        <div style="font-size:14px;margin-top:2px;color:${reached?'var(--good)':'var(--muted)'};">${reached?'✔ ผ่านแล้ว':'ยังไม่ถึง'}</div>
-      </div>`;
-    }).join("");
-    const statusLine = (evStatus(ev)==='ended' && nextTier!==undefined)
-      ? `<div style="margin-top:8px;font-size:17px;color:${reachedCount>0?'var(--good)':'var(--muted)'};font-weight:700;">${reachedCount>0?`ผ่าน ${reachedCount}/${ev.tiers.length} ระดับ`:'ไม่ผ่านเกณฑ์'}</div>`
-      : nextTier!==undefined
-      ? `<div style="margin-top:8px;font-size:17px;color:var(--muted);">ขาดอีก <b style="color:var(--warn);">${THB(nextTier-achieved)}</b> ถึงระดับถัดไป (${THB(nextTier)})</div>`
-      : `<div style="margin-top:8px;font-size:17px;color:var(--good);font-weight:700;">🎉 ผ่านครบทุกระดับแล้ว!</div>`;
+    const allEn = agent().entries;
+    const achieved = eventValue(entries, ev);
+    const p = evProg(achieved, ev);
+    const achievedProj = eventValue(effectiveEntries(projEntries(allEn)), ev);
+    const pP = evProg(achievedProj, ev);
+    const miss = eventMissingPrem(allEn, ev);
+    const ended = evStatus(ev)==='ended';
+    const projLine = achievedProj>achieved ? `<div class="proj-box" style="margin-top:8px;">⏳ ถ้ารออนุมัติผ่านทั้งหมด: <b>${THB(achievedProj)}</b> → ${pP.n>p.n?`<b style="color:var(--good);">${pP.label}</b>`:pP.ok?`${pP.label} (เท่าเดิม)`:'ยังไม่ถึง'}${pP.next!==undefined?` · ${evNextTxt(pP, ev)}`:''}</div>` : '';
+    const missLine = miss ? `<div class="alert-box" style="margin-top:8px;"><div class="line" style="font-weight:700;">⚠ ยังไม่ได้คีย์ "เบี้ยประกันต่อปี" ${miss} เคสในช่วงแข่ง — ยอด FYP อาจต่ำกว่าความจริง</div><div class="line" style="font-size:15px;color:var(--muted);">แก้ได้ที่แท็บ บันทึกผลงาน → แตะรายการเพื่อแก้ไข</div></div>` : '';
+    let body;
+    if (evMode(ev)==='every'){
+      const step = Number(ev.tiers[0])||1, frac = Math.max(0, Math.min(1, (achieved - p.n*step)/step));
+      body = `<div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:120px;border-radius:10px;padding:10px;text-align:center;background:${p.ok?'#F1F8F3':'var(--cream)'};border:1.5px solid ${p.ok?'var(--good)':'#123F6B22'};">
+            <div style="font-size:15px;color:var(--muted);">ได้แล้ว</div>
+            <div style="font-weight:800;font-size:26px;color:${p.ok?'var(--good)':'var(--navy-deep)'};">${p.n} ครั้ง</div>
+            ${p.amt!==null&&p.amt!==undefined?`<div style="font-size:17px;font-weight:700;color:${p.ok?'var(--good)':'var(--muted)'};">${THB(p.amt)}</div>`:''}
+          </div>
+          <div style="flex:2;min-width:160px;">
+            <div style="font-size:15px;color:var(--muted);">ครั้งถัดไป (ทุกๆ ${THB(step)})</div>
+            <div style="background:#123F6B14;border-radius:8px;height:16px;overflow:hidden;margin:6px 0;"><div style="height:100%;width:${Math.round(frac*100)}%;background:linear-gradient(90deg,var(--gold-soft),var(--gold));"></div></div>
+            <div style="font-size:17px;">${ended?'จบการแข่งขันแล้ว':`ขาดอีก <b style="color:var(--warn);">${THB(p.need)}</b>${ev.reward?` ได้เพิ่มอีก ${THB(ev.reward)}`:''}`}</div>
+          </div>
+        </div>`;
+    } else {
+      const tiersHtml = ev.tiers.map((t,i)=>{
+        const reached = achieved>=t;
+        return `<div style="flex:1;min-width:90px;border-radius:10px;padding:10px;text-align:center;background:${reached?'#F1F8F3':'var(--cream)'};border:1.5px solid ${reached?'var(--good)':'#123F6B22'};">
+          <div style="font-size:15px;color:var(--muted);">${ev.tiers.length>1?`ระดับ ${i+1}`:'เกณฑ์'}</div>
+          <div style="font-weight:700;color:${reached?'var(--good)':'var(--navy-deep)'};font-size:18px;">${THB(t)}</div>
+          <div style="font-size:14px;margin-top:2px;color:${reached?'var(--good)':'var(--muted)'};">${reached?'✔ ผ่านแล้ว':'ยังไม่ถึง'}</div>
+        </div>`;
+      }).join("");
+      const statusLine = (ended && p.next!==undefined)
+        ? `<div style="margin-top:8px;font-size:17px;color:${p.ok?'var(--good)':'var(--muted)'};font-weight:700;">${p.ok?`ผ่าน ${p.n}/${ev.tiers.length} ระดับ`:'ไม่ผ่านเกณฑ์'}</div>`
+        : p.next!==undefined
+        ? `<div style="margin-top:8px;font-size:17px;color:var(--muted);">ขาดอีก <b style="color:var(--warn);">${THB(p.need)}</b> ถึง${p.n?'ระดับถัดไป':'เกณฑ์'} (${THB(p.next)})</div>`
+        : `<div style="margin-top:8px;font-size:17px;color:var(--good);font-weight:700;">🎉 ผ่านครบทุกระดับแล้ว!</div>`;
+      body = `<div style="display:flex;gap:8px;flex-wrap:wrap;">${tiersHtml}</div>${statusLine}`;
+    }
     return `<div class="card" style="margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;">
         <h3 style="margin:0;display:flex;align-items:center;gap:10px;">${posterThumbs(posterMatches(ev.name, ev.key, ev))}<span>${esc(ev.name)}</span></h3>
         <span style="font-size:15px;color:var(--muted);">${thDate(ev.start)} – ${thDate(ev.end)}</span>
       </div>
-      <div style="font-size:17px;color:var(--muted);margin:4px 0 10px;">ผลงานสะสมในช่วงแข่งขัน: <b style="color:var(--navy-deep);">${THB(achieved)}</b></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">${tiersHtml}</div>
-      ${statusLine}
+      <div style="font-size:16px;color:var(--muted);margin:4px 0 2px;">กติกา: ${evRuleTxt(ev)}</div>
+      <div style="font-size:17px;color:var(--muted);margin:0 0 10px;">${evUnit(ev)} สะสมในช่วงแข่งขัน: <b style="color:var(--navy-deep);">${THB(achieved)}</b></div>
+      ${body}
+      ${missLine}
       ${projLine}
     </div>`;
   };
@@ -6372,6 +6468,18 @@ document.addEventListener('click', e=>{
   else if (type==='nav'){ const nb = document.querySelector(`[data-b-nav="${a}"]`); if (nb) nb.click(); }
 });
 
+// ตั้งค่าแบบการแข่งขัน (นับจาก / แบบรางวัล / รางวัล / เกณฑ์ UM)
+document.addEventListener('change', e=>{
+  const el = e.target.closest && e.target.closest('[data-ev-f]'); if (!el) return;
+  const [f, i] = el.dataset.evF.split('|'); const ev = evAll()[+i]; if (!ev) return;
+  const nums = s=>(String(s).match(/\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?/g)||[]).map(x=>Number(x.replace(/,/g,''))).filter(x=>x>0);
+  if (f==='basis') ev.basis = el.value;
+  else if (f==='mode'){ ev.mode = el.value; if (ev.mode==='every' && Array.isArray(ev.tiers) && ev.tiers.length>1) ev.tiers = [ev.tiers[0]]; }
+  else if (f==='reward'){ const n = nums(el.value)[0]; if (n) ev.reward = n; else delete ev.reward; }
+  else if (f==='rewardText'){ const t = el.value.trim(); if (t) ev.rewardText = t; else delete ev.rewardText; }
+  else if (f==='umTiers'){ const a = nums(el.value).sort((x,y)=>x-y); if (a.length) ev.umTiers = a; else delete ev.umTiers; }
+  saveState(); render();
+});
 bSkyInit(); bNavInit(); bApplyPrefs();
 posterLoad();
 boot();
