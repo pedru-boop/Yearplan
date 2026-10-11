@@ -373,6 +373,46 @@ main{padding-bottom:170px!important;}
 /* ลดเอฟเฟกต์ */
 html.b-calm .b-podw,html.b-calm .b-orbit,html.b-calm .b-badge,html.b-calm .b-grp.launch{animation:none!important;}
 @media (prefers-reduced-motion:reduce){.b-podw,.b-orbit,.b-badge,.b-grp.launch,.b-pod.boom,.b-warp.go{animation:none!important;}}
+
+/* ===== beta2: ค้นหา · โปสเตอร์ · ขยายกล่องไตรมาส ===== */
+.qcard[data-qz]{cursor:zoom-in;}
+.qcard[data-qz] .head > span:first-child::after{content:"  🔍";font-size:.8em;opacity:.7;}
+#qz-layer .qcard[data-qz]{cursor:zoom-out;background:#fff!important;box-shadow:0 24px 60px rgba(0,0,0,.6);}
+#qz-layer .qcard[data-qz] .head > span:first-child::after{content:"  ▲ แตะเพื่อย่อ";font-size:.7em;font-weight:600;color:#4B5563;}
+#qz-layer{position:fixed;inset:0;z-index:95;background:rgba(3,6,15,.82);overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(70px + env(safe-area-inset-top,0px)) 10px 60px;}
+#qz-layer[hidden],#pv[hidden]{display:none!important;}
+#qz-layer .qz-inner{max-width:720px;margin:0 auto;zoom:calc(var(--z,1.12) * 1.08);color:var(--ink);font-family:'Mali','Sarabun','Noto Sans Thai',sans-serif;font-weight:var(--fw,500);}
+#qz-layer .qcard .mini-row{flex-wrap:wrap;gap:2px 10px;}
+#qz-layer .qcard .mini-row .v{margin-left:auto;}
+#qz-layer .qcard{overflow-x:auto;}
+#qz-layer .qtable input{width:100%!important;min-width:0;box-sizing:border-box;}
+#qz-layer .qtable td,#qz-layer .qtable th{padding-left:3px;padding-right:3px;}
+#qz-x,#pv .x{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:12px;z-index:121;width:54px;height:54px;border-radius:50%;border:0;background:#fff;color:#03131F;font-size:28px;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.5);cursor:pointer;}
+.p-thumbs{display:inline-flex;gap:4px;vertical-align:middle;cursor:zoom-in;flex:none;}
+.p-thumbs img{width:42px;height:59px;object-fit:cover;border-radius:6px;border:1.5px solid #FFC857;box-shadow:0 2px 6px rgba(0,0,0,.3);background:#0001;display:block;}
+.p-evrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.p-strip{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 2px 10px;-webkit-overflow-scrolling:touch;}
+.p-card{flex:none;width:132px;scroll-snap-align:start;border:1px solid var(--b-line);border-radius:14px;background:var(--b-panel);padding:6px;color:var(--b-ink);text-align:left;font:inherit;cursor:zoom-in;box-shadow:0 8px 18px -8px rgba(0,0,0,.5);}
+.p-card img{width:100%;aspect-ratio:1/1.414;object-fit:cover;border-radius:9px;display:block;background:#0003;}
+.p-card .t{font-weight:700;font-size:14.5px;margin-top:6px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.p-card .d{display:block;font-size:13.5px;color:var(--b-warn);margin-top:2px;}
+.p-card .k{display:inline-block;font-size:12px;padding:0 6px;border-radius:999px;background:var(--b-violet);color:#fff;margin-top:3px;}
+#pv{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.95);display:flex;flex-direction:column;color:#fff;font-family:'Sarabun','Mali','Noto Sans Thai',sans-serif;}
+#pv .bar{padding:calc(16px + env(safe-area-inset-top,0px)) 76px 8px 16px;font-size:18px;font-weight:700;min-height:70px;}
+#pv .bar small{display:block;font-size:15px;font-weight:400;color:#C9D3E0;}
+#pv .track{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}
+#pv .sl{flex:none;width:100%;height:100%;scroll-snap-align:center;overflow:auto;display:flex;flex-direction:column;align-items:center;padding:0 10px 16px;}
+#pv .sl img{max-width:100%;max-height:calc(100dvh - 190px);object-fit:contain;border-radius:8px;cursor:zoom-in;}
+#pv .sl.big{align-items:flex-start;} #pv .sl.big img{max-width:none;max-height:none;width:220%;cursor:zoom-out;}
+#pv .cap{font-size:16px;text-align:center;margin-top:10px;color:#ddd;line-height:1.5;}
+#pv .pick{margin-top:10px;font-size:18px;font-weight:700;padding:12px 20px;border-radius:12px;border:0;background:#45E3FF;color:#03131F;cursor:pointer;}
+#pv .hint{text-align:center;font-size:14px;color:#9fb0c8;padding:0 0 calc(10px + env(safe-area-inset-bottom,0px));}
+.sr-hit{display:flex;gap:8px;align-items:flex-start;padding:7px 8px;border-radius:8px;cursor:pointer;border:1px solid #123F6B14;margin:4px 0;background:#F7FAFF;}
+.sr-hit:active{background:#E3EEFF;}
+.sr-hit .w{flex:1;min-width:0;font-size:15px;line-height:1.45;color:#1B2430;}
+.sr-hit .w small{display:block;color:#4B5563;font-size:13.5px;}
+.sr-hit mark{background:#FFE29A;color:inherit;border-radius:3px;padding:0 1px;}
+.sr-hit .go{color:#0F56B2;font-weight:700;font-size:18px;}
 </style>
 </head>
 <body>
@@ -387,7 +427,7 @@ html.b-calm .b-podw,html.b-calm .b-orbit,html.b-calm .b-badge,html.b-calm .b-grp
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta1</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta2</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -646,6 +686,9 @@ function renderEventsSettingsCard(){
       </div>
       <label class="field" style="margin-top:6px;"><span>เกณฑ์ FYC (บาท)</span><input type="text" inputmode="decimal" data-ev-tiers="${i}" value="${esc((ev.tiers||[]).map(t=>Number(t).toLocaleString('en-US')).join(', '))}" placeholder="15000, 30000"></label>
       <div style="font-size:14px;margin-top:4px;">${stTxt(ev)}</div>
+      <div class="p-evrow">${posterThumbs(posterMatches(ev.name, ev.key, ev)) || '<span style="color:var(--muted);font-size:14px;">ยังไม่มีโปสเตอร์</span>'}
+        <button type="button" class="btn-ghost" data-ev-poster="${i}" style="font-size:15px;padding:5px 10px;">🖼 เลือกโปสเตอร์</button>
+        ${Array.isArray(ev.posters)&&ev.posters.length?`<button type="button" class="btn-ghost" data-ev-poster-auto="${i}" style="font-size:15px;padding:5px 10px;">↺ จับคู่อัตโนมัติ</button>`:''}</div>
     </div>`).join('') || '<div class="empty">ยังไม่มีการแข่งขัน</div>'}
     <button class="btn-ghost" id="ev-add">+ เพิ่มการแข่งขัน</button>`}
   </div>`;
@@ -1083,7 +1126,7 @@ function askNorm(s){ return String(s||'').toLowerCase().replace(/\s+/g,''); }
 function renderAskBox(){
   return `<div class="card ask-card">
     <div style="display:flex;gap:8px;align-items:center;">
-      <input id="ask-input" type="search" enterkeyhint="search" placeholder="🔎 ถามแอป เช่น Kick Off ใครติดบ้าง" value="${esc(askQuery)}" style="flex:1;min-width:0;padding:8px 10px;font-size:17px;">
+      <input id="ask-input" type="search" enterkeyhint="search" placeholder="🔎 ค้นหา/ถามแอป เช่น ชื่อตัวแทน, Kick Off ใครติดบ้าง" value="${esc(askQuery)}" style="flex:1;min-width:0;padding:8px 10px;font-size:17px;">
       <button id="ask-go" class="btn-primary" style="padding:8px 14px;">ถาม</button>
     </div>
     ${askResult
@@ -1130,7 +1173,7 @@ function __answerQuestionRaw(raw){
       else notYet.push({ html:`<b>${esc(n)}</b> — ${THB(ach)} · ขาดอีก ${THB(ev.tiers[0]-ach)}${pendTxt}`, v:ach });
     });
     got.sort((a,b)=>b.v-a.v); notYet.sort((a,b)=>b.v-a.v);
-    out.push(sec(`🏁 ${esc(ev.name)} (${st==='ended'?'จบแล้ว':st==='upcoming'?'ยังไม่เริ่ม':'กำลังแข่ง'} · เกณฑ์ ${ev.tiers.map(THB).join(' / ')})${scopeNote}`,
+    out.push(sec(`${posterThumbs(posterMatches(ev.name, ev.key, ev))} 🏁 ${esc(ev.name)} (${st==='ended'?'จบแล้ว':st==='upcoming'?'ยังไม่เริ่ม':'กำลังแข่ง'} · เกณฑ์ ${ev.tiers.map(THB).join(' / ')})${scopeNote}`,
       `<div class="ask-sub">✅ ติดแล้ว ${got.length} คน</div>${li(got.map(x=>x.html))}<div class="ask-sub">⏳ ยังไม่ติด ${notYet.length} คน</div>${li(notYet.map(x=>x.html))}`));
   });
 
@@ -1139,7 +1182,7 @@ function __answerQuestionRaw(raw){
     { test:()=>has('โบนัสไตรมาส') || (has('ไตรมาส') && has('โบนัส')), prefix:'โบนัสไตรมาส', title:'💰 โบนัสไตรมาส' },
     { test:()=>has('คุณวุฒิ','trophy','ทรอฟี่','ผ่านเกณฑ์ไตรมาส'), prefix:'ผ่านเกณฑ์ไตรมาส', title:'🏅 คุณวุฒิไตรมาส (Trophy)' },
     { test:()=>has('โบนัสปี','โบนัสรายปี','โบนัสทั้งปี'), prefix:'โบนัสปี', title:'💰 โบนัสปี' },
-    { test:()=>has('ต่อเนื่อง'), prefix:'เกณฑ์รางวัลต่อเนื่อง', title:'🔁 เกณฑ์รางวัลต่อเนื่องทั้งปี' },
+    { test:()=>has('ต่อเนื่อง','เงื่อนไขทั้งปี','24ราย'), prefix:'คุณวุฒิไตรมาส — เงื่อนไขทั้งปี', title:'🔁 คุณวุฒิไตรมาส — เงื่อนไขทั้งปี (24 ราย + 160,000)' },
     { test:()=>has('joining','จอยนิ่ง','จอยนิง'), prefix:'Joining Bonus', title:'🎁 Joining Bonus' },
   ];
   compTopics.forEach(tp=>{
@@ -1293,8 +1336,10 @@ function __answerQuestionRaw(raw){
       out.push(sec(`👤 ${esc(n)}`, li(L)));
     });
   }
+  const __sr = appSearchHtml(raw, out.length>0);
+  if (__sr) out.push(__sr);
   if (!out.length){
-    return `<div class="ask-empty" style="margin-bottom:8px;">ยังไม่เข้าใจคำถามนี้ ลองถามแบบนี้ได้ค่ะ</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${ASK_CHIPS.map(c=>`<span class="stage-chip ask-chip" data-ask="${esc(c)}">${esc(c)}</span>`).join('')}</div><div style="font-size:13px;color:var(--muted);margin-top:8px;">หรือพิมพ์ชื่อตัวแทน / ชื่อ UM ในทีม เพื่อดูสรุปของคนนั้น</div>`;
+    return `<div class="ask-empty" style="margin-bottom:8px;">ไม่พบคำนี้ในแอป ลองคำอื่น หรือถามแบบนี้ได้ค่ะ ลองถามแบบนี้ได้ค่ะ</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${ASK_CHIPS.map(c=>`<span class="stage-chip ask-chip" data-ask="${esc(c)}">${esc(c)}</span>`).join('')}</div><div style="font-size:13px;color:var(--muted);margin-top:8px;">หรือพิมพ์ชื่อตัวแทน / ชื่อ UM ในทีม เพื่อดูสรุปของคนนั้น</div>`;
   }
   return out.join('');
 }
@@ -1360,11 +1405,11 @@ function agentCompStatus(ag){
       items.push({ has:aHas, ok:true, near: next && next.min-aFyc<=NEAR, title:`โบนัสปี ${toBE(selYear)}`,
         text:`ได้แล้ว ${ANNUAL_BANDS[band].pct[idx]}%${next?` · ขาดอีก <b>${THBC(next.min-aFyc)}</b> ขยับเป็น ${ANNUAL_BANDS[band].pct[idx+1]}%`:' · ขั้นสูงสุดแล้ว'}` });
     } else items.push({ has:aHas, ok:false, near: cs<=2 && fs<=NEAR, title:`โบนัสปี ${toBE(selYear)}`, text:`ขาดอีก <b>${shortTxt(cs,fs)}</b> จะเริ่มได้ ${ANNUAL_BANDS[band].pct[0]}%` });
-    // เกณฑ์รางวัลต่อเนื่องทั้งปี 24 ราย + 160,000
+    // คุณวุฒิไตรมาส — เงื่อนไขทั้งปี 24 ราย + 160,000 (ต้องผ่านจึงได้เงินรางวัลต่อเนื่อง)
     const gc=Math.max(0,ANNUAL_GATE_CASES-aCases), gf=Math.max(0,ANNUAL_GATE_FYC-aFyc);
     items.push(gc===0&&gf===0
-      ? { has:aHas, ok:true, title:'เกณฑ์รางวัลต่อเนื่องทั้งปี', text:'ผ่านแล้ว (24 ราย + 160,000)' }
-      : { has:aHas, ok:false, near: gc<=2 && gf<=NEAR, title:'เกณฑ์รางวัลต่อเนื่องทั้งปี', text:`ขาดอีก <b>${shortTxt(gc,gf)}</b>` });
+      ? { has:aHas, ok:true, title:'คุณวุฒิไตรมาส — เงื่อนไขทั้งปี', text:'ผ่านแล้ว (24 ราย + 160,000) — มีสิทธิ์รับเงินรางวัลคุณวุฒิไตรมาสต่อเนื่อง' }
+      : { has:aHas, ok:false, near: gc<=2 && gf<=NEAR, title:'คุณวุฒิไตรมาส — เงื่อนไขทั้งปี', text:`ขาดอีก <b>${shortTxt(gc,gf)}</b> (เกณฑ์ 24 ราย + 160,000)` });
   }
   // 4) Joining Bonus — เฉพาะช่วง 4 เดือนแรกนับจากวันที่มีผลงานขึ้นแรก
   const sd = ag.competitions && ag.competitions.firstSaleDate;
@@ -2222,7 +2267,7 @@ function renderTeamTab(){
               ${x.pending>0?`<div style="font-size:12px;color:var(--gold);margin-top:1px;">+${THB(x.pending)} รอพิจารณา</div>`:''}
             </td>
           </tr>`;}).join("");
-          return `<div class="qcard" style="background:${NAVY_TINTS[q-1]};">
+          return `<div class="qcard" data-qz="um${q}" style="background:${NAVY_TINTS[q-1]};">
             ${isCurrentQ?`<div class="badge-current">ไตรมาสปัจจุบัน</div>`:''}
             <div class="head"><span>ไตรมาส ${q}</span><span>${isCurrentQ?'⏳':(rate>0?'✔':'✕')}</span></div>
             <div class="mini-row"><span>ตัวแทนตรงไตรมาสนี้ (ใช้คำนวณ DPO)</span><span class="v ${rate>0?'ok':''}">${THB(qDirectFyc)}</span></div>
@@ -3038,7 +3083,7 @@ function renderSpecialEventsSection(entries){
       : `<div style="margin-top:8px;font-size:17px;color:var(--good);font-weight:700;">🎉 ผ่านครบทุกระดับแล้ว!</div>`;
     return `<div class="card" style="margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;">
-        <h3 style="margin:0;">${esc(ev.name)}</h3>
+        <h3 style="margin:0;display:flex;align-items:center;gap:10px;">${posterThumbs(posterMatches(ev.name, ev.key, ev))}<span>${esc(ev.name)}</span></h3>
         <span style="font-size:15px;color:var(--muted);">${thDate(ev.start)} – ${thDate(ev.end)}</span>
       </div>
       <div style="font-size:17px;color:var(--muted);margin:4px 0 10px;">ผลงานสะสมในช่วงแข่งขัน: <b style="color:var(--navy-deep);">${THB(achieved)}</b></div>
@@ -3051,7 +3096,7 @@ function renderSpecialEventsSection(entries){
   const upcoming = eventsThisYear.filter(ev=>evStatus(ev)==='upcoming');
   const ended = eventsThisYear.filter(ev=>evStatus(ev)==='ended');
   const cards = active.map(cardOf).join("")
-    + upcoming.map(ev=>`<div class="comp-upcoming">⏳ <b>${esc(ev.name)}</b> — เริ่ม ${thDate(ev.start)}</div>`).join("");
+    + upcoming.map(ev=>`<div class="comp-upcoming">${posterThumbs(posterMatches(ev.name, ev.key, ev))} ⏳ <b>${esc(ev.name)}</b> — เริ่ม ${thDate(ev.start)}</div>`).join("");
   const history = ended.map(ev=>cardOf(ev).replace('class="card"','class="hist-item"').replace('🎉 ผ่านครบทุกระดับแล้ว!','🏆 ผ่านครบทุกระดับ'));
   return `
     ${cards?`<h3 style="margin:4px 0 4px;">🏁 การแข่งขันพิเศษ</h3>
@@ -3508,6 +3553,7 @@ function withDueView(fn){
 function render(){
   __rc = new WeakMap();
   try { withDueView(__renderInner); } finally { __rc = null; }
+  try { qzAfterRender(); } catch(e){}
 }
 function __renderInner(){
   if (IS_AGENT_APP) activeSection = "agent";
@@ -4235,7 +4281,7 @@ function renderCompetitionsTab(){
       ${qNetDiff>=0?`<span style="color:var(--good);">เกินสุทธิ ${THB(qNetDiff)}</span>`:`<span style="color:var(--bad);">ขาดสุทธิ ${THB(-qNetDiff)}</span>`}
     </div>` : '';
 
-    return `<div class="qcard" style="${borderStyle}background:${NAVY_TINTS[r.q-1]};">
+    return `<div class="qcard" data-qz="ag${r.q}" style="${borderStyle}background:${NAVY_TINTS[r.q-1]};">
       ${isCurrentQuarter?`<div class="badge-current">ไตรมาสปัจจุบัน</div>`:''}
       <div class="head"><span>ไตรมาส ${r.q} — คุณวุฒิไตรมาส</span><span>${isCurrentQuarter?'⏳':(r.qualifies?'✔':'✕')}</span></div>
       <div class="mini-row"><span>เดือนที่มีผลงาน</span><span class="v ${r.activeMonths>=QUALIFY_MIN_ACTIVE_MONTHS?'ok':''}">${r.activeMonths}/3 เดือน</span></div>
@@ -4441,7 +4487,7 @@ function renderCompetitionsTab(){
     ${IS_AGENT_APP?renderEventsSettingsCard():""}
 
     <div class="card">
-      <h3>การแข่งขันคุณวุฒิไตรมาส ประจำปี ${toBE(selYear)}</h3>
+      <h3 style="display:flex;align-items:center;gap:10px;">${posterThumbs(posterMatches("คุณวุฒิไตรมาส","trophy"))}<span>การแข่งขันคุณวุฒิไตรมาส ประจำปี ${toBE(selYear)}</span></h3>
       <p class="sub">เกณฑ์ต่อไตรมาส: ผลงาน ≥ 6 ราย · FYC ≥ 40,000 · มีผลงานรายใหม่อย่างน้อย 2 ใน 3 เดือน (ประกาศที่ 3/2569)</p>
       <div class="qgrid">${qCardsHtml}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
@@ -5823,6 +5869,8 @@ function betaLayout(c){
     buckets[g].sort((a,b)=>{ const ia=ord.indexOf(bCardKey(a)), ib=ord.indexOf(bCardKey(b)); return (ia<0?999:ia)-(ib<0?999:ib); });
   });
   const todos = bTodos(c);
+  bCardIndex = [];
+  Object.keys(buckets).forEach(g=>buckets[g].forEach(n=>{ try{ bCardIndex.push({ g, key:bCardKey(n), title:bCardTitle(n), text:(n.textContent||'').replace(/\s+/g,' ') }); }catch(e){} }));
 
   // เปิดหมวดครั้งแรก: เปิดกล่องเป้าหมาย (จากเรื่องที่ต้องทำ) หรือกล่องแรกของหมวดไว้ให้เลย แล้ววาดใหม่ 1 รอบ
   if (betaJustOpened && betaGroup && buckets[betaGroup]){
@@ -5853,6 +5901,7 @@ function betaLayout(c){
       </div>
     </section>
     <p class="b-fresh">ข้อมูล ณ ${fmtTH(new Date(),{day:"numeric",month:"short",year:"numeric"})}${S.yearPending>0?` · รออนุมัติ <b>${S.yearPendingCount?S.yearPendingCount+' ราย ':''}(${THB(S.yearPending)})</b>`:' · ไม่มีงานรออนุมัติ'}${activeTeamUmName?` · ทีมของ ${esc(activeTeamUmName)}`:''}</p>
+    ${posterStripHtml()}
     <div id="b-ask-slot"></div>
     <div class="b-sec"><h2>วันนี้ต้องทำ</h2><span>แตะเพื่อไปที่เรื่องนั้น</span></div>
     <div class="b-todos">${todos.length?todos.map((t,i)=>`<button class="b-todo" style="--c:${t.c}" data-b-todo="${i}"><span class="when">${t.when}</span><span class="what"><b>${esc(t.t)}</b><span>${esc(t.s)}</span></span><span class="go" aria-hidden="true">›</span></button>`).join(''):'<div class="b-empty">ไม่มีเรื่องเร่งด่วนใน 14 วันนี้ 👍</div>'}</div>
@@ -6103,7 +6152,228 @@ function bSkyStart(){
   requestAnimationFrame(loop);
 }
 
+/* ================= beta2: โปสเตอร์ (อ่านจาก GitHub ทุกคนเห็นเหมือนกัน) ================= */
+const POSTER_REPO = 'pedru-boop/Yearplan';
+const POSTER_BASE = /\.github\.io$/.test(location.hostname) ? 'posters/' : 'https://pedru-boop.github.io/Yearplan/posters/';
+const POSTER_TTL = 30*60*1000; // จำรายการไว้ 30 นาที ไม่ต้องดึงทุกครั้งที่เปิด
+let posterList = [];
+function pNorm(s){ return String(s||'').toLowerCase().replace(/[\s\-_.·,:;()\/'"!?&+—–]/g,''); }
+function pBase(f){ return String(f||'').split('/').pop(); }
+function pSrc(p){ return POSTER_BASE + String(p.file).split('/').map(encodeURIComponent).join('/'); }
+function pIsArchived(p){ return !!p.archived || /^archive\//.test(p.file||''); }
+function pTodayIso(){ return todayIso(); }
+function posterActive(p){ const t=pTodayIso(); return !pIsArchived(p) && (!p.start || t>=p.start) && (!p.end || t<=p.end); }
+function posterFromName(path){
+  const f = pBase(path);
+  const m = f.match(/^(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})_(.+)\.(jpe?g|png|webp|gif)$/i);
+  const title = (m ? m[3] : f.replace(/\.[^.]+$/,'')).replace(/[-_]+/g,' ').trim();
+  return { file:path, title, start:m?m[1]:'', end:m?m[2]:'', match:[title], archived:/^archive\//.test(path) };
+}
+function posterLoad(force){
+  let cache = null; try{ cache = JSON.parse(localStorage.getItem('ped-posters')||'null'); }catch(e){}
+  if (cache && Array.isArray(cache.list)) posterList = cache.list;
+  if (!force && cache && Date.now()-cache.at < POSTER_TTL) return;
+  fetch(POSTER_BASE+'posters.json?v='+Date.now(), { cache:'no-store' })
+    .then(r=>{ if (!r.ok) throw new Error('no manifest'); return r.json(); })
+    .then(j=>Array.isArray(j) ? j : (j.posters||[]))
+    .catch(()=>Promise.all(['posters','posters/archive'].map(p=>fetch(`https://api.github.com/repos/${POSTER_REPO}/contents/${p}`).then(r=>r.ok?r.json():[]).catch(()=>[])))
+      .then(([a,b])=>[...(Array.isArray(a)?a:[]),...(Array.isArray(b)?b:[])].filter(x=>x.type==='file' && /\.(jpe?g|png|webp|gif)$/i.test(x.name)).map(x=>posterFromName(x.path.replace(/^posters\//,'')))))
+    .then(list=>{
+      list = (list||[]).filter(p=>p && p.file);
+      const changed = JSON.stringify(list)!==JSON.stringify(posterList);
+      posterList = list;
+      try{ localStorage.setItem('ped-posters', JSON.stringify({ at:Date.now(), list })); }catch(e){}
+      if (changed) render();
+    }).catch(()=>{});
+}
+// จับคู่โปสเตอร์กับการแข่งขัน: ที่เลือกเองในตั้งค่าก่อน ไม่งั้นจับจากชื่อ (ไม่สนตัวพิมพ์/ช่องว่าง)
+function posterMatches(name, key, ev){
+  if (ev && Array.isArray(ev.posters) && ev.posters.length){
+    const want = ev.posters.map(pBase);
+    return posterList.filter(p=>want.includes(pBase(p.file)));
+  }
+  const n = pNorm(name), k = pNorm(key);
+  if (!n && !k) return [];
+  return posterList.filter(p=>(Array.isArray(p.match)&&p.match.length?p.match:[p.title]).some(m=>{
+    const x = pNorm(m); if (!x) return false;
+    if (x===n || x===k) return true;
+    return n.length>=3 && x.length>=3 && (n.includes(x) || x.includes(n));
+  }));
+}
+function posterThumbs(list){
+  if (!list || !list.length) return '';
+  return `<span class="p-thumbs" role="button" aria-label="ดูโปสเตอร์เต็มจอ" data-poster-open="${esc(list.map(p=>p.file).join('|'))}">${list.slice(0,2).map(p=>`<img src="${esc(pSrc(p))}" loading="lazy" alt="โปสเตอร์ ${esc(p.title||'')}">`).join('')}</span>`;
+}
+function posterDaysLeft(p){ if (!p.end) return null; const t0=new Date(); t0.setHours(0,0,0,0); return Math.round((new Date(p.end+"T00:00:00")-t0)/86400000); }
+function posterStripHtml(){
+  const act = posterList.filter(posterActive).sort((a,b)=>(a.end||'9999').localeCompare(b.end||'9999'));
+  if (!act.length) return '';
+  const files = esc(act.map(p=>p.file).join('|'));
+  return `<div class="b-sec"><h2>โปสเตอร์ & โปร</h2><span>ปัดดูต่อ · แตะดูเต็มจอ</span></div>
+    <div class="p-strip">${act.map((p,i)=>{ const d=posterDaysLeft(p); return `<button type="button" class="p-card" data-poster-open="${files}" data-poster-i="${i}">
+      <img src="${esc(pSrc(p))}" loading="lazy" alt="โปสเตอร์ ${esc(p.title||'')}">
+      <span class="t">${esc(p.title||'')}</span>
+      ${d!==null?`<span class="d">${d===0?'วันสุดท้าย!':`เหลือ ${d} วัน`}</span>`:''}${p.kind==='promo'?'<span class="k">โปรลูกค้า</span>':''}
+    </button>`; }).join('')}</div>`;
+}
+function pDateTxt(p){
+  const f = iso=>fmtTH(new Date(iso+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"});
+  const L = [];
+  if (p.start || p.end) L.push(`ผลงาน ${p.start?f(p.start):''}${p.end?` – ${f(p.end)}`:''}`);
+  if (p.approve) L.push(`อนุมัติภายใน ${f(p.approve)}`);
+  return L.join(' · ');
+}
+// หน้าดูโปสเตอร์เต็มจอ (ปัดซ้าย-ขวา · แตะรูปเพื่อขยาย · ✕ หรือแตะพื้นดำเพื่อปิด)
+function posterView(files, startIdx, onPick){
+  const list = files.map(f=>posterList.find(p=>p.file===f) || posterFromName(f));
+  if (!list.length) return;
+  let pv = document.getElementById('pv');
+  if (!pv){ pv = document.createElement('div'); pv.id='pv'; document.body.appendChild(pv); }
+  pv.innerHTML = `<div class="bar"><span id="pv-t"></span><small id="pv-c"></small></div>
+    <button type="button" class="x" aria-label="ปิด">✕</button>
+    <div class="track">${list.map((p,i)=>`<div class="sl" data-i="${i}"><img src="${esc(pSrc(p))}" alt="โปสเตอร์ ${esc(p.title||'')}">
+      <div class="cap">${esc(pDateTxt(p))}${pIsArchived(p)?' · จบแล้ว':''}</div>
+      ${onPick?`<button type="button" class="pick" data-pick="${i}">✓ ใช้โปสเตอร์นี้</button>`:''}</div>`).join('')}</div>
+    <div class="hint">${list.length>1?'ปัดซ้าย-ขวาเพื่อดูใบอื่น · ':''}แตะรูปเพื่อขยาย</div>`;
+  pv.hidden = false; document.body.style.overflow = 'hidden';
+  const track = pv.querySelector('.track');
+  const setHead = ()=>{ const i = Math.round(track.scrollLeft/Math.max(1,track.clientWidth)); const p=list[Math.min(list.length-1,Math.max(0,i))]; pv.querySelector('#pv-t').textContent = p.title||''; pv.querySelector('#pv-c').textContent = list.length>1?`${i+1} / ${list.length}`:''; };
+  requestAnimationFrame(()=>{ track.scrollLeft = (startIdx||0)*track.clientWidth; setHead(); });
+  track.onscroll = setHead;
+  const close = ()=>{ pv.hidden = true; pv.innerHTML=''; document.body.style.overflow = ''; };
+  pv.onclick = e=>{
+    if (e.target.closest('.x')) return close();
+    const pk = e.target.closest('[data-pick]'); if (pk){ close(); onPick(list[+pk.dataset.pick]); return; }
+    const img = e.target.closest('.sl img'); if (img){ img.parentElement.classList.toggle('big'); return; }
+    if (e.target.classList.contains('sl') || e.target.classList.contains('track') || e.target.classList.contains('hint')) close();
+  };
+}
+document.addEventListener('click', e=>{
+  const t = e.target.closest('[data-poster-open]');
+  if (t){
+    e.preventDefault(); e.stopPropagation();
+    posterView(t.dataset.posterOpen.split('|').filter(Boolean), +(t.dataset.posterI||0));
+    return;
+  }
+  const sp = e.target.closest('[data-ev-poster]');
+  if (sp){
+    e.preventDefault(); e.stopPropagation();
+    const ev = evAll()[+sp.dataset.evPoster]; if (!ev) return;
+    if (!posterList.length){ showToast('ยังไม่มีโปสเตอร์บน GitHub (โฟลเดอร์ posters)'); posterLoad(true); return; }
+    const all = [...posterList].sort((a,b)=>(pIsArchived(a)-pIsArchived(b)) || (b.end||'').localeCompare(a.end||''));
+    posterView(all.map(p=>p.file), 0, p=>{ ev.posters = [pBase(p.file)]; saveState(); render(); showToast(`ใช้โปสเตอร์ "${p.title}" กับ ${ev.name}`); });
+    return;
+  }
+  const au = e.target.closest('[data-ev-poster-auto]');
+  if (au){ e.preventDefault(); e.stopPropagation(); const ev = evAll()[+au.dataset.evPosterAuto]; if (ev){ delete ev.posters; saveState(); render(); } }
+}, true);
+
+/* ================= beta2: กล่องไตรมาส แตะเพื่อขยายเต็มจอ ================= */
+let qzKey = null;
+function qzLayer(){
+  let L = document.getElementById('qz-layer');
+  if (!L){
+    L = document.createElement('div'); L.id='qz-layer'; L.hidden = true;
+    L.innerHTML = '<button type="button" id="qz-x" aria-label="ย่อกลับ">✕</button><div class="qz-inner"></div>';
+    document.body.appendChild(L);
+    L.addEventListener('click', e=>{ if (e.target===L || e.target.id==='qz-x') qzClose(); });
+  }
+  return L;
+}
+function qzOpen(card){
+  const L = qzLayer(), inner = L.querySelector('.qz-inner');
+  qzKey = card.dataset.qz;
+  const ph = document.createElement('div'); ph.className='qz-ph'; ph.style.height = card.offsetHeight+'px';
+  card.before(ph); inner.innerHTML=''; inner.appendChild(card);
+  L.hidden = false; L.scrollTop = 0; document.body.style.overflow='hidden';
+}
+function qzClose(){
+  const L = document.getElementById('qz-layer'); if (!L) return;
+  const card = L.querySelector('.qcard'), ph = document.querySelector('.qz-ph');
+  if (card && ph) ph.replaceWith(card); else if (ph) ph.remove();
+  L.querySelector('.qz-inner').innerHTML=''; L.hidden = true; qzKey = null; document.body.style.overflow='';
+}
+// หลังวาดหน้าใหม่ (เช่นแก้ตัวเลขในกล่อง) ให้กล่องที่ขยายอยู่ ยังขยายค้างไว้
+function qzAfterRender(){
+  if (!qzKey) return;
+  const L = qzLayer(); L.querySelector('.qz-inner').innerHTML='';
+  const card = document.querySelector(`#tab-content .qcard[data-qz="${qzKey}"]`);
+  if (card){ const k=qzKey, st=L.scrollTop; qzOpen(card); qzKey=k; L.scrollTop=st; } else { L.hidden=true; qzKey=null; document.body.style.overflow=''; }
+}
+document.addEventListener('click', e=>{
+  const card = e.target.closest('.qcard[data-qz]'); if (!card || betaArr) return;
+  if (e.target.closest('input,select,textarea,button,a,label,.tier-btn,.tier-box,[data-poster-open]')) return;
+  if (card.closest('#qz-layer')) qzClose(); else qzOpen(card);
+});
+document.addEventListener('keydown', e=>{ if (e.key==='Escape'){ if (qzKey) qzClose(); const pv=document.getElementById('pv'); if (pv && !pv.hidden) pv.querySelector('.x').click(); } });
+
+/* ================= beta2: ค้นหาทุกอย่างในแอป ================= */
+let bCardIndex = [];
+const SR_MENU = [
+  ['บันทึกผลงาน คีย์ผลงาน กรมธรรม์ เพิ่มงาน', 'tab|entry', '➕ บันทึกผลงาน'],
+  ['เป้าหมายตัวแทน เป้า', 'tab|goals', '🎯 เป้าหมายตัวแทน'],
+  ['การแข่งขันตัวแทน คุณวุฒิไตรมาส โบนัสไตรมาส โบนัสปี joining trophy ผลงาน', 'tab|competitions', '🏆 ผลงาน/การแข่งขันของตัวแทน'],
+  ['จัดการตัวแทน บัตรตัวแทน รหัสตัวแทน เลขบัตร หมดอายุ อบรม', 'nav|manage', '👥 จัดการตัวแทน / บัตรตัวแทน'],
+  ['ทีม UM ยูเอ็ม ภาพรวมทุก UM', 'nav|teamUm', '🧑‍💼 ทีม UM'],
+  ['ตั้งค่า ขนาดตัวอักษร ฟอนต์ แบ็กอัพ บันทึก โหลด กู้คืน โหมดสว่าง', 'nav|set', '⚙️ ตั้งค่า'],
+];
+function srEscRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function appSearchHtml(raw, hasAnswer){
+  const words = String(raw||'').trim().split(/\s+/).filter(Boolean);
+  const toks = words.map(askNorm).filter(Boolean);
+  if (!toks.length || toks.join('').length<2) return '';
+  const hit = s=>{ const x = askNorm(s); return toks.every(t=>x.includes(t)); };
+  const mark = s=>{ let h = esc(s); words.forEach(w=>{ if (w.length) h = h.replace(new RegExp(srEscRe(esc(w)),'gi'), m=>`<mark>${m}</mark>`); }); return h; };
+  const snip = (s)=>{ s = String(s||''); const lw = s.toLowerCase(); let i = -1; for (const w of words){ i = lw.indexOf(w.toLowerCase()); if (i>=0) break; } if (s.length<=110) return s; const a = Math.max(0, i-40); return (a>0?'…':'') + s.slice(a, a+110) + (a+110<s.length?'…':''); };
+  const groups = {}; const add = (g, label, sub, act)=>{ (groups[g] = groups[g]||[]).push({ label, sub, act }); };
+  const names = Object.keys(state.agents||{});
+  names.forEach(n=>{
+    const ag = state.agents[n];
+    if (hit(n)) add('👤 ตัวแทน', n, 'แตะเพื่อเปิดผลงานของคนนี้', `data-switch-agent="${esc(n)}"`);
+    (ag.entries||[]).filter(isOrigin).forEach(e=>{
+      const txt = [e.note, e.plan].filter(Boolean).join(' · ');
+      if (txt && hit(txt)) add('📄 ผลงาน/กรมธรรม์', `${n} · ${fmtTH(D(e.date),{day:"numeric",month:"short",year:"2-digit"})} · ${THB(e.fyc)}`, txt, `data-switch-agent="${esc(n)}"`);
+    });
+    (ag.coaching||[]).forEach(c=>{ if (c.note && hit(c.note)) add('🗣️ บันทึกโค้ช', `${n} · ${c.date?fmtTH(new Date(c.date+"T00:00:00"),{day:"numeric",month:"short"}):''}`, c.note, `data-sr="card|coach|tb:coaching"`); });
+    const lic = ag.license||{};
+    [lic.agentCode, lic.cardNumber].forEach(v=>{ if (v && hit(v)) add('🪪 บัตรตัวแทน', n, v, `data-sr="nav|manage"`); });
+    (lic.trainings||[]).forEach(t=>{ if (t.courseName && hit(t.courseName)) add('📚 การอบรม', n, t.courseName, `data-sr="nav|manage"`); });
+  });
+  (state.recruits||[]).forEach(r=>{ const txt=[r.name,r.phone,r.stage,r.note].filter(Boolean).join(' · '); if (hit(txt)) add('🌱 ว่าที่ตัวแทน', r.name, txt, `data-sr="card|coach|tb:recruits"`); });
+  if (!activeTeamUmName) Object.keys((progRoot().teamUMs)||{}).forEach(n=>{ if (hit(n)) add('🧑‍💼 UM ในทีม', n, 'แตะเพื่อเข้าไปดูทีมของ UM คนนี้', `data-open-team-um="${esc(n)}"`); });
+  evAll().forEach(ev=>{ if (ev && hit([ev.name, ev.key, ...(EVENT_ALIASES[ev.key]||[])].join(' '))) add('🏁 การแข่งขัน', ev.name, `${ev.start||''} – ${ev.end||''}`, `data-sr="card|comp|tb:eventsSettings"`); });
+  posterList.forEach(p=>{ if (hit([p.title, ...(p.match||[])].join(' '))) add('🖼 โปสเตอร์', p.title, pDateTxt(p), `data-poster-open="${esc(p.file)}"`); });
+  const seen = new Set();
+  bCardIndex.forEach(c=>{
+    if (seen.has(c.key)) return;
+    if (hit(c.title)){ seen.add(c.key); add('📂 กล่องในหน้าหลัก', c.title, (bG(c.g)||{}).name||'', `data-sr="card|${c.g}|${esc(c.key)}"`); }
+  });
+  bCardIndex.forEach(c=>{
+    if (seen.has(c.key) || !hit(c.text)) return;
+    seen.add(c.key); add('🔎 พบในกล่อง', c.title, snip(c.text), `data-sr="card|${c.g}|${esc(c.key)}"`);
+  });
+  SR_MENU.forEach(([kw, act, label])=>{ if (hit(kw+' '+label)) add('🧭 เมนู', label, '', `data-sr="${act}"`); });
+  const keys = Object.keys(groups);
+  if (!keys.length) return '';
+  const total = keys.reduce((s,k)=>s+groups[k].length,0);
+  const LIM = 6;
+  return `<div class="ask-sec"><div class="ask-title">🔎 ค้นหา “${esc(raw.trim())}” ในแอป · พบ ${total} รายการ</div>
+    ${hasAnswer?'<div class="ask-empty" style="margin-bottom:4px;">แตะรายการเพื่อไปที่นั่น</div>':''}
+    ${keys.map(k=>`<div class="ask-sub">${k} (${groups[k].length})</div>${groups[k].slice(0,LIM).map(h=>`<div class="sr-hit" ${h.act}><div class="w"><b>${mark(h.label)}</b>${h.sub?`<small>${mark(snip(h.sub))}</small>`:''}</div><span class="go">›</span></div>`).join('')}${groups[k].length>LIM?`<div class="ask-empty">…และอีก ${groups[k].length-LIM} รายการ ลองพิมพ์ให้เจาะจงขึ้น</div>`:''}`).join('')}
+  </div>`;
+}
+document.addEventListener('click', e=>{
+  const t = e.target.closest('[data-sr]'); if (!t) return;
+  e.preventDefault();
+  const [type, a, b] = t.dataset.sr.split('|');
+  closeAllCalendars();
+  if (type==='card'){ if (activeTeamUmName && a!=='comp' && a!=='alert'){ /* อยู่ในทีมคนอื่นก็เปิดได้ */ } activeSection='um'; betaGroup=null; bOpenGroup(a, null, b); }
+  else if (type==='tab'){ if (activeTeamUmName){ showToast(`กำลังดูทีมของ ${activeTeamUmName} — กด "← กลับของฉันเอง" ก่อน`); return; } activeSection='agent'; activeTab=a; betaGroup=null; render(); window.scrollTo(0,0); }
+  else if (type==='nav'){ const nb = document.querySelector(`[data-b-nav="${a}"]`); if (nb) nb.click(); }
+});
+
 bSkyInit(); bNavInit(); bApplyPrefs();
+posterLoad();
 boot();
 
 // ทุกช่องกรอก: แตะแล้วล้างค่าเดิมทันที ถ้าไม่พิมพ์อะไรแล้วออก ให้คืนค่าเดิม (ไม่ต้องคอยลบเอง)

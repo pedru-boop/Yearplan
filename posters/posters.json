@@ -1,0 +1,13 @@
+[
+  {"file":"2026-11_kickoff.jpg","title":"Road to Kick Off 2027","start":"2026-08-28","end":"2026-11-30","approve":"2026-11-30","match":["Kick Off","kickoff","คิกออฟ"]},
+  {"file":"2026-11_regional.jpg","title":"Regional Year Plan 2027","start":"2026-08-28","end":"2026-11-30","approve":"2026-11-30","match":["Regional","รีเจียน"]},
+  {"file":"2026-10_beijing-iphone.jpg","title":"ถ่ายรูปสวยๆ ที่ปักกิ่ง รับ iPhone 18 Pro","start":"2026-10-01","end":"2026-10-31","approve":"2026-11-30","match":["ปักกิ่ง","beijing","iPhone"]},
+  {"file":"2026-10_pocket-money-beijing.jpg","title":"Pocket Money เที่ยวปักกิ่ง","start":"2026-10-01","end":"2026-10-31","approve":"2026-11-30","match":["ปักกิ่ง","beijing","Pocket Money"]},
+  {"file":"2026-10_top-month-ul.jpg","title":"Top of the Month · Unit Linked & Mutual Fund","start":"2026-10-01","end":"2026-10-31","approve":"2026-11-15","match":["Top of the Month","Unit Linked","Mutual Fund"]},
+  {"file":"2026-10_top-month-rider.jpg","title":"Top of the Month · สัญญาเพิ่มเติม","start":"2026-10-01","end":"2026-10-31","approve":"2026-11-15","match":["Top of the Month","สัญญาเพิ่มเติม"]},
+  {"file":"2026-q4_top-quarter.jpg","title":"Top of the Quarter ไตรมาส 4 · ประกันกลุ่ม & Credit Life","start":"2026-10-01","end":"2026-12-31","match":["Top of the Quarter","ประกันกลุ่ม","Credit Life"]},
+  {"file":"2026-10_recapture.jpg","title":"Recapture ตุลาคม 2569","start":"2026-10-01","end":"2026-10-31","match":["Recapture"]},
+  {"file":"2026-10_cao-challenge.jpg","title":"CAO Challenge ภาคเหนือ","start":"2026-10-01","end":"2026-10-31","match":["CAO Challenge","CAO"]},
+  {"file":"2026-10_bla-promo.jpg","title":"บีแอลเอ โปรดีทุกเดือน","kind":"promo","start":"2026-10-01","end":"2026-10-31","match":["โปรดีทุกเดือน"]},
+  {"file":"2026-10_start-tax.jpg","title":"Start Tax Get Reward","kind":"promo","start":"2026-10-01","end":"2026-10-31","match":["Start Tax"]}
+]
