@@ -540,6 +540,31 @@ html.b-calm .cb-tk em{animation:none;}
 .cb-note{font-size:15px;color:#374151;line-height:1.45;}
 .cb-warn{color:#C8173F;font-weight:700;}
 .pp-um .cb{border-color:#E8B64A;background:#FFFBF0;}
+
+/* ===== beta10 ===== */
+.q-cur{display:inline-block;font-size:13px;font-weight:700;background:#4FAE74;color:#fff;border-radius:999px;padding:1px 8px;vertical-align:middle;margin-left:4px;}
+.qcard .qtable th:nth-child(1),.qcard .qtable td:nth-child(1){width:15%;}
+.qcard .qtable th:nth-child(2),.qcard .qtable td:nth-child(2),.qcard .qtable th:nth-child(3),.qcard .qtable td:nth-child(3),.qcard .qtable th:nth-child(4),.qcard .qtable td:nth-child(4){width:28.33%;}
+.qcard .qtable td,.qcard .qtable td.r,.qcard .qtable input{font-size:16px!important;white-space:nowrap!important;overflow-wrap:normal!important;font-variant-numeric:tabular-nums;}
+.qcard .qtable th{font-size:14px!important;white-space:nowrap;}
+.qcard .qtable td.r{text-align:center!important;}
+.qcard .qtable td > div{white-space:normal;font-size:11.5px!important;}
+
+/* contrast fixes (ตรวจด้วยสคริปต์ทุกหน้า) */
+.card:not(.dark) [style*="color:var(--gold)"],.rb [style*="color:var(--gold)"],.card:not(.dark) .proj-row .lab,.card:not(.dark) .proj-row .val{color:#7A4A00!important;}
+.card:not(.dark) [style*="color:var(--warn)"]{color:#7A4A00!important;}
+.card.dark [style*="color:var(--gold)"],.card.dark .proj-row .lab,.card.dark .proj-row .val{color:#FFD27A!important;}
+.card.dark .gc-ind{color:#BFE3FF!important;}
+html[data-mode="light"] .b-pval .warn,html[data-mode="light"] .b-pval .hot{color:#5C2A00!important;}
+html[data-mode="light"]{--b-cyan:#075E8A;--b-warn:#7A4A00;--b-dim:#24324F;}
+html[data-mode="light"] nav.tabs .sub-tabs button.active,html[data-mode="light"] .b-btn.on{color:#FFFFFF!important;}
+html[data-mode="light"] header.top [style*="monospace"]{color:#24324F!important;opacity:1!important;}
+.btn-ghost{background:#FFFFFF!important;color:#0B2D5C!important;}
+h3:not(.card *):not(.rb *):not(#pv *):not(#qz-layer *):not(.b-ghead *),
+p.sub:not(.card *):not(#pv *),.foot-note:not(.card *){color:var(--b-ink)!important;}
+.q-cur{background:#2F7A4F!important;}
+.p-card .k{background:#5B4BD6!important;}
+.gc-ind{color:#0B3F8A!important;opacity:1!important;}
 </style>
 </head>
 <body>
@@ -554,7 +579,7 @@ html.b-calm .cb-tk em{animation:none;}
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta9</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta10</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -2034,8 +2059,8 @@ function renderManageAgentsTab(){
         const enc = encodeURIComponent(r.name), editing = editLicenseAgent===r.name;
         const dash = '<span style="color:var(--muted);">—</span>';
         return `<tr style="border-bottom:${editing?'none':'1px solid #123F6B14'};vertical-align:top;${r.st.rank===0?'background:#FFF8EC;':''}">
-          <td data-switch-agent="${esc(r.name)}" style="padding:8px 4px;cursor:pointer;min-width:84px;">
-            <div style="font-weight:700;color:${r.isCurrent?'var(--gold-soft)':'var(--navy)'};font-size:14px;line-height:1.3;">${r.isCurrent?'▶ ':''}${esc(r.name)}</div>
+          <td data-go-agent="${esc(r.name)}" data-go-tab="competitions" style="padding:8px 4px;cursor:pointer;min-width:84px;">
+            <div style="font-weight:700;color:${r.isCurrent?'#0B6B3A':'var(--navy)'};font-size:14px;line-height:1.3;">${r.isCurrent?'▶ ':''}${esc(r.name)}</div>
             <div style="font-size:11px;color:var(--muted);">FYC ${THB(r.yearFyc)}</div>
           </td>
           <td style="padding:8px 4px;font-weight:600;word-break:break-all;">${esc(r.lic.agentCode)||dash}</td>
@@ -2556,8 +2581,7 @@ function renderTeamTab(){
             </td>
           </tr>`;}).join("");
           return `<div class="qcard" data-qz="um${q}" style="background:${NAVY_TINTS[q-1]};">
-            ${isCurrentQ?`<div class="badge-current">ไตรมาสปัจจุบัน</div>`:''}
-            <div class="head"><span>ไตรมาส ${q}</span><span>${isCurrentQ?'⏳':(rate>0?'✔':'✕')}</span></div>
+            <div class="head"><span>ไตรมาส ${q}${isCurrentQ?' <small class="q-cur">ปัจจุบัน</small>':''}</span><span>${isCurrentQ?'⏳':(rate>0?'✔':'✕')}</span></div>
             <div class="mini-row"><span>ตัวแทนตรงไตรมาสนี้ (ใช้คำนวณ DPO)</span><span class="v ${rate>0?'ok':''}">${THB(qDirectFyc)}</span></div>
             <div class="mini-row"><span>เทียบเกณฑ์ (${Math.round(multiplier*100)}%)</span><span class="v">${rate>0?`อัตรา ${rate}%`:'ยังไม่ถึงเกณฑ์'}</span></div>
             <div class="mini-row"><span>DPO</span><span class="v ok" style="font-weight:700;">${THB(reward)}</span></div>
@@ -4599,8 +4623,7 @@ function renderCompetitionsTab(){
     </div>` : '';
 
     return `<div class="qcard" data-qz="ag${r.q}" style="${borderStyle}background:${NAVY_TINTS[r.q-1]};">
-      ${isCurrentQuarter?`<div class="badge-current">ไตรมาสปัจจุบัน</div>`:''}
-      <div class="head"><span>ไตรมาส ${r.q} — คุณวุฒิไตรมาส</span><span>${isCurrentQuarter?'⏳':(r.qualifies?'✔':'✕')}</span></div>
+      <div class="head"><span>ไตรมาส ${r.q}${isCurrentQuarter?' <small class="q-cur">ปัจจุบัน</small>':''} — คุณวุฒิไตรมาส</span><span>${isCurrentQuarter?'⏳':(r.qualifies?'✔':'✕')}</span></div>
       <div class="mini-row"><span>เดือนที่มีผลงาน</span><span class="v ${r.activeMonths>=QUALIFY_MIN_ACTIVE_MONTHS?'ok':''}">${r.activeMonths}/3 เดือน</span></div>
       ${!r.qualifies?`<div class="alert-box">
         <div class="title">${isCurrentQuarter?'⏳ ไตรมาสนี้ยังไม่จบ — เกณฑ์คุณวุฒิไตรมาส':'⚠ เกณฑ์คุณวุฒิไตรมาสนี้'}</div>
@@ -6700,7 +6723,7 @@ function evProgressOpen(key){
 }
 document.addEventListener('click', e=>{
   const pa = e.target.closest('[data-pp-agent]'); if (pa && !pa.closest('#pv')){ e.preventDefault(); e.stopPropagation(); goAgent(pa.dataset.ppAgent, 'competitions'); return; }
-  const a = e.target.closest('[data-go-agent]'); if (a){ e.preventDefault(); e.stopPropagation(); goAgent(a.dataset.goAgent); return; }
+  const a = e.target.closest('[data-go-agent]'); if (a){ e.preventDefault(); e.stopPropagation(); goAgent(a.dataset.goAgent, a.dataset.goTab); return; }
   const c = e.target.closest('[data-go-card]'); if (c){ e.preventDefault(); e.stopPropagation(); bOpenAgentCard(c.dataset.goCard); return; }
   const v = e.target.closest('[data-go-ev]'); if (v){ e.preventDefault(); e.stopPropagation(); evProgressOpen(v.dataset.goEv); return; }
   const g = e.target.closest('[data-go-grp]'); if (g){ e.preventDefault(); e.stopPropagation(); const [grp, f] = g.dataset.goGrp.split('|'); if (typeof qzKey!=='undefined' && qzKey) qzClose(); activeSection='um'; betaGroup=null; bOpenGroup(grp, null, f.startsWith('tb:') ? f : new RegExp(f)); return; }
