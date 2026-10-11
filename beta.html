@@ -413,6 +413,45 @@ html.b-calm .b-podw,html.b-calm .b-orbit,html.b-calm .b-badge,html.b-calm .b-grp
 .sr-hit .w small{display:block;color:#4B5563;font-size:13.5px;}
 .sr-hit mark{background:#FFE29A;color:inherit;border-radius:3px;padding:0 1px;}
 .sr-hit .go{color:#0F56B2;font-weight:700;font-size:18px;}
+
+/* ===== beta5: แยกสัดส่วนด้วยสี · ข้อความล่างอ่านง่าย · ความคืบหน้าใต้โปสเตอร์ ===== */
+.card:not(.dark){background:color-mix(in srgb,var(--gc,#45E3FF) 9%,#FFFFFF)!important;}
+html[data-mode="light"] .card:not(.dark){background:color-mix(in srgb,var(--gc,#45E3FF) 7%,#FFFFFF)!important;}
+.card:not(.dark) > h3{padding-bottom:8px;margin-bottom:8px!important;border-bottom:2px solid color-mix(in srgb,var(--gc,#45E3FF) 55%,transparent);}
+/* กล่องย่อยด้านใน: พื้นขาว ขอบสีชัด และสลับสีทีละเรื่อง */
+.card .prog-item,.card .hist-item,.card [style*="border:1px solid #123F6B1F"],.card .pp-ev{
+  --sbc:#2B8FD6;--sbg:#F3F9FF;background:var(--sbg)!important;border:2px solid var(--sbc)!important;border-left-width:7px!important;border-radius:12px!important;box-shadow:0 3px 10px rgba(10,30,70,.10);margin-bottom:12px!important;}
+.card .prog-item:nth-child(5n+2),.card .hist-item:nth-child(5n+2),.card [style*="border:1px solid #123F6B1F"]:nth-child(5n+2){--sbc:#D89A1C;--sbg:#FFF9EC;}
+.card .prog-item:nth-child(5n+3),.card .hist-item:nth-child(5n+3),.card [style*="border:1px solid #123F6B1F"]:nth-child(5n+3){--sbc:#2F9E5E;--sbg:#F1FBF5;}
+.card .prog-item:nth-child(5n+4),.card .hist-item:nth-child(5n+4),.card [style*="border:1px solid #123F6B1F"]:nth-child(5n+4){--sbc:#7A5CE0;--sbg:#F6F3FF;}
+.card .prog-item:nth-child(5n+5),.card .hist-item:nth-child(5n+5),.card [style*="border:1px solid #123F6B1F"]:nth-child(5n+5){--sbc:#D9466B;--sbg:#FFF3F6;}
+/* เส้นคั่นหัวข้อย่อยในกล่อง: ชัดขึ้น */
+.card:not(.dark) [style*="border-top:1px dashed"],.card:not(.dark) [style*="border-top:2px solid #123F6B22"]{border-top:3px solid color-mix(in srgb,var(--gc,#45E3FF) 50%,transparent)!important;margin-top:14px!important;padding-top:12px!important;}
+/* กล่องไตรมาส 4 สี */
+.qcard{border:2px solid transparent;}
+.qgrid > .qcard:nth-child(4n+1){background:#EEF6FF!important;border-color:#2B8FD6;}
+.qgrid > .qcard:nth-child(4n+2){background:#FFF7E6!important;border-color:#D89A1C;}
+.qgrid > .qcard:nth-child(4n+3){background:#EEFAF2!important;border-color:#2F9E5E;}
+.qgrid > .qcard:nth-child(4n+4){background:#F5F1FF!important;border-color:#7A5CE0;}
+/* ข้อความล่างสุดของแอป */
+main{padding-bottom:30px!important;}
+footer.bottom{color:var(--b-ink)!important;opacity:.92;font-size:16px!important;line-height:1.6;padding:16px 18px 190px!important;max-width:680px;margin:0 auto;}
+html[data-mode="light"] footer.bottom{color:#1B2A4A!important;}
+/* ความคืบหน้าใต้โปสเตอร์ */
+#pv .pp{position:absolute;left:0;right:0;bottom:0;top:calc(70px + env(safe-area-inset-top,0px));z-index:3;background:#F4F7FC;color:#1B2430;border-radius:18px 18px 0 0;overflow:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 40px;}
+#pv .pp-back{font:inherit;font-size:17px;font-weight:700;border:0;background:#0F56B2;color:#fff;border-radius:10px;padding:10px 14px;cursor:pointer;}
+#pv .pp-t{font-size:22px;font-weight:800;color:#0B2D5C;margin:12px 0 2px;}
+#pv .pp-hint{font-size:15px;color:#4B5563;margin-bottom:10px;}
+#pv .pp-ev{padding:12px;}
+#pv .pp-ev h4{margin:0 0 4px;font-size:19px;color:#0B2D5C;}
+#pv .pp-rule{font-size:14.5px;color:#374151;line-height:1.5;margin-bottom:8px;}
+#pv .pp-um{font-size:15.5px;background:#FFF4D6;border:1.5px solid #E8B64A;border-radius:10px;padding:8px 10px;margin-bottom:8px;}
+#pv .pp-row{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid #D5DEEA;border-radius:10px;padding:9px 10px;margin:6px 0;cursor:pointer;}
+#pv .pp-row.ok{border-color:#2F9E5E;background:#F1FBF5;}
+#pv .pp-row .rk{flex:none;width:30px;height:30px;border-radius:50%;background:#0F56B2;color:#fff;display:grid;place-items:center;font-weight:800;}
+#pv .pp-row .w{flex:1;min-width:0;font-size:17px;} #pv .pp-row .w small{display:block;font-size:14.5px;color:#374151;line-height:1.5;}
+#pv .pp-row .go{color:#0F56B2;font-size:22px;font-weight:800;}
+#pv .pp-empty{color:#4B5563;font-size:15px;padding:8px 0;}
 </style>
 </head>
 <body>
@@ -427,7 +466,7 @@ html.b-calm .b-podw,html.b-calm .b-orbit,html.b-calm .b-badge,html.b-calm .b-grp
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta4</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta5</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -885,31 +924,34 @@ function renderDeadlinesCard(names, selectedPosition){
   const t0 = new Date(); t0.setHours(0,0,0,0);
   const y = t0.getFullYear();
   const items = [];
-  const add = (date, icon, title, detail)=>{
+  const add = (date, icon, title, detail, meta)=>{
     if (!date) return; const d = new Date(date); d.setHours(0,0,0,0);
     const dl = Math.round((d-t0)/86400000);
     if (dl>90 || dl<-30) return;
-    items.push({ d, dl, icon, title, detail });
+    items.push({ d, dl, icon, title, detail, meta: meta||{} });
   };
   for (let k=0;k<2;k++){
     const qi = Math.floor(t0.getMonth()/3)+k;
     const qEnd = new Date(y, qi*3+3, 0);
-    add(qEnd, '📊', `สิ้นไตรมาส ${(qi%4)+1}`, 'ตัดยอด DPO · ค่าสร้างและรักษาตัวแทน · คุณวุฒิไตรมาสตัวแทน');
+    add(qEnd, '📊', `สิ้นไตรมาส ${(qi%4)+1}`, 'ตัดยอด DPO · ค่าสร้างและรักษาตัวแทน · คุณวุฒิไตรมาสตัวแทน', { kind:'quarter' });
   }
   if (selectedPosition){
-    add(new Date(y,5,30), '💎', 'ตัดรอบโบนัสส่วนเกินโควตางวดแรก', 'CFYC 6 เดือนแรกต้องเกินโควตาทั้งปี');
-    add(new Date(y,11,31), '💎', 'ตัดยอดทั้งปี', 'โบนัสส่วนเกินโควตา (ส่วนที่เหลือ) · เป้าทั้งปี');
+    add(new Date(y,5,30), '💎', 'ตัดรอบโบนัสส่วนเกินโควตางวดแรก', 'CFYC 6 เดือนแรกต้องเกินโควตาทั้งปี', { kind:'bonus3' });
+    add(new Date(y,11,31), '💎', 'ตัดยอดทั้งปี', 'โบนัสส่วนเกินโควตา (ส่วนที่เหลือ) · เป้าทั้งปี', { kind:'bonus3' });
   }
   evList().forEach(ev=>{
-    if (compStatus(new Date(ev.start+"T00:00:00"), new Date(ev.end+"T23:59:59"))==='active') add(new Date(ev.end+"T00:00:00"), '🏁', `จบการแข่งขัน ${ev.name}`, 'ผลงานต้องส่งภายในวันนี้');
+    if (compStatus(new Date(ev.start+"T00:00:00"), new Date(ev.end+"T23:59:59"))!=='active') return;
+    let got=0, near=0;
+    names.forEach(n=>{ const v = eventValue(effectiveEntries(state.agents[n].entries||[]), ev); if (!(v>0)) return; const p = evProg(v, ev); if (p.ok) got++; if (p.next!==undefined && p.need<=10000) near++; });
+    add(new Date(ev.end+"T00:00:00"), '🏁', `จบการแข่งขัน ${ev.name}`, `ผลงานต้องส่งภายในวันนี้ · ติดแล้ว ${got} คน${near?` · ใกล้ติด/ขยับขั้น ${near} คน`:''}`, { kind:'event', key: ev.key });
   });
-  if (y===PROMO_YEAR_NEW_AGENT) add(new Date(PROMO_YEAR_NEW_AGENT,10,30), '🏆', 'จบแข่งขันตัวแทนใหม่ สำหรับ UM', 'เบี้ยต้องรับจริงภายในวันนี้ (ทั้ง 2 รุ่น)');
+  if (y===PROMO_YEAR_NEW_AGENT) add(new Date(PROMO_YEAR_NEW_AGENT,10,30), '🏆', 'จบแข่งขันตัวแทนใหม่ สำหรับ UM', 'เบี้ยต้องรับจริงภายในวันนี้ (ทั้ง 2 รุ่น)', { kind:'newagent' });
   names.forEach(name=>{
     const ag = state.agents[name];
     const sd = ag.competitions?.firstSaleDate;
-    if (sd) add(addMonths(sd,12), '⏳', `ค่าเสริมมือ ${name} ครบ 12 เดือน`, 'FYC หลังวันนี้ไม่นับค่าเสริมมือแล้ว');
+    if (sd) add(addMonths(sd,12), '⏳', `ค่าเสริมมือ ${name} ครบ 12 เดือน`, 'FYC หลังวันนี้ไม่นับค่าเสริมมือแล้ว', { kind:'service', agent:name });
     const ri = renewalInfo(ag.license);
-    if (ri && ri.stage!=='ok') add(ri.exp, '🪪', `บัตร ${name} หมดอายุ`, renewalShort(ri));
+    if (ri && ri.stage!=='ok') add(ri.exp, '🪪', `บัตร ${name} หมดอายุ`, renewalShort(ri), { kind:'card', agent:name });
     (ag.coaching||[]).filter(n=>n.followUp && !n.done).forEach(fu=>add(new Date(fu.followUp+"T00:00:00"), '🗣️', `นัดติดตาม ${name}`, esc((fu.note||'').slice(0,60))));
   });
   (state.recruits||[]).forEach(r=>{ if (r.stage!=='เข้าทีมแล้ว' && r.nextDate) add(new Date(r.nextDate+"T00:00:00"), '🌱', `ผู้สนใจ ${r.name}`, `ขั้น: ${esc(r.stage)}${r.note?` · ${esc(r.note.slice(0,40))}`:''}`); });
@@ -5917,21 +5959,47 @@ const bStrip = html => String(html||'').replace(/<[^>]*>/g,'').replace(/\s+/g,' 
 
 /* ---------- เรื่องที่ต้องทำวันนี้ ---------- */
 function bTodos(c){
-  const out = [];
-  c.querySelectorAll('.alert-box .line').forEach(l=>{ if (/⚠/.test(l.textContent) && out.length<2) out.push({ when:'ด่วน', c:'var(--b-hot)', t:bStrip(l.textContent).replace(/^⚠\s*/,'').slice(0,70), s:'สัญญาณเตือนระดับทีม', g:'alert', f:/สัญญาณเตือน/ }); });
-  const dl = (__dlItems||[]).filter(i=>i.dl<=14).slice(0,3);
-  dl.forEach(i=>{
-    const g = i.icon==='🗣️'||i.icon==='🌱' ? 'coach' : 'alert';
-    const f = i.icon==='🗣️' ? 'tb:coaching' : i.icon==='🌱' ? 'tb:recruits' : 'tb:deadlines';
-    out.push({ when: i.dl<0?`เลย ${-i.dl} วัน`:i.dl===0?'วันนี้':`อีก ${i.dl} วัน`, c: i.dl<=3?'var(--b-hot)':i.dl<=7?'var(--b-warn)':'var(--b-cyan)', t: bStrip(i.title), s: bStrip(i.detail).slice(0,60), g, f });
+  const out = [], seen = new Set();
+  const col = dl => dl<=3 ? 'var(--b-hot)' : dl<=14 ? 'var(--b-warn)' : 'var(--b-cyan)';
+  const whenTxt = dl => dl<0 ? `เลย ${-dl} วัน` : dl===0 ? 'วันนี้' : `อีก ${dl} วัน`;
+  // สัญญาณเตือนระดับทีม + งานรออนุมัติที่อาจไม่ทันรอบ
+  c.querySelectorAll('.alert-box').forEach(box=>{
+    const card = box.closest('.card'); const ht = card ? bCardTitle(card) : '';
+    const isWarn = /สัญญาณเตือนด่วน/.test(box.textContent), isPend = /รอพิจารณา/.test(ht);
+    if (!isWarn && !isPend) return;
+    box.querySelectorAll('.line').forEach(l=>{
+      const t = bStrip(l.textContent); if (!/^(⚠|⏰|🏁)/.test(t) || seen.has(t)) return; seen.add(t);
+      out.push({ d:-1, when:'ด่วน', c:'var(--b-hot)', t:t.replace(/^(⚠|⏰|🏁)\s*/,'').slice(0,90), s: isPend?'งานรออนุมัติ — แตะเพื่อดูรายการ':'สัญญาณเตือนระดับทีม', g:'alert', f: isPend?'tb:pendingReport':/สัญญาณเตือน/ });
+    });
   });
-  if (out.length<3){
-    const near = [];
-    Object.keys(state.agents||{}).forEach(n=>{ try{ agentCompStatus(state.agents[n]).forEach(it=>{ if (it.near && !it.ok) near.push({ n, it }); }); }catch(e){} });
-    near.slice(0, 3-out.length).forEach(({n,it})=>out.push({ when:'ใกล้แล้ว', c:'var(--b-warn)', t:`${n} · ${it.title}`, s:bStrip(it.text).slice(0,60), g:'alert', f:/ต้องจับตา/ }));
-  }
-  return out.slice(0,3);
+  (__dlItems||[]).filter(i=>i.icon!=='🗣️' && i.icon!=='🌱' && i.dl<=90).forEach(i=>{
+    const m = i.meta||{}; const it = { d:i.dl, when:whenTxt(i.dl), c:col(i.dl), t:`${i.icon} ${bStrip(i.title)}`, s:bStrip(i.detail).slice(0,80), g:'alert', f:'tb:deadlines' };
+    if (m.kind==='card'){ it.s = bStrip(i.detail)+' — แตะเพื่อเปิดข้อมูลบัตร'; it.act = ()=>bOpenAgentCard(m.agent); }
+    else if (m.kind==='service'){ it.g='team'; it.f='tb:serviceFeeTimeline'; }
+    else if (m.kind==='event'){ const ev = evList().find(x=>x.key===m.key); it.g='comp'; it.f = ev && (ev.umTiers||[]).length ? /ระดับ UM/ : 'tb:eventsSettings'; }
+    else if (m.kind==='quarter'){ it.g='perf'; it.f=/ผลงานรายไตรมาส/; }
+    else if (m.kind==='bonus3'){ it.g='perf'; it.f='tb:monthlyCalc'; }
+    else if (m.kind==='newagent'){ it.g='comp'; it.f=/แข่งขันตัวแทนใหม่/; }
+    out.push(it);
+  });
+  return out.sort((a,b)=>a.d-b.d);
 }
+// เปิดข้อมูลบัตรของตัวแทนคนนั้นทันที (แท็บจัดการตัวแทน)
+function bOpenAgentCard(name){
+  if (!state.agents[name]) return;
+  bCollapseAll(); betaGroup=null; betaArr=false;
+  state.currentAgent = name; try{ syncAgentFormState(); }catch(e){}
+  editLicenseAgent = name; activeSection = 'manage'; render();
+  setTimeout(()=>{ const r = document.querySelector(`[data-edit-license="${CSS.escape(name)}"]`); if (r) r.closest('tr').scrollIntoView({ block:'start', behavior: bCalm()?'auto':'smooth' }); }, 60);
+}
+// ออกจากหน้า/หมวด = ย่อทุกกล่องกลับเหมือนเดิม
+function bCollapseAll(){
+  collapsedBoxes = new Proxy({}, { get:(t,k)=> (k in t) ? t[k] : true });
+  genericCollapsed = {}; openTiers = {};
+  try{ openCoachAgent = null; }catch(e){}
+  try{ if (typeof qzKey!=='undefined' && qzKey) qzClose(); }catch(e){}
+}
+let bTodoAll = false;
 
 /* ---------- ตัวเลขบนแต่ละหมวด ---------- */
 let bWatchN = 0;
@@ -6023,8 +6091,8 @@ function betaLayout(c){
     <p class="b-fresh">ข้อมูล ณ ${fmtTH(new Date(),{day:"numeric",month:"short",year:"numeric"})}${S.yearPending>0?` · รออนุมัติ <b>${S.yearPendingCount?S.yearPendingCount+' ราย ':''}(${THB(S.yearPending)})</b>`:' · ไม่มีงานรออนุมัติ'}${activeTeamUmName?` · ทีมของ ${esc(activeTeamUmName)}`:''}</p>
     ${posterStripHtml()}
     <div id="b-ask-slot"></div>
-    <div class="b-sec"><h2>วันนี้ต้องทำ</h2><span>แตะเพื่อไปที่เรื่องนั้น</span></div>
-    <div class="b-todos">${todos.length?todos.map((t,i)=>`<button class="b-todo" style="--c:${t.c}" data-b-todo="${i}"><span class="when">${t.when}</span><span class="what"><b>${esc(t.t)}</b><span>${esc(t.s)}</span></span><span class="go" aria-hidden="true">›</span></button>`).join(''):'<div class="b-empty">ไม่มีเรื่องเร่งด่วนใน 14 วันนี้ 👍</div>'}</div>
+    <div class="b-sec"><h2>📋 To do list · เรื่องด่วน 90 วัน</h2><span>แตะเพื่อไปที่เรื่องนั้น</span></div>
+    <div class="b-todos">${todos.length?todos.slice(0, bTodoAll?999:6).map((t,i)=>`<button class="b-todo" style="--c:${t.c}" data-b-todo="${i}"><span class="when">${t.when}</span><span class="what"><b>${esc(t.t)}</b><span>${esc(t.s)}</span></span><span class="go" aria-hidden="true">›</span></button>`).join('')+(todos.length>6?`<button type="button" class="b-btn" data-b-todoall style="justify-self:center;">${bTodoAll?'▲ ย่อรายการ':`▼ ดูทั้งหมด ${todos.length} เรื่อง`}</button>`:''):'<div class="b-empty">ไม่มีเรื่องเร่งด่วนใน 90 วันนี้ 👍</div>'}</div>
     <div class="b-sec"><h2>หมวดทั้งหมด</h2></div>
     <div class="b-deck ${betaArr?'b-arr':''}" id="b-deck">${L.groups.map((g,i)=>{ const G=bG(g); const badge = g==='alert' ? bAlertCount(buckets, todos) : 0; return `
       <div class="b-podw" data-g="${g}"><div class="b-pod" role="button" tabindex="0" style="--c:${G.c}" aria-label="${G.name}">
@@ -6075,7 +6143,7 @@ function bOpenGroup(g, el, focus){
   if (betaArr) return;
   const r = el ? el.getBoundingClientRect() : null;
   betaOrigin = r ? { x: r.left+r.width/2, y: r.top } : null;
-  const go = ()=>{ betaGroup=g; betaFocus=focus||null; betaJustOpened=true; try{ history.pushState({bg:g},''); }catch(e){} window.scrollTo(0,0); render(); };
+  const go = ()=>{ bCollapseAll(); betaGroup=g; betaFocus=focus||null; betaJustOpened=true; try{ history.pushState({bg:g},''); }catch(e){} window.scrollTo(0,0); render(); };
   if (!bCalm() && el){
     const pod = el.classList.contains('b-pod') ? el : null;
     if (pod){ pod.classList.remove('boom'); void pod.offsetWidth; pod.classList.add('boom'); }
@@ -6083,15 +6151,16 @@ function bOpenGroup(g, el, focus){
     bBoost = .6; setTimeout(go, 130);
   } else go();
 }
-function bCloseGroup(){ if (!betaGroup) return; if (history.state && history.state.bg) history.back(); else { betaGroup=null; render(); } }
-window.addEventListener('popstate', ()=>{ if (betaGroup){ betaGroup=null; betaArr=false; render(); } });
+function bCloseGroup(){ if (!betaGroup) return; bCollapseAll(); if (history.state && history.state.bg) history.back(); else { betaGroup=null; render(); } }
+window.addEventListener('popstate', ()=>{ if (betaGroup){ bCollapseAll(); betaGroup=null; betaArr=false; render(); } });
 
 function bMove(arr, i, d){ const j=i+d; if (j<0||j>=arr.length) return false; [arr[i],arr[j]]=[arr[j],arr[i]]; return true; }
 function bBindLayout(c, todos){
   const L = bLayout();
   c.querySelectorAll('[data-b-arr]').forEach(b=>b.onclick=()=>{ betaArr=!betaArr; render(); });
   c.querySelectorAll('[data-b-back]').forEach(b=>b.onclick=()=>{ betaArr=false; bCloseGroup(); });
-  c.querySelectorAll('[data-b-todo]').forEach(b=>b.onclick=()=>{ const t=todos[+b.dataset.bTodo]; bOpenGroup(t.g, b, t.f); });
+  c.querySelectorAll('[data-b-todo]').forEach(b=>b.onclick=()=>{ const t=todos[+b.dataset.bTodo]; if (t.act) t.act(); else bOpenGroup(t.g, b, t.f); });
+  c.querySelectorAll('[data-b-todoall]').forEach(b=>b.onclick=()=>{ bTodoAll=!bTodoAll; render(); });
   const deck = c.querySelector('#b-deck');
   if (deck){
     deck.onclick = e=>{
@@ -6221,7 +6290,7 @@ function bNavInit(){
     const b = e.target.closest('[data-b-nav]'); if (!b) return;
     const k = b.dataset.bNav;
     if (activeTeamUmName && k!=='home' && k!=='set'){ showToast(`กำลังดูทีมของ ${activeTeamUmName} — กด "← กลับของฉันเอง" ด้านบนก่อน`); return; }
-    betaArr = false; closeAllCalendars();
+    betaArr = false; closeAllCalendars(); bCollapseAll(); editLicenseAgent = null;
     if (k==='home'){ activeSection='um'; betaGroup=null; }
     else if (k==='set'){ activeSection='um'; betaGroup='set'; }
     else { activeSection=k; betaGroup=null; if (k==='agent' && !['goals','entry','competitions'].includes(activeTab)) activeTab='goals'; }
@@ -6229,7 +6298,7 @@ function bNavInit(){
   };
   fab.onclick = ()=>{
     if (activeTeamUmName){ showToast(`กำลังดูทีมของ ${activeTeamUmName} — กด "← กลับของฉันเอง" ก่อน`); return; }
-    betaGroup=null; betaArr=false; activeSection='agent'; activeTab='entry'; closeAllCalendars(); render();
+    bCollapseAll(); betaGroup=null; betaArr=false; activeSection='agent'; activeTab='entry'; closeAllCalendars(); render();
     const f=document.getElementById('entry-form'); if (f) f.scrollIntoView({ block:'start', behavior: bCalm()?'auto':'smooth' });
   };
 }
@@ -6353,6 +6422,7 @@ function posterView(files, startIdx, onPick){
     <button type="button" class="x" aria-label="ปิด">✕</button>
     <div class="track">${list.map((p,i)=>`<div class="sl" data-i="${i}"><img src="${esc(pSrc(p))}" alt="โปสเตอร์ ${esc(p.title||'')}">
       <div class="cap">${esc(pDateTxt(p))}${pIsArchived(p)?' · จบแล้ว':''}</div>
+      ${!onPick && posterEvents(p).length?`<button type="button" class="pick" data-pprog="${i}">📊 ดูความคืบหน้าของทีม</button>`:''}
       ${onPick?`<button type="button" class="pick" data-pick="${i}">✓ ใช้โปสเตอร์นี้</button>`:''}</div>`).join('')}</div>
     <div class="hint">${list.length>1?'ปัดซ้าย-ขวาเพื่อดูใบอื่น · ':''}แตะรูปเพื่อขยาย</div>`;
   pv.hidden = false; document.body.style.overflow = 'hidden';
@@ -6364,9 +6434,32 @@ function posterView(files, startIdx, onPick){
   pv.onclick = e=>{
     if (e.target.closest('.x')) return close();
     const pk = e.target.closest('[data-pick]'); if (pk){ close(); onPick(list[+pk.dataset.pick]); return; }
+    const pg = e.target.closest('[data-pprog]'); if (pg){ posterProgressOpen(pv, list[+pg.dataset.pprog]); return; }
+    if (e.target.closest('[data-pp-back]')){ const pp = pv.querySelector('.pp'); if (pp) pp.remove(); return; }
+    const ar = e.target.closest('[data-pp-agent]'); if (ar){ const n = ar.dataset.ppAgent; close(); if (!state.agents[n]) return; bCollapseAll(); state.currentAgent=n; try{ syncAgentFormState(); }catch(_){} betaGroup=null; activeSection='agent'; activeTab='competitions'; render(); window.scrollTo(0,0); return; }
+    if (e.target.closest('.pp')) return;
     const img = e.target.closest('.sl img'); if (img){ img.parentElement.classList.toggle('big'); return; }
     if (e.target.classList.contains('sl') || e.target.classList.contains('track') || e.target.classList.contains('hint')) close();
   };
+}
+function posterEvents(p){ return evList().filter(ev=>posterMatches(ev.name, ev.key, ev).some(x=>pBase(x.file)===pBase(p.file))); }
+function posterProgressOpen(pv, p){
+  const old = pv.querySelector('.pp'); if (old) old.remove();
+  const f = iso=>fmtTH(new Date(iso+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"});
+  const html = posterEvents(p).map(ev=>{
+    const rows = Object.keys(state.agents||{}).map(n=>{ const en = state.agents[n].entries||[]; const v = eventValue(effectiveEntries(en), ev), vp = eventValue(effectiveEntries(projEntries(en)), ev); return { n, v, vp, p:evProg(v, ev), miss:eventMissingPrem(en, ev) }; })
+      .filter(r=>r.v>0 || r.vp>0).sort((a,b)=>(b.v-a.v)||(b.vp-a.vp));
+    const st = compStatus(...evRange(ev));
+    let um = '';
+    if ((ev.umTiers||[]).length){ const tv = rows.reduce((s,r)=>s+r.v,0), tp = evProg(tv, ev, true); um = `<div class="pp-um">👔 ระดับ UM (ขายเอง+ตัวแทนตรง): <b>${THB(tv)}</b> · ${tp.ok?esc(tp.label):'ยังไม่ถึง'}${tp.next!==undefined?` · ขาดอีก ${THB(tp.need)}`:''}</div>`; }
+    return `<div class="pp-ev"><h4>🏁 ${esc(ev.name)}</h4>
+      <div class="pp-rule">${evRuleTxt(ev)}<br>${f(ev.start)} – ${f(ev.end)} · ${st==='ended'?'จบแล้ว':st==='upcoming'?'ยังไม่เริ่ม':'กำลังแข่ง'} · มียอด ${rows.length} คน · ติดแล้ว ${rows.filter(r=>r.p.ok).length} คน</div>${um}
+      ${rows.length ? rows.map((r,k)=>`<div class="pp-row ${r.p.ok?'ok':''}" data-pp-agent="${esc(r.n)}"><span class="rk">${k+1}</span><div class="w"><b>${esc(r.n)}</b><small>${evUnit(ev)} ${THB(r.v)}${r.vp>r.v?` <i>(+รออนุมัติ ${THB(r.vp-r.v)})</i>`:''}<br>${r.p.ok?`✅ ${esc(r.p.label)} · `:''}${evNextTxt(r.p, ev)}${r.miss?` · <i style="color:#C8173F;">ยังไม่คีย์เบี้ย ${r.miss} เคส</i>`:''}</small></div><span class="go">›</span></div>`).join('') : '<div class="pp-empty">ยังไม่มีตัวแทนที่มียอดในการแข่งขันนี้</div>'}
+    </div>`;
+  }).join('');
+  const box = document.createElement('div'); box.className = 'pp';
+  box.innerHTML = `<button type="button" class="pp-back" data-pp-back>← กลับไปดูโปสเตอร์</button><div class="pp-t">📊 ความคืบหน้าของทีม</div><div class="pp-hint">แสดงเฉพาะคนที่มียอดแล้ว · แตะชื่อเพื่อเปิดผลงานของคนนั้น</div>${html}`;
+  pv.appendChild(box);
 }
 document.addEventListener('click', e=>{
   const t = e.target.closest('[data-poster-open]');
@@ -6387,6 +6480,19 @@ document.addEventListener('click', e=>{
   const au = e.target.closest('[data-ev-poster-auto]');
   if (au){ e.preventDefault(); e.stopPropagation(); const ev = evAll()[+au.dataset.evPosterAuto]; if (ev){ delete ev.posters; saveState(); render(); } }
 }, true);
+
+// แถบโปสเตอร์หน้าหลักค่อยๆ เลื่อนสลับเอง · แตะ/ปัดแล้วหยุด 5 วินาที
+let pAutoIdle = 0;
+setInterval(()=>{
+  if (bCalm() || document.hidden || Date.now()<pAutoIdle) return;
+  const pv = document.getElementById('pv'); if (pv && !pv.hidden) return;
+  const s = document.querySelector('#b-home:not([hidden]) .p-strip'); if (!s) return;
+  const card = s.querySelector('.p-card'); if (!card) return;
+  const max = s.scrollWidth - s.clientWidth; if (max<=4) return;
+  const step = card.offsetWidth + 12;
+  s.scrollTo({ left: s.scrollLeft+step >= max-2 ? 0 : s.scrollLeft+step, behavior:'smooth' });
+}, 3200);
+['pointerdown','touchstart','wheel'].forEach(t=>document.addEventListener(t, e=>{ if (e.target && e.target.closest && e.target.closest('.p-strip')) pAutoIdle = Date.now()+5000; }, { passive:true }));
 
 /* ================= beta2: กล่องไตรมาส แตะเพื่อขยายเต็มจอ ================= */
 let qzKey = null;
