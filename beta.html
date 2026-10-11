@@ -427,7 +427,7 @@ html.b-calm .b-podw,html.b-calm .b-orbit,html.b-calm .b-badge,html.b-calm .b-grp
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta3</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta4</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -665,8 +665,22 @@ function evList(){
     r.evSeed2610 = true;
     EV_SEED_2610.forEach(s=>{ if (!r.specialEvents.some(ev=>ev && ev.key===s.key)) r.specialEvents.push(JSON.parse(JSON.stringify(s))); });
   }
+  if (!r.evSeed2610b){ // ปรับ Kick Off / Regional ให้ครบตามโปสเตอร์ (ระดับตัวแทน + UM) ครั้งเดียว
+    r.evSeed2610b = true;
+    Object.entries(EV_FIX_2610B).forEach(([k,fix])=>{
+      const ev = r.specialEvents.find(x=>x && x.key===k);
+      if (ev) Object.assign(ev, JSON.parse(JSON.stringify(fix)), { name: ev.name || fix.name });
+      else r.specialEvents.unshift({ key:k, ...JSON.parse(JSON.stringify(fix)) });
+    });
+  }
   return r.specialEvents.filter(ev=>ev && ev.start && ev.end && Array.isArray(ev.tiers) && ev.tiers.length);
 }
+// Kick Off / Regional ตามโปสเตอร์ (ผลงาน 28 ส.ค.–30 พ.ย. 69)
+const KO_LABELS = ["สิทธิ์เข้างาน Kick Off 2027","สิทธิ์เข้างาน + Pocket Money 500","Top Producer · Pocket Money 1,000 · แจ็กเก็ต · สิทธิ์ Regional"];
+const EV_FIX_2610B = {
+  kickoff:  { name:"Kick Off", start:"2026-08-28", end:"2026-11-30", basis:"fyc", mode:"tier", tiers:[15000,30000,45000], tierLabels:KO_LABELS, umTiers:[45000,90000,135000], umTierLabels:KO_LABELS, rewardText:"Road to Kick Off 2027 (8 ม.ค. 70 ไอคอนสยาม)" },
+  regional: { name:"Regional", start:"2026-08-28", end:"2026-11-30", basis:"fyc", mode:"tier", tiers:[45000], tierLabels:["สิทธิ์ Regional Year Plan 2027"], umTiers:[135000], umTierLabels:["สิทธิ์ Regional Year Plan 2027"], rewardText:"Regional Year Plan 2027" },
+};
 const EV_SEED_2610 = [
   { key:"pocketmoney", name:"Pocket Money เที่ยวปักกิ่ง", start:"2026-10-01", end:"2026-10-31", basis:"fyc", mode:"every", tiers:[25000], reward:2500, rewardText:"แคชเชียร์เช็ค", posters:["2026-10_pocket-money-beijing.jpg"] },
   { key:"cao", name:"CAO Challenge", start:"2026-10-01", end:"2026-10-31", basis:"fyp", mode:"tier", tiers:[50000], rewardText:"เสื้อโปโล BLA North", umTiers:[100000], umRewardText:"เสื้อโปโล BLA North", posters:["2026-10_cao-challenge.jpg"] },
@@ -687,15 +701,17 @@ function eventMissingPrem(entries, ev){
   const [s,e] = evRange(ev);
   return (entries||[]).filter(x=>isOrigin(x) && D(x.date)>=s && D(x.date)<=e && !(Number(x.premium)>0)).length;
 }
-function evProg(v, ev, tiers){
-  const t = tiers || ev.tiers || [];
-  if (evMode(ev)==='every' && !tiers){
+function evProg(v, ev, um){
+  const t = (um ? ev.umTiers : ev.tiers) || [];
+  const labs = (um ? ev.umTierLabels : ev.tierLabels) || [];
+  if (evMode(ev)==='every' && !um){
     const step = Number(t[0])||0; if (!step) return { n:0, ok:false, levels:null, next:undefined, need:0, label:'ยังไม่ตั้งเกณฑ์' };
     const n = Math.floor(v/step), next = (n+1)*step, amt = ev.reward ? n*Number(ev.reward) : null;
     return { n, ok:n>0, levels:null, next, need:next-v, amt, label: n>0 ? `ได้ ${n} ครั้ง${amt!==null?` = ${THB(amt)}`:''}` : 'ยังไม่ถึง' };
   }
   const n = t.filter(x=>v>=x).length, next = t[n];
-  return { n, ok:n>0, levels:t.length, next, need: next!==undefined ? next-v : 0, label: n>0 ? (t.length>1?`ระดับ ${n}/${t.length}`:'ผ่านแล้ว') : 'ยังไม่ถึง' };
+  const lv = n>0 ? (t.length>1?`ระดับ ${n}/${t.length}`:'ผ่านแล้ว') : 'ยังไม่ถึง';
+  return { n, ok:n>0, levels:t.length, next, need: next!==undefined ? next-v : 0, label: n>0 && labs[n-1] ? `${lv} · ${labs[n-1]}` : lv, nextLabel: labs[n]||'' };
 }
 function evRuleTxt(ev){
   const rw = ev.rewardText ? ` · ${esc(ev.rewardText)}` : '';
@@ -703,7 +719,8 @@ function evRuleTxt(ev){
     ? `${evUnit(ev)} ทุกๆ ${THB(ev.tiers[0])}${ev.reward?` ได้ ${THB(ev.reward)}`:''}${rw}`
     : `${evUnit(ev)} ${ev.tiers.map(THB).join(' / ')}${rw}`;
 }
-function evNextTxt(p, ev){ return p.next===undefined ? 'ครบทุกระดับ 🎉' : `ขาดอีก ${THB(p.need)} ${evMode(ev)==='every'?`ได้ครั้งที่ ${p.n+1}`:`ถึง${p.n?'ระดับถัดไป':''} ${THB(p.next)}`}`; }
+function evNextTxt(p, ev){ return p.next===undefined ? 'ครบทุกระดับ 🎉' : `ขาดอีก ${THB(p.need)} ${evMode(ev)==='every'&&!p.levels?`ได้ครั้งที่ ${p.n+1}`:`ถึง${p.n?'ระดับถัดไป':''} ${THB(p.next)}${p.nextLabel?` (${esc(p.nextLabel)})`:''}`}`; }
+function fypEventAt(iso){ if (!iso) return null; const d = new Date(iso+"T12:00:00"); return evList().find(ev=>evBasis(ev)==='fyp' && d>=evRange(ev)[0] && d<=evRange(ev)[1]) || null; }
 function evAll(){ evList(); return evRoot().specialEvents; }
 // การแข่งขันระดับ UM (ขายเอง + ตัวแทนตรง = รวมทุกคนในทีมของ UM คนนี้)
 function renderUmEventsCard(names){
@@ -713,14 +730,15 @@ function renderUmEventsCard(names){
   const rows = evs.map(ev=>{
     let v=0, vp=0, miss=0;
     names.forEach(n=>{ const en = state.agents[n].entries||[]; v += eventValue(effectiveEntries(en), ev); vp += eventValue(effectiveEntries(projEntries(en)), ev); miss += eventMissingPrem(en, ev); });
-    const p = evProg(v, ev, ev.umTiers), pP = evProg(vp, ev, ev.umTiers);
+    const p = evProg(v, ev, true), pP = evProg(vp, ev, true);
     const dl = Math.round((evRange(ev)[1]-now)/86400000);
     return `<div style="border:1px solid #123F6B1F;border-radius:10px;padding:10px;margin-bottom:10px;">
       <div style="display:flex;align-items:center;gap:10px;">${posterThumbs(posterMatches(ev.name, ev.key, ev))}
         <div style="flex:1;min-width:0;"><b style="color:var(--navy);font-size:18px;">${esc(ev.name)}</b>
         <div style="font-size:14px;color:var(--muted);">ระดับ UM: ${evUnit(ev)} ${ev.umTiers.map(THB).join(' / ')}${ev.umRewardText?` · ${esc(ev.umRewardText)}`:''} · เหลือ ${dl} วัน</div></div></div>
+      ${(ev.umTierLabels||[]).length?`<div style="margin:6px 0;">${ev.umTiers.map((t,k)=>`<div style="font-size:14.5px;padding:2px 0;color:${v>=t?'var(--good)':'var(--muted)'};${v>=t?'font-weight:700;':''}">${v>=t?'✔':'○'} ${THB(t)} — ${esc(ev.umTierLabels[k]||'')}</div>`).join('')}</div>`:''}
       <div class="tech-row"><span class="lab">${evUnit(ev)} ทีม (ขายเอง + ตัวแทนตรง)</span><span class="val ${p.ok?'good':''}">${THB(v)}</span></div>
-      <div style="font-size:17px;font-weight:700;color:${p.ok?'var(--good)':'var(--navy)'};">${p.ok?`✅ ${p.label}`:'⏳ ยังไม่ถึง'}${p.next!==undefined?` · ขาดอีก ${THB(p.need)}`:''}</div>
+      <div style="font-size:17px;font-weight:700;color:${p.ok?'var(--good)':'var(--navy)'};">${p.ok?`✅ ${esc(p.label)}`:'⏳ ยังไม่ถึง'}${p.next!==undefined?` · ขาดอีก ${THB(p.need)}${p.nextLabel?` ถึง ${esc(p.nextLabel)}`:''}`:''}</div>
       ${vp>v?`<div class="proj-box">⏳ ถ้ารออนุมัติผ่านทั้งหมด: ${THB(vp)} → ${pP.ok?pP.label:'ยังไม่ถึง'}</div>`:''}
       ${miss?`<div style="font-size:15px;color:var(--bad);font-weight:700;margin-top:6px;">⚠ ยังไม่ได้คีย์เบี้ยประกันต่อปี ${miss} เคส — ยอด FYP อาจต่ำกว่าความจริง</div>`:''}
     </div>`;
@@ -756,7 +774,9 @@ function renderEventsSettingsCard(){
         ${evMode(ev)==='every'?`<label class="field" style="flex:1;min-width:130px;"><span>ได้ครั้งละ (บาท)</span><input type="text" inputmode="decimal" data-ev-f="reward|${i}" value="${ev.reward?Number(ev.reward).toLocaleString('en-US'):''}" placeholder="2500"></label>`:''}
         <label class="field" style="flex:2;min-width:160px;"><span>รางวัล (ข้อความ ไม่บังคับ)</span><input type="text" data-ev-f="rewardText|${i}" value="${esc(ev.rewardText||'')}" placeholder="เช่น เสื้อโปโล"></label>
       </div>
+      ${evMode(ev)==='tier'?`<label class="field" style="margin-top:6px;"><span>ชื่อรางวัลแต่ละขั้น (คั่นด้วย / ตามลำดับขั้น)</span><input type="text" data-ev-f="tierLabels|${i}" value="${esc((ev.tierLabels||[]).join(' / '))}" placeholder="เช่น สิทธิ์เข้างาน / + Pocket Money 500"></label>`:''}
       <label class="field" style="margin-top:6px;"><span>เกณฑ์ระดับ UM ${evUnit(ev)} ขายเอง+ตัวแทนตรง (เว้นว่างถ้าไม่มี)</span><input type="text" inputmode="decimal" data-ev-f="umTiers|${i}" value="${esc((ev.umTiers||[]).map(t=>Number(t).toLocaleString('en-US')).join(', '))}" placeholder="เช่น 100000"></label>
+      ${(ev.umTiers||[]).length?`<label class="field" style="margin-top:6px;"><span>ชื่อรางวัลระดับ UM แต่ละขั้น (คั่นด้วย /)</span><input type="text" data-ev-f="umTierLabels|${i}" value="${esc((ev.umTierLabels||[]).join(' / '))}"></label>`:''}
       <div style="font-size:14px;margin-top:4px;">${stTxt(ev)}</div>
       <div class="p-evrow">${posterThumbs(posterMatches(ev.name, ev.key, ev)) || '<span style="color:var(--muted);font-size:14px;">ยังไม่มีโปสเตอร์</span>'}
         <button type="button" class="btn-ghost" data-ev-poster="${i}" style="font-size:15px;padding:5px 10px;">🖼 เลือกโปสเตอร์</button>
@@ -3166,6 +3186,7 @@ function renderSpecialEventsSection(entries){
         return `<div style="flex:1;min-width:90px;border-radius:10px;padding:10px;text-align:center;background:${reached?'#F1F8F3':'var(--cream)'};border:1.5px solid ${reached?'var(--good)':'#123F6B22'};">
           <div style="font-size:15px;color:var(--muted);">${ev.tiers.length>1?`ระดับ ${i+1}`:'เกณฑ์'}</div>
           <div style="font-weight:700;color:${reached?'var(--good)':'var(--navy-deep)'};font-size:18px;">${THB(t)}</div>
+          ${(ev.tierLabels||[])[i]?`<div style="font-size:13.5px;margin-top:3px;line-height:1.3;color:var(--navy);">${esc(ev.tierLabels[i])}</div>`:''}
           <div style="font-size:14px;margin-top:2px;color:${reached?'var(--good)':'var(--muted)'};">${reached?'✔ ผ่านแล้ว':'ยังไม่ถึง'}</div>
         </div>`;
       }).join("");
@@ -3196,7 +3217,7 @@ function renderSpecialEventsSection(entries){
   const history = ended.map(ev=>cardOf(ev).replace('class="card"','class="hist-item"').replace('🎉 ผ่านครบทุกระดับแล้ว!','🏆 ผ่านครบทุกระดับ'));
   return `
     ${cards?`<h3 style="margin:4px 0 4px;">🏁 การแข่งขันพิเศษ</h3>
-    <p class="sub" style="margin-top:0;">คำนวณจากผลงาน FYC ที่บันทึกในช่วงวันที่แข่งขันเท่านั้น — แสดงเฉพาะรายการที่กำลังแข่งอยู่</p>
+    <p class="sub" style="margin-top:0;">คำนวณจากผลงาน FYC/FYP ที่ส่งในช่วงแข่งขันเท่านั้น — แสดงเฉพาะรายการที่กำลังแข่งอยู่</p>
     ${cards}`:''}
     ${compHistoryBox('agentCompHistory', history)}
   `;
@@ -4158,7 +4179,7 @@ function renderEntryTab(){
         if (editingId===e.id){
           return `<tr style="background:#4FAE7414;">
             <td>${renderDateInput('edit', editDraft.date, true)}</td>
-            <td><input type="text" data-edit-field="note" value="${esc(editDraft.note)}" style="padding:5px 7px;font-size:18.75px;width:100%;"></td>
+            <td><input type="text" data-edit-field="note" value="${esc(editDraft.note)}" placeholder="หมายเหตุ" style="padding:5px 7px;font-size:18.75px;width:100%;">${isOrigin(e)?`<label style="display:block;margin-top:6px;font-size:14px;color:#7A4A00;font-weight:700;">💰 เบี้ยปีแรก (FYP)<input type="text" inputmode="decimal" data-edit-field="premium" value="${esc(editDraft.premium||'')}" placeholder="เช่น 60,000" style="display:block;padding:5px 7px;font-size:18.75px;width:100%;margin-top:2px;"></label>`:''}</td>
             <td colspan="4" style="text-align:right"><input type="text" inputmode="decimal" data-edit-field="fyc" value="${esc(editDraft.fyc)}" style="padding:5px 7px;font-size:18.75px;text-align:right;width:110px;"></td>
             <td></td>
             <td style="text-align:right;white-space:nowrap;">
@@ -4175,7 +4196,7 @@ function renderEntryTab(){
         const fut = isFutureE(e);
         return `<tr style="${effPending?'background:#FBF6E844;':''}${fut?'opacity:0.55;':''}">
           <td style="${origin?'color:var(--navy);font-weight:600;':''}${effPending?'opacity:0.7;':''}">${fmtTH(D(e.date),{day:"numeric",month:"long",year:"numeric"})}${fut?'<div style="font-size:13px;color:var(--muted);font-weight:400;">⏳ ยังไม่ถึงงวด (ยังไม่นับ)</div>':''}</td>
-          <td style="color:var(--muted)">${esc(e.note)||"—"}${(e.premium||e.plan)?`<div style="font-size:13px;">${e.plan?esc(e.plan):''}${e.plan&&e.premium?' · ':''}${e.premium?'เบี้ย '+THB(e.premium):''}</div>`:''}</td>
+          <td style="color:var(--muted)">${esc(e.note)||"—"}${origin && !(Number(e.premium)>0) && fypEventAt(e.date)?`<div data-start-edit="${e.id}" style="font-size:13px;color:var(--bad);font-weight:700;cursor:pointer;">⚠ ยังไม่คีย์เบี้ย FYP — แตะเพื่อเติม</div>`:''}${(e.premium||e.plan)?`<div style="font-size:13px;">${e.plan?esc(e.plan):''}${e.plan&&e.premium?' · ':''}${e.premium?'เบี้ย '+THB(e.premium):''}</div>`:''}</td>
           ${cell("annual")}${cell("semiannual")}${cell("quarterly")}${cell("monthly")}
           <td style="text-align:center;">
             ${!origin
@@ -4210,12 +4231,12 @@ function renderEntryTab(){
         <label class="field"><span>${billingLabel}</span>
           <input type="text" inputmode="decimal" id="f-fyc" value="${esc(entryForm.fyc)}" placeholder="0.00">
         </label>
+        <label class="field" style="background:#FFF8E6;border:1.5px solid #E8B64A;border-radius:10px;padding:8px;"><span style="color:#7A4A00;">💰 เบี้ยประกันปีแรก (FYP) ต่อปี${fypEventAt(entryForm.date)?' <b style="color:var(--bad);">· ช่วงนี้มีการแข่งขันนับ FYP</b>':''}</span>
+          <input type="text" inputmode="decimal" id="f-premium" value="${esc(entryForm.premium||'')}" placeholder="เช่น 60,000" style="font-weight:700;">
+        </label>
         <label class="field full"><span>ลักษณะการเก็บเบี้ย</span>
           <div style="display:flex;gap:6px;margin-top:2px;">${radiosHtml}</div>
           <div id="billing-preview">${previewHtml}</div>
-        </label>
-        <label class="field"><span>เบี้ยประกันต่อปี (ไม่บังคับ)</span>
-          <input type="text" inputmode="decimal" id="f-premium" value="${esc(entryForm.premium||'')}" placeholder="ใช้เช็กการแข่งขันแบบเบี้ย/ของสมนาคุณ">
         </label>
         <label class="field"><span>แบบประกัน (ไม่บังคับ)</span>
           <input type="text" id="f-plan" list="plan-list" value="${esc(entryForm.plan||'')}" placeholder="เช่น สะสมทรัพย์">
@@ -5288,7 +5309,7 @@ function bindEvents(){
       const id = Number(btn.dataset.startEdit);
       const e = agent().entries.find(x=>x.id===id);
       editingId = id;
-      editDraft = { date: e.date, fyc: formatThousands(String(e.fyc)), note: e.note||"" };
+      editDraft = { date: e.date, fyc: formatThousands(String(e.fyc)), note: e.note||"", premium: e.premium ? formatThousands(String(e.premium)) : "" };
       render();
     };
   });
@@ -5305,6 +5326,7 @@ function bindEvents(){
         const fycChanged = newFyc !== original.fyc;
         const dateChanged = editDraft.date !== original.date;
         agent().entries[idx] = { ...original, date: editDraft.date, fyc: newFyc, note: editDraft.note.trim() };
+        if ((original.installmentIndex ?? 0) === 0){ const pr = Number(stripCommas(editDraft.premium||"")); if (pr>0) agent().entries[idx].premium = pr; else delete agent().entries[idx].premium; }
         // ถ้าแก้ไขรายการต้นฉบับ (งวดแรก) ของแผนผ่อนชำระหลายงวด ต้องคำนวณงวดถัดๆ ไปใหม่ให้สอดคล้องกัน ไม่งั้นงวดหลังจะค้างเลขเดิม/วันเดิมที่ผิดไป
         const isOriginInstallment = (original.installmentIndex ?? 0) === 0;
         const hasSiblings = (original.installmentTotal ?? 1) > 1;
@@ -5325,6 +5347,7 @@ function bindEvents(){
       saveState(); editingId=null; render();
     };
   });
+  document.querySelectorAll('[data-edit-field="premium"]').forEach(inp=>{ inp.oninput=(e)=>{editDraft.premium=formatThousands(stripCommas(e.target.value)); e.target.value=editDraft.premium;}; });
   document.querySelectorAll('[data-edit-field="note"]').forEach(inp=>{ inp.oninput=(e)=>{editDraft.note=e.target.value;}; inp.onfocus=(e)=>e.target.select(); });
   document.querySelectorAll('[data-edit-field="fyc"]').forEach(inp=>{ inp.oninput=(e)=>{editDraft.fyc=formatThousands(stripCommas(e.target.value)); e.target.value=editDraft.fyc;}; inp.onfocus=(e)=>e.target.select(); });
   function checkClearRelatedFields(agentName){
@@ -5729,6 +5752,7 @@ function submitEntry(){
       warnings.push(`วันที่นี้อยู่ก่อน "วันที่มีผลงานขึ้นแรก" ของตัวแทนคนนี้ (${fmtTH(fsd,{day:"numeric",month:"long",year:"numeric"})}) — ถ้าไม่ตรงกัน อาจกระทบการคำนวณ Joining Bonus/ค่าเสริมมือ`);
     }
   }
+  { const fe = fypEventAt(entryForm.date); if (fe && !(Number(stripCommas(entryForm.premium||""))>0)) warnings.push(`ยังไม่ได้กรอก "เบี้ยประกันปีแรก (FYP)" — ช่วงนี้มีการแข่งขัน ${fe.name} ที่นับจาก FYP ถ้าไม่กรอก เคสนี้จะไม่ถูกนับ (เติมทีหลังได้ที่ปุ่มแก้ไข)`); }
   if (warnings.length){
     const proceed = confirm(`⚠ พบข้อสังเกตก่อนบันทึก:\n\n${warnings.map(w=>"· "+w).join("\n\n")}\n\nยืนยันจะบันทึกต่อไหม?`);
     if (!proceed) return;
@@ -6477,6 +6501,7 @@ document.addEventListener('change', e=>{
   else if (f==='mode'){ ev.mode = el.value; if (ev.mode==='every' && Array.isArray(ev.tiers) && ev.tiers.length>1) ev.tiers = [ev.tiers[0]]; }
   else if (f==='reward'){ const n = nums(el.value)[0]; if (n) ev.reward = n; else delete ev.reward; }
   else if (f==='rewardText'){ const t = el.value.trim(); if (t) ev.rewardText = t; else delete ev.rewardText; }
+  else if (f==='tierLabels' || f==='umTierLabels'){ const a = el.value.split('/').map(s=>s.trim()); if (a.some(Boolean)) ev[f] = a; else delete ev[f]; }
   else if (f==='umTiers'){ const a = nums(el.value).sort((x,y)=>x-y); if (a.length) ev.umTiers = a; else delete ev.umTiers; }
   saveState(); render();
 });
