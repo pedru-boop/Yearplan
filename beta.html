@@ -452,6 +452,39 @@ html[data-mode="light"] footer.bottom{color:#1B2A4A!important;}
 #pv .pp-row .w{flex:1;min-width:0;font-size:17px;} #pv .pp-row .w small{display:block;font-size:14.5px;color:#374151;line-height:1.5;}
 #pv .pp-row .go{color:#0F56B2;font-size:22px;font-weight:800;}
 #pv .pp-empty{color:#4B5563;font-size:15px;padding:8px 0;}
+
+/* ===== beta6: ฟอนต์มะลิทั้งแอป · ลิงก์ · กล่องรายงาน · หน้าคีย์แบบหน้ากระดาน ===== */
+html:not(.ff-sarabun) body, html:not(.ff-sarabun) body *{font-family:'Mali','Sarabun','Noto Sans Thai',sans-serif!important;}
+html.ff-sarabun body, html.ff-sarabun body *{font-family:'Sarabun','Noto Sans Thai',sans-serif!important;}
+:root{--b-display:'Mali','Sarabun',sans-serif;}
+.lk{color:#0F56B2!important;text-decoration:underline;text-decoration-color:#45E3FF;text-decoration-thickness:2px;text-underline-offset:3px;cursor:pointer;}
+.card.dark .lk,#pv .bar .lk{color:#9FE6FF!important;}
+.dl-row[data-go-card]:active,.dl-row[data-go-agent]:active,.dl-row[data-go-ev]:active,.dl-row[data-go-grp]:active{background:#E3EEFF;}
+.rb-two{display:grid;grid-template-columns:1fr;gap:12px;margin:14px 0 4px;}
+@media (min-width:700px){.rb-two{grid-template-columns:1fr 1fr;}}
+.rb{border-radius:16px;padding:12px;background:#FFFFFF;color:#1B2430;border:2px solid #2B8FD6;border-top-width:6px;box-shadow:0 10px 22px -10px rgba(0,0,0,.55);min-width:0;}
+.rb-b{border-color:#D89A1C;background:#FFFBF0;}
+.rb-h{font-size:19px;font-weight:800;color:#0B2D5C;margin-bottom:6px;}
+.rb-t{width:100%;border-collapse:collapse;font-size:16px;}
+.rb-t th{font-size:14px;color:#374151;font-weight:700;text-align:right;padding:4px 4px;border-bottom:2px solid #D5DEEA;}
+.rb-t th:first-child,.rb-t td:first-child{text-align:left;}
+.rb-t td{padding:7px 4px;border-bottom:1px solid #E5EBF3;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;vertical-align:top;}
+.rb-t tbody tr{cursor:pointer;} .rb-t tbody tr:active{background:#E3EEFF;}
+.rb-t td small{display:block;font-size:13px;color:#4B5563;font-weight:500;} .rb-t td small.hot{color:#C8173F;font-weight:700;}
+.rb-t tfoot td{font-weight:800;color:#0B2D5C;border-top:2px solid #0B2D5C;border-bottom:0;}
+.rb-empty{font-size:16px;color:#4B5563;padding:10px 0;}
+.rb-note{font-size:13.5px;color:#4B5563;margin-top:6px;}
+.e-board{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:end;min-width:0;}
+.e-board > *{min-width:0;}
+.e-board .date-btn,.e-board .date-wrap{min-width:0;width:100%;white-space:nowrap;overflow:hidden;}
+.e-board .date-btn span{overflow:hidden;text-overflow:ellipsis;}
+form.entry-form{min-width:0;} form.entry-form > *{min-width:0;}
+.e-board .field span{font-size:16px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.e-board input{width:100%;min-width:0;text-align:right;font-weight:700;padding:8px 6px!important;}
+.e-board .date-btn{padding:8px 5px!important;font-size:16px!important;justify-content:center!important;}
+.e-board .date-btn > :not(:first-child){display:none!important;}
+.e-board .field span{font-size:15.5px!important;}
+.e-board .e-prem input{background:#FFF8E6;border-color:#E8B64A!important;}
 </style>
 </head>
 <body>
@@ -466,7 +499,7 @@ html[data-mode="light"] footer.bottom{color:#1B2A4A!important;}
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta5</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.11-beta6</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -773,7 +806,7 @@ function renderUmEventsCard(names){
     const dl = Math.round((evRange(ev)[1]-now)/86400000);
     return `<div style="border:1px solid #123F6B1F;border-radius:10px;padding:10px;margin-bottom:10px;">
       <div style="display:flex;align-items:center;gap:10px;">${posterThumbs(posterMatches(ev.name, ev.key, ev))}
-        <div style="flex:1;min-width:0;"><b style="color:var(--navy);font-size:18px;">${esc(ev.name)}</b>
+        <div style="flex:1;min-width:0;"><b style="color:var(--navy);font-size:18px;">${evLink(ev)}</b>
         <div style="font-size:14px;color:var(--muted);">ระดับ UM: ${evUnit(ev)} ${ev.umTiers.map(THB).join(' / ')}${ev.umRewardText?` · ${esc(ev.umRewardText)}`:''} · เหลือ ${dl} วัน</div></div></div>
       ${(ev.umTierLabels||[]).length?`<div style="margin:6px 0;">${ev.umTiers.map((t,k)=>`<div style="font-size:14.5px;padding:2px 0;color:${v>=t?'var(--good)':'var(--muted)'};${v>=t?'font-weight:700;':''}">${v>=t?'✔':'○'} ${THB(t)} — ${esc(ev.umTierLabels[k]||'')}</div>`).join('')}</div>`:''}
       <div class="tech-row"><span class="lab">${evUnit(ev)} ทีม (ขายเอง + ตัวแทนตรง)</span><span class="val ${p.ok?'good':''}">${THB(v)}</span></div>
@@ -952,7 +985,7 @@ function renderDeadlinesCard(names, selectedPosition){
     if (sd) add(addMonths(sd,12), '⏳', `ค่าเสริมมือ ${name} ครบ 12 เดือน`, 'FYC หลังวันนี้ไม่นับค่าเสริมมือแล้ว', { kind:'service', agent:name });
     const ri = renewalInfo(ag.license);
     if (ri && ri.stage!=='ok') add(ri.exp, '🪪', `บัตร ${name} หมดอายุ`, renewalShort(ri), { kind:'card', agent:name });
-    (ag.coaching||[]).filter(n=>n.followUp && !n.done).forEach(fu=>add(new Date(fu.followUp+"T00:00:00"), '🗣️', `นัดติดตาม ${name}`, esc((fu.note||'').slice(0,60))));
+    (ag.coaching||[]).filter(n=>n.followUp && !n.done && coachIsFollow(n)).forEach(fu=>add(new Date(fu.followUp+"T00:00:00"), '🗣️', `นัดติดตาม ${name}`, esc((fu.note||'').slice(0,60))));
   });
   (state.recruits||[]).forEach(r=>{ if (r.stage!=='เข้าทีมแล้ว' && r.nextDate) add(new Date(r.nextDate+"T00:00:00"), '🌱', `ผู้สนใจ ${r.name}`, `ขั้น: ${esc(r.stage)}${r.note?` · ${esc(r.note.slice(0,40))}`:''}`); });
   items.sort((a,b)=>a.d-b.d);
@@ -968,10 +1001,11 @@ function renderDeadlinesCard(names, selectedPosition){
     ${closed?'':items.map(i=>{
       const color = i.dl<0?'var(--bad)':i.dl<=7?'var(--bad)':i.dl<=30?'#8A4B00':'var(--muted)';
       const when = i.dl<0?`เลยมา ${-i.dl} วัน`:i.dl===0?'วันนี้':`อีก ${i.dl} วัน`;
-      return `<div class="dl-row">
+      const mt = i.meta||{}; const goAttr = mt.kind==='card' ? `data-go-card="${esc(mt.agent)}"` : mt.kind==='service' ? `data-go-agent="${esc(mt.agent)}"` : mt.kind==='event' ? `data-go-ev="${esc(mt.key)}"` : mt.kind==='quarter' ? 'data-go-grp="perf|ผลงานรายไตรมาส"' : mt.kind==='bonus3' ? 'data-go-grp="perf|tb:monthlyCalc"' : mt.kind==='newagent' ? 'data-go-grp="comp|แข่งขันตัวแทนใหม่"' : i.icon==='🗣️' ? 'data-go-grp="coach|tb:coaching"' : i.icon==='🌱' ? 'data-go-grp="coach|tb:recruits"' : '';
+      return `<div class="dl-row" ${goAttr} style="${goAttr?'cursor:pointer;':''}">
         <div class="dl-date">${fmtTH(i.d,{day:"numeric",month:"short"})}</div>
         <div style="flex:1;min-width:0;"><div style="font-weight:600;color:var(--navy);">${i.icon} ${esc(i.title)}</div><div style="font-size:14px;color:var(--muted);">${i.detail}</div></div>
-        <div style="color:${color};font-weight:700;white-space:nowrap;font-size:15px;">${when}</div>
+        <div style="color:${color};font-weight:700;white-space:nowrap;font-size:15px;">${when}${goAttr?' <span style="color:#0F56B2;">›</span>':''}</div>
       </div>`;
     }).join('')}
   </div>`;
@@ -987,8 +1021,8 @@ function renderCoachingCard(names){
     const notes = (ag.coaching||[]).map((n,i)=>({...n, i})).sort((a,b)=>a.date<b.date?1:-1);
     const last = notes[0];
     const days = last ? Math.round((t0-new Date(last.date+"T00:00:00"))/86400000) : null;
-    const nextFu = notes.filter(n=>!n.done).map(n=>n.followUp).filter(f=>f && f>=todayIso()).sort()[0] || '';
-    const openCount = notes.filter(n=>!n.done).length;
+    const nextFu = notes.filter(n=>!n.done && coachIsFollow(n)).map(n=>n.followUp).filter(f=>f && f>=todayIso()).sort()[0] || '';
+    const openCount = notes.filter(n=>!n.done && coachIsFollow(n)).length;
     return { name, notes, days, nextFu, openCount };
   }).sort((a,b)=>(b.days===null?99999:b.days)-(a.days===null?99999:a.days));
   const overdue = list.filter(x=>x.days===null || x.days>COACH_GAP_DAYS).length;
@@ -1015,19 +1049,24 @@ function renderCoachingCard(names){
         ${open?`<div style="margin-top:10px;padding:10px;background:#F5F8FC;border-radius:8px;">
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <label class="field" style="flex:1;min-width:140px;"><span>วันที่คุย</span>${renderDateInput("coach-date", coachDraft.date||todayIso(), true)}</label>
-            <label class="field" style="flex:1;min-width:140px;"><span>นัดติดตาม (ถ้ามี)</span>${renderDateInput("coach-follow", coachDraft.followUp, true)}</label>
+            ${coachDraft.kind!=='info'?`<label class="field" style="flex:1;min-width:140px;"><span>นัดติดตามวันที่</span>${renderDateInput("coach-follow", coachDraft.followUp, true)}</label>`:''}
           </div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button type="button" class="b-btn ${coachDraft.kind!=='info'?'on':''}" data-coach-kind="follow" style="flex:1;">📌 ต้องติดตามผล</button>
+            <button type="button" class="b-btn ${coachDraft.kind==='info'?'on':''}" data-coach-kind="info" style="flex:1;">📢 แจ้งให้ทราบ</button>
+          </div>
+          <div style="font-size:14px;color:var(--muted);margin-top:4px;">${coachDraft.kind==='info'?'แจ้งให้ทราบ = บันทึกไว้เฉยๆ ไม่ขึ้นแจ้งเตือน':'ต้องติดตามผล = ขึ้นแจ้งเตือนตามวันนัด และติ๊ก "ดำเนินการแล้ว" ได้'}</div>
           <textarea id="coach-note" rows="3" placeholder="คุยเรื่องอะไร เป้าที่ตกลงกัน สิ่งที่ต้องติดตาม" style="width:100%;box-sizing:border-box;margin-top:8px;padding:8px;font-size:17px;font-family:inherit;border:1px solid #123F6B33;border-radius:8px;">${esc(coachDraft.note)}</textarea>
           <button class="btn-primary" data-coach-save="${esc(x.name)}" style="margin-top:8px;">บันทึก</button>
           ${x.notes.length?`<div style="margin-top:12px;">${x.notes.map(n=>`<div style="padding:8px 0;border-top:1px dashed #123F6B22;">
             <div style="display:flex;justify-content:space-between;gap:8px;">
-              <b style="color:var(--navy-deep);font-size:15px;">${fmtTH(new Date(n.date+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"})}${n.followUp?` <span style="color:var(--muted);font-weight:400;">→ นัด ${fmtTH(new Date(n.followUp+"T00:00:00"),{day:"numeric",month:"short"})}</span>`:''}</b>
+              <b style="color:var(--navy-deep);font-size:15px;">${coachIsFollow(n)?'<span style="color:#8A4B00;">📌 ติดตาม</span>':'<span style="color:#0F56B2;">📢 แจ้งให้ทราบ</span>'} · ${fmtTH(new Date(n.date+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"})}${n.followUp?` <span style="color:var(--muted);font-weight:400;">→ นัด ${fmtTH(new Date(n.followUp+"T00:00:00"),{day:"numeric",month:"short"})}</span>`:''}</b>
               <span data-coach-del="${enc}|${n.i}" style="color:var(--bad);cursor:pointer;padding:0 6px;">×</span>
             </div>
             <div style="font-size:15px;white-space:pre-wrap;${n.done?'text-decoration:line-through;color:var(--muted);':''}">${esc(n.note)}</div>
-            <label style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:4px;font-size:15px;cursor:pointer;color:${n.done?'var(--good)':'var(--navy)'};font-weight:600;">
+            ${coachIsFollow(n)?`<label style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:4px;font-size:15px;cursor:pointer;color:${n.done?'var(--good)':'var(--navy)'};font-weight:600;">
               <input type="checkbox" data-coach-done="${enc}|${n.i}" ${n.done?'checked':''} style="width:20px;height:20px;"> ${n.done?'ดำเนินการเรียบร้อยแล้ว':'ดำเนินการแล้ว'}
-            </label>
+            </label>`:''}
           </div>`).join('')}</div>`:''}
         </div>`:''}
       </div>`;
@@ -1303,11 +1342,11 @@ function __answerQuestionRaw(raw){
       const pP = evProg(allEff, ev);
       const miss = eventMissingPrem(ag.entries, ev);
       const pendTxt = (allEff>ach ? ` <span style="color:#8A4B00;">· ⏳ ถ้าอนุมัติครบ ${THB(allEff)} → ${pP.ok?pP.label:'ยังไม่ติด'}</span>` : '') + (miss?` <span style="color:var(--bad);">· ยังไม่คีย์เบี้ย ${miss} เคส</span>`:'');
-      if (p.ok) got.push({ html:`<b>${esc(n)}</b> — ${p.label} (${THB(ach)}) · ${evNextTxt(p, ev)}${pendTxt}`, v:ach });
-      else notYet.push({ html:`<b>${esc(n)}</b> — ${THB(ach)} · ${evNextTxt(p, ev)}${pendTxt}`, v:ach });
+      if (p.ok) got.push({ html:`<b>${agLink(n)}</b> — ${p.label} (${THB(ach)}) · ${evNextTxt(p, ev)}${pendTxt}`, v:ach });
+      else notYet.push({ html:`<b>${agLink(n)}</b> — ${THB(ach)} · ${evNextTxt(p, ev)}${pendTxt}`, v:ach });
     });
     got.sort((a,b)=>b.v-a.v); notYet.sort((a,b)=>b.v-a.v);
-    out.push(sec(`${posterThumbs(posterMatches(ev.name, ev.key, ev))} 🏁 ${esc(ev.name)} (${st==='ended'?'จบแล้ว':st==='upcoming'?'ยังไม่เริ่ม':'กำลังแข่ง'} · ${evRuleTxt(ev)})${scopeNote}`,
+    out.push(sec(`${posterThumbs(posterMatches(ev.name, ev.key, ev))} 🏁 ${evLink(ev)} (${st==='ended'?'จบแล้ว':st==='upcoming'?'ยังไม่เริ่ม':'กำลังแข่ง'} · ${evRuleTxt(ev)})${scopeNote}`,
       `<div class="ask-sub">✅ ติดแล้ว ${got.length} คน</div>${li(got.map(x=>x.html))}<div class="ask-sub">⏳ ยังไม่ติด ${notYet.length} คน</div>${li(notYet.map(x=>x.html))}`));
   });
 
@@ -1327,7 +1366,7 @@ function __answerQuestionRaw(raw){
       const it = agentCompStatus(state.agents[n]).find(i=>i.title.startsWith(tp.prefix));
       if (!it){ none.push(esc(n)); return; }
       const d = compProjDiff(state.agents[n]).find(x=>x.title===it.title);
-      const line = `<b>${esc(n)}</b> — ${it.text}${d?` <span style="color:#8A4B00;">· ⏳ ถ้าอนุมัติครบ: ${d.p.ok&&!it.ok?'<b>ผ่าน</b> · ':''}${d.p.text}</span>`:''}`;
+      const line = `<b>${agLink(n)}</b> — ${it.text}${d?` <span style="color:#8A4B00;">· ⏳ ถ้าอนุมัติครบ: ${d.p.ok&&!it.ok?'<b>ผ่าน</b> · ':''}${d.p.text}</span>`:''}`;
       (it.ok ? ok : it.near ? near : other).push(line);
     });
     out.push(sec(`${tp.title}${scopeNote}`,
@@ -1339,7 +1378,7 @@ function __answerQuestionRaw(raw){
     scope.forEach(n=>{
       const pe = (state.agents[n].entries||[]).filter(e=>e.pending && isOrigin(e)).sort((a,b)=>D(a.date)-D(b.date));
       if (!pe.length) return;
-      rows.push(`<b>${esc(n)}</b> — ${pe.length} ราย · ${THB(pe.reduce((s,e)=>s+e.fyc,0))}<div style="font-size:14px;color:var(--muted);">${pe.map(e=>`${fmtTH(D(e.date),{day:"numeric",month:"short"})} ${THB(e.fyc)} · ค้าง ${Math.max(0,Math.round((t0-D(e.date))/86400000))} วัน${e.pendingReason&&e.pendingReason!=='รอพิจารณา'?` · ${esc(e.pendingReason)}`:''}`).join('<br>')}</div>`);
+      rows.push(`<b>${agLink(n)}</b> — ${pe.length} ราย · ${THB(pe.reduce((s,e)=>s+e.fyc,0))}<div style="font-size:14px;color:var(--muted);">${pe.map(e=>`${fmtTH(D(e.date),{day:"numeric",month:"short"})} ${THB(e.fyc)} · ค้าง ${Math.max(0,Math.round((t0-D(e.date))/86400000))} วัน${e.pendingReason&&e.pendingReason!=='รอพิจารณา'?` · ${esc(e.pendingReason)}`:''}`).join('<br>')}</div>`);
     });
     out.push(sec(`⏳ งานรอพิจารณา${scopeNote}`, li(rows, 'ไม่มีงานค้างพิจารณา')));
   }
@@ -1348,9 +1387,9 @@ function __answerQuestionRaw(raw){
     const rows = [];
     scope.forEach(n=>{
       const lic = state.agents[n].license || {};
-      if (!lic.cardExpiryDate){ rows.push({ d:99999, h:`<b>${esc(n)}</b> — ยังไม่ได้ใส่วันหมดอายุบัตร` }); return; }
+      if (!lic.cardExpiryDate){ rows.push({ d:99999, h:`<b>${agLink(n)}</b> — ยังไม่ได้ใส่วันหมดอายุบัตร` }); return; }
       const ri = renewalInfo(lic);
-      rows.push({ d: ri.daysLeft, h:`<b>${esc(n)}</b> — หมดอายุ ${fmtTH(ri.exp,{day:"numeric",month:"short",year:"numeric"})} (${ri.daysLeft<0?`เลยมา ${-ri.daysLeft} วัน`:`อีก ${ri.daysLeft} วัน`}) ${renewalShort(ri)}` });
+      rows.push({ d: ri.daysLeft, h:`<b>${agLink(n)}</b> — หมดอายุ ${fmtTH(ri.exp,{day:"numeric",month:"short",year:"numeric"})} (${ri.daysLeft<0?`เลยมา ${-ri.daysLeft} วัน`:`อีก ${ri.daysLeft} วัน`}) ${renewalShort(ri)}` });
     });
     rows.sort((a,b)=>a.d-b.d);
     out.push(sec(`🪪 บัตรตัวแทน / อบรมต่อบัตร${scopeNote}`, li(rows.map(r=>r.h))));
@@ -1362,7 +1401,7 @@ function __answerQuestionRaw(raw){
       const sd = state.agents[n].competitions && state.agents[n].competitions.firstSaleDate;
       if (!sd) return;
       const end = addMonths(sd,12); const dl = Math.round((end-t0)/86400000);
-      rows.push(`<b>${esc(n)}</b> — เริ่ม ${fmtTH(new Date(sd+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"})} · ครบ 12 เดือน ${fmtTH(end,{day:"numeric",month:"short",year:"2-digit"})} ${dl<0?'(ครบแล้ว)':`(อีก ${dl} วัน)`}`);
+      rows.push(`<b>${agLink(n)}</b> — เริ่ม ${fmtTH(new Date(sd+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"})} · ครบ 12 เดือน ${fmtTH(end,{day:"numeric",month:"short",year:"2-digit"})} ${dl<0?'(ครบแล้ว)':`(อีก ${dl} วัน)`}`);
     });
     out.push(sec('⏳ ช่วงค่าเสริมมือ (12 เดือนแรก)', li(rows, 'ยังไม่มีตัวแทนที่ใส่วันมีผลงานขึ้นแรก')));
   }
@@ -1371,7 +1410,7 @@ function __answerQuestionRaw(raw){
     const rows = scope.map(n=>{
       const notes = (state.agents[n].coaching||[]).slice().sort((a,b)=>a.date<b.date?1:-1);
       const last = notes[0]; const days = last ? Math.round((t0-new Date(last.date+"T00:00:00"))/86400000) : null;
-      return { d: days===null?99999:days, h:`<b>${esc(n)}</b> — ${days===null?'<span style="color:var(--bad);">ยังไม่เคยบันทึก</span>':`คุยล่าสุด ${days} วันก่อน${last.note?` · ${esc(last.note.slice(0,50))}`:''}`}` };
+      return { d: days===null?99999:days, h:`<b>${agLink(n)}</b> — ${days===null?'<span style="color:var(--bad);">ยังไม่เคยบันทึก</span>':`คุยล่าสุด ${days} วันก่อน${last.note?` · ${esc(last.note.slice(0,50))}`:''}`}` };
     }).sort((a,b)=>b.d-a.d);
     out.push(sec('🗣️ บันทึกโค้ช', li(rows.map(r=>r.h))));
   }
@@ -1449,7 +1488,7 @@ function __answerQuestionRaw(raw){
     scope.forEach(n=>{
       const items = agentCompStatus(state.agents[n]);
       const ok = items.filter(i=>i.ok).map(i=>i.title), nr = items.filter(i=>!i.ok && i.near).map(i=>`${i.title} (${i.text})`);
-      if (wantNear ? nr.length : (ok.length||nr.length)) rows.push(`<b>${esc(n)}</b>${!wantNear&&ok.length?`<div>✅ ${ok.join(' · ')}</div>`:''}${nr.length?`<div>🔥 ใกล้: ${nr.join(' · ')}</div>`:''}`);
+      if (wantNear ? nr.length : (ok.length||nr.length)) rows.push(`<b>${agLink(n)}</b>${!wantNear&&ok.length?`<div>✅ ${ok.join(' · ')}</div>`:''}${nr.length?`<div>🔥 ใกล้: ${nr.join(' · ')}</div>`:''}`);
     });
     out.push(sec(`${wantNear?'🔥 ใกล้ได้รางวัล':'🏆 ใครติดอะไรบ้าง'}${scopeNote}`, li(rows, 'ยังไม่มี')));
   }
@@ -1690,7 +1729,8 @@ function renderAllUmDashboard(){
   const rows = list.map(x=>({ ...x, s: computeUmSummary(x.st) })).filter(x=>x.s);
   if (!rows.length) return "";
   // เรียงคนที่เสี่ยงเสียรายได้ขึ้นก่อน: ขาดโควตาสะสมมากสุด แล้วตามด้วย % เป้าทั้งปีน้อยสุด
-  rows.sort((a,b)=>(a.own?-1:b.own?1:0) || ((b.s.quotaShort||0)-(a.s.quotaShort||0)) || (a.s.annualPct-b.s.annualPct));
+  rows.sort((a,b)=>(a.own?-1:b.own?1:0) || ((b.s.annualAchieved||0)-(a.s.annualAchieved||0)));
+  let __rk = 0; rows.forEach(x=>{ x.rank = x.own ? 0 : ++__rk; });
   const mName = THAI_MONTH_NAMES[rows[0].s.viewMonth];
   // แถบ 12 เดือน: 1 ช่อง = โควตา 1 เดือน (ถ้ายังไม่ระบุตำแหน่ง ใช้เป้าทั้งปี ÷ 12) เติมสีตามผลงานสะสม เพื่อดูว่าผลงานถึงตอนนี้เท่ากับโควตากี่เดือนแล้ว
   const monthBar = (s)=>{
@@ -1736,7 +1776,7 @@ function renderAllUmDashboard(){
     const attr = x.own ? `data-section="um"` : `data-open-team-um="${esc(x.name)}"`;
     return `<div ${attr} style="border:1px solid #123F6B1F;border-radius:10px;padding:10px 12px;margin-bottom:10px;cursor:pointer;${x.own?'background:#FBF6E8;':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-        <div style="min-width:0;"><div style="font-weight:700;color:var(--navy);font-size:17px;">${x.own?'⭐ ':''}${esc(x.name)}</div>
+        <div style="min-width:0;"><div style="font-weight:700;color:var(--navy);font-size:17px;">${x.own?'⭐ ':`<span style="display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:50%;background:#0F56B2;color:#fff;font-size:14px;margin-right:6px;">${x.rank}</span>`}${esc(x.name)}</div>
           <div style="font-size:13px;color:#4B5563;">${pos?pos.label:''}${pos?' · ':''}${s.agentCount} ตัวแทน</div></div>
         ${status}
       </div>
@@ -1752,7 +1792,7 @@ function renderAllUmDashboard(){
       <span>📊 ภาพรวมทุก UM</span>
       <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.allUmDash?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
     </h3>
-    ${collapsedBoxes.allUmDash?'':`<p class="sub">ข้อมูลถึงเดือน${mName} พ.ศ. ${toBE(selYear)} — เรียงคนที่ขาดโควตามากสุดขึ้นก่อน · แตะการ์ดเพื่อเข้าไปจัดการ</p>${rows.map(card).join("")}`}
+    ${collapsedBoxes.allUmDash?'':`<p class="sub">ข้อมูลถึงเดือน${mName} พ.ศ. ${toBE(selYear)} — ของฉันอยู่บนสุด ที่เหลือเรียงตามผลงานทั้งปีมากไปน้อย · แตะการ์ดเพื่อเข้าไปจัดการ</p>${rows.map(card).join("")}`}
   </div>`;
 }
 function renderTeamUmTab(){
@@ -2022,7 +2062,7 @@ function renderTeamTab(){
     const barPct = r.achieved>0 ? Math.max(2, (r.achieved/maxAchieved)*100) : 0;
     return `<div style="margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;font-size:15.5px;margin-bottom:3px;">
-        <span style="color:var(--navy);font-weight:600;">${esc(r.name)}</span>
+        <span style="color:var(--navy);font-weight:600;">${agLink(r.name)}</span>
         <span style="color:var(--muted);">${THB(r.achieved)}</span>
       </div>
       <div style="background:#123F6B12;border-radius:6px;height:14px;overflow:hidden;">
@@ -2522,7 +2562,7 @@ function renderTeamTab(){
             <div id="item3-hypothetical-result" style="font-size:14px;color:var(--muted);"></div>
           </div>
           <div class="tech-row"><span class="lab">ค่าเสริมมือ</span><span class="val good">${THB(serviceFee)}</span></div>
-          ${serviceFeeDetail.length?`<div style="max-height:50vh;overflow-y:auto;margin-bottom:8px;border:1px solid #123F6B14;border-radius:6px;"><table class="qtable" style="font-size:14px;"><thead><tr><th style="padding:4px 6px;">ตัวแทน</th><th class="r" style="padding:4px 6px;">FYC</th><th class="r" style="padding:4px 6px;">ค่าเสริมมือ</th></tr></thead><tbody>${serviceFeeDetail.map(d=>`<tr><td style="color:var(--navy-deep);padding:3px 6px;">${esc(d.name)}</td><td class="r" style="padding:3px 6px;font-size:15px;">${THB(d.eligibleFYC)}</td><td class="r" style="color:var(--good);padding:3px 6px;font-size:15px;">${THB(d.eligibleFYC*0.3)}</td></tr>`).join("")}</tbody></table></div>`:''}
+          ${serviceFeeDetail.length?`<div style="max-height:50vh;overflow-y:auto;margin-bottom:8px;border:1px solid #123F6B14;border-radius:6px;"><table class="qtable" style="font-size:14px;"><thead><tr><th style="padding:4px 6px;">ตัวแทน</th><th class="r" style="padding:4px 6px;">FYC</th><th class="r" style="padding:4px 6px;">ค่าเสริมมือ</th></tr></thead><tbody>${serviceFeeDetail.map(d=>`<tr><td style="color:var(--navy-deep);padding:3px 6px;">${agLink(d.name)}</td><td class="r" style="padding:3px 6px;font-size:15px;">${THB(d.eligibleFYC)}</td><td class="r" style="color:var(--good);padding:3px 6px;font-size:15px;">${THB(d.eligibleFYC*0.3)}</td></tr>`).join("")}</tbody></table></div>`:''}
           <div class="tech-row"><span class="lab">ค่ารักษาทีมงาน</span><span class="val good">${THB(maint.total)}</span></div>
           <div style="font-size:14px;color:var(--muted);margin-bottom:8px;">${maint.detail.length?THAI_MONTH_SHORT.map((mn,m)=>{ const u=maint.detail.filter(d=>d.m===m); return u.length?`${mn}: ${u.length} หน่วย (${u.map(d=>esc(d.name)).join(', ')})`:''; }).filter(Boolean).join('<br>'):'ยังไม่มีหน่วยตรงที่ครบโควตา (ดูจากแท็บทีม UM)'}${maint.missingPos.length?`<br>⚠ ยังไม่ระบุตำแหน่ง: ${maint.missingPos.map(esc).join(', ')}`:''}</div>
           <div class="tech-row"><span class="lab">DPO</span><span class="val good">${THB(salesCompReward)}</span></div>
@@ -2530,7 +2570,7 @@ function renderTeamTab(){
           ${salesCompDetail.length?`<div style="font-size:14px;color:var(--muted);margin-bottom:6px;">คิดจาก:<br>${salesCompDetail.map(d=>`· ไตรมาส${d.q} ตัวแทนตรง ${THB(d.qTeamFyc)} × ${d.rate}% = <b style="color:var(--good);">${THB(d.reward)}</b>`).join('<br>')}</div>`:''}
           <div class="tech-row"><span class="lab">ค่าสร้างและรักษาตัวแทน</span><span class="val good">${THB(teamBuildingReward)}</span></div>
           ${tierToggle('tb-calc', teamBuildTiersHtml())}
-          ${teamBuildingDetail.length?`<table class="qtable" style="margin-bottom:8px;"><thead><tr><th>ตัวแทน</th><th>ไตรมาส</th><th>ระดับ</th><th class="r">ได้รับ</th></tr></thead><tbody>${teamBuildingDetail.map(d=>`<tr><td style="color:var(--navy-deep);">${esc(d.name)}</td><td>${d.q}</td><td>${d.level}</td><td class="r" style="color:var(--good);">${THB(d.reward)}</td></tr>`).join("")}</tbody></table>`:''}
+          ${teamBuildingDetail.length?`<table class="qtable" style="margin-bottom:8px;"><thead><tr><th>ตัวแทน</th><th>ไตรมาส</th><th>ระดับ</th><th class="r">ได้รับ</th></tr></thead><tbody>${teamBuildingDetail.map(d=>`<tr><td style="color:var(--navy-deep);">${agLink(d.name)}</td><td>${d.q}</td><td>${d.level}</td><td class="r" style="color:var(--good);">${THB(d.reward)}</td></tr>`).join("")}</tbody></table>`:''}
         </div>
         <div style="background:#F5F8FC;border:1px dashed #123F6B33;border-radius:8px;padding:10px 12px;margin-top:14px;">
           <div style="font-size:14px;color:var(--navy-deep);font-weight:600;margin-bottom:6px;">🧪 ลองสมมติรวม: ถ้าทีมทำ CFYC เพิ่มขึ้นอีก (กระทบค่าขยายงาน, โบนัสส่วนเกินโควตา, DPO พร้อมกัน — เงินเดือนไม่รวมเพราะขึ้นกับว่าเดือนไหนถึงโควตา ไม่ใช่ยอดสะสม)</div>
@@ -2688,7 +2728,7 @@ function renderTeamTab(){
 
         if (!sections.length) return '';
         const renderRow = (r, cols)=>{
-          const cells = [`<td style="color:var(--navy-deep);font-weight:600;">${esc(r.name)}</td>`];
+          const cells = [`<td style="color:var(--navy-deep);font-weight:600;">${state.agents[r.name]?agLink(r.name):esc(r.name)}</td>`];
           if (cols.includes("need")){
             const needColor = r.needType==="ขาดทั้งราย+FYC" ? 'var(--bad)' : 'var(--gold)';
             cells.push(r.needType
@@ -3241,7 +3281,7 @@ function renderSpecialEventsSection(entries){
     }
     return `<div class="card" style="margin-bottom:12px;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;">
-        <h3 style="margin:0;display:flex;align-items:center;gap:10px;">${posterThumbs(posterMatches(ev.name, ev.key, ev))}<span>${esc(ev.name)}</span></h3>
+        <h3 style="margin:0;display:flex;align-items:center;gap:10px;">${posterThumbs(posterMatches(ev.name, ev.key, ev))}<span>${evLink(ev)}</span></h3>
         <span style="font-size:15px;color:var(--muted);">${thDate(ev.start)} – ${thDate(ev.end)}</span>
       </div>
       <div style="font-size:16px;color:var(--muted);margin:4px 0 2px;">กติกา: ${evRuleTxt(ev)}</div>
@@ -3522,7 +3562,8 @@ let newTeamUmNameInput = "";
 let collapsedBoxes = new Proxy({}, { get:(t,k)=> (k in t) ? t[k] : true });
 let genericCollapsed = {}; // กล่องในแท็บ UM ที่ไม่มีปุ่มย่อของตัวเอง: key = ชื่อหัวข้อ, ค่าเริ่มต้น = ย่อ
 let openCoachAgent = null;
-let coachDraft = { date: "", note: "", followUp: "" };
+let coachDraft = { date: "", note: "", followUp: "", kind: "follow" };
+function coachIsFollow(n){ return n && (n.kind ? n.kind==="follow" : !!n.followUp); }
 let recruitDraft = { name: "", phone: "" }; // ย่อไว้ตั้งแต่แรก กดหัวข้อเพื่อขยายดูรายละเอียด (pendingReport, cardExpiry เปิดไว้ก่อน เพราะเป็นเรื่องที่ต้องรีบดู)
 
 function agent(){
@@ -3911,7 +3952,7 @@ function calState(id){
 }
 function renderDateInput(id, isoValue, compact){
   const selected = isoValue ? new Date(isoValue+"T00:00:00") : new Date();
-  const label = isoValue ? selected.toLocaleDateString("th-TH", {day:"numeric", month:"long", year:"numeric"}) : "เลือกวันที่";
+  const label = isoValue ? selected.toLocaleDateString("th-TH", id==="main" ? {day:"numeric", month:"short", year:"2-digit"} : {day:"numeric", month:"long", year:"numeric"}) : "เลือกวันที่";
   const cs = calState(id);
   const padStyle = compact ? "padding:5px 7px;font-size:18.75px;" : "padding:8px 10px;font-size:21px;";
   let popHtml = "";
@@ -4269,13 +4310,17 @@ function renderEntryTab(){
     <div class="card">
       <h3>เพิ่มรายการผลงาน</h3>
       <form id="entry-form" class="entry-form" onsubmit="return false;">
-        <label class="field full"><span>วันที่ทำสัญญา</span>${renderDateInput('main', entryForm.date, false)}</label>
-        <label class="field"><span>${billingLabel}</span>
-          <input type="text" inputmode="decimal" id="f-fyc" value="${esc(entryForm.fyc)}" placeholder="0.00">
-        </label>
-        <label class="field" style="background:#FFF8E6;border:1.5px solid #E8B64A;border-radius:10px;padding:8px;"><span style="color:#7A4A00;">💰 เบี้ยประกันปีแรก (FYP) ต่อปี${fypEventAt(entryForm.date)?' <b style="color:var(--bad);">· ช่วงนี้มีการแข่งขันนับ FYP</b>':''}</span>
-          <input type="text" inputmode="decimal" id="f-premium" value="${esc(entryForm.premium||'')}" placeholder="เช่น 60,000" style="font-weight:700;">
-        </label>
+        <div class="full e-board">
+          <label class="field"><span>วันที่</span>${renderDateInput('main', entryForm.date, false)}</label>
+          <label class="field e-prem"><span>เบี้ย FYP</span>
+            <input type="text" inputmode="decimal" id="f-premium" value="${esc(entryForm.premium||'')}" placeholder="ต่อปี">
+          </label>
+          <label class="field"><span>คอม FYC</span>
+            <input type="text" inputmode="decimal" id="f-fyc" value="${esc(entryForm.fyc)}" placeholder="0.00">
+          </label>
+        </div>
+        <div class="full" style="font-size:14.5px;color:var(--muted);margin-top:-4px;">เบี้ย = เบี้ยประกันปีแรกต่อปี · คอม = ${billingLabel}</div>
+        ${fypEventAt(entryForm.date)?'<div class="full" style="font-size:15px;color:var(--bad);font-weight:700;margin-top:-4px;">⚠ ช่วงนี้มีการแข่งขันที่นับจาก FYP — กรอกเบี้ยด้วยนะคะ</div>':''}
         <label class="field full"><span>ลักษณะการเก็บเบี้ย</span>
           <div style="display:flex;gap:6px;margin-top:2px;">${radiosHtml}</div>
           <div id="billing-preview">${previewHtml}</div>
@@ -4791,7 +4836,7 @@ function bindEvents(){
     };
   });
   document.querySelectorAll("[data-coach-open]").forEach(el=>{
-    el.onclick = ()=>{ const n = el.dataset.coachOpen; openCoachAgent = openCoachAgent===n ? null : n; coachDraft = { date: todayIso(), note: "", followUp: "" }; render(); };
+    el.onclick = ()=>{ const n = el.dataset.coachOpen; openCoachAgent = openCoachAgent===n ? null : n; coachDraft = { date: todayIso(), note: "", followUp: "", kind: "follow" }; render(); };
   });
   const coachNote = document.getElementById("coach-note");
   if (coachNote) coachNote.oninput = (e)=>{ coachDraft.note = e.target.value; };
@@ -4800,8 +4845,9 @@ function bindEvents(){
       const ag = state.agents[el.dataset.coachSave]; if (!ag) return;
       if (!coachDraft.note.trim()){ showToast("พิมพ์บันทึกก่อน"); return; }
       if (!ag.coaching) ag.coaching = [];
-      ag.coaching.push({ date: coachDraft.date || todayIso(), note: coachDraft.note.trim(), followUp: coachDraft.followUp || "" });
-      coachDraft = { date: todayIso(), note: "", followUp: "" };
+      const __k = coachDraft.kind==="info" ? "info" : "follow";
+      ag.coaching.push({ date: coachDraft.date || todayIso(), note: coachDraft.note.trim(), followUp: __k==="follow" ? (coachDraft.followUp || "") : "", kind: __k });
+      coachDraft = { date: todayIso(), note: "", followUp: "", kind: coachDraft.kind||"follow" };
       saveState(); render();
     };
   });
@@ -6033,7 +6079,7 @@ function bPodSum(g, buckets, todos){
   if (g==='coach'){
     const t0 = new Date(); t0.setHours(0,0,0,0);
     let late=0, open=0;
-    Object.values(state.agents||{}).forEach(ag=>{ const ns=(ag.coaching||[]); const last=ns.map(n=>n.date).sort().pop(); if (!last || (t0-new Date(last+"T00:00:00"))/86400000>COACH_GAP_DAYS) late++; open += ns.filter(n=>!n.done && n.followUp).length; });
+    Object.values(state.agents||{}).forEach(ag=>{ const ns=(ag.coaching||[]); const last=ns.map(n=>n.date).sort().pop(); if (!last || (t0-new Date(last+"T00:00:00"))/86400000>COACH_GAP_DAYS) late++; open += ns.filter(n=>!n.done && n.followUp && coachIsFollow(n)).length; });
     const rec = (state.recruits||[]).filter(r=>r.stage!=='เข้าทีมแล้ว').length;
     return `ไม่ได้คุยเกิน 30 วัน <b class="${late?'warn':'ok'}">${late}</b><br>ผู้สนใจ <b>${rec}</b> คน${open?` · นัดค้าง <b class="warn">${open}</b>`:''}`;
   }
@@ -6091,8 +6137,7 @@ function betaLayout(c){
     <p class="b-fresh">ข้อมูล ณ ${fmtTH(new Date(),{day:"numeric",month:"short",year:"numeric"})}${S.yearPending>0?` · รออนุมัติ <b>${S.yearPendingCount?S.yearPendingCount+' ราย ':''}(${THB(S.yearPending)})</b>`:' · ไม่มีงานรออนุมัติ'}${activeTeamUmName?` · ทีมของ ${esc(activeTeamUmName)}`:''}</p>
     ${posterStripHtml()}
     <div id="b-ask-slot"></div>
-    <div class="b-sec"><h2>📋 To do list · เรื่องด่วน 90 วัน</h2><span>แตะเพื่อไปที่เรื่องนั้น</span></div>
-    <div class="b-todos">${todos.length?todos.slice(0, bTodoAll?999:6).map((t,i)=>`<button class="b-todo" style="--c:${t.c}" data-b-todo="${i}"><span class="when">${t.when}</span><span class="what"><b>${esc(t.t)}</b><span>${esc(t.s)}</span></span><span class="go" aria-hidden="true">›</span></button>`).join('')+(todos.length>6?`<button type="button" class="b-btn" data-b-todoall style="justify-self:center;">${bTodoAll?'▲ ย่อรายการ':`▼ ดูทั้งหมด ${todos.length} เรื่อง`}</button>`:''):'<div class="b-empty">ไม่มีเรื่องเร่งด่วนใน 90 วันนี้ 👍</div>'}</div>
+    ${bReportBoxes(S)}
     <div class="b-sec"><h2>หมวดทั้งหมด</h2></div>
     <div class="b-deck ${betaArr?'b-arr':''}" id="b-deck">${L.groups.map((g,i)=>{ const G=bG(g); const badge = g==='alert' ? bAlertCount(buckets, todos) : 0; return `
       <div class="b-podw" data-g="${g}"><div class="b-pod" role="button" tabindex="0" style="--c:${G.c}" aria-label="${G.name}">
@@ -6446,7 +6491,14 @@ function posterEvents(p){ return evList().filter(ev=>posterMatches(ev.name, ev.k
 function posterProgressOpen(pv, p){
   const old = pv.querySelector('.pp'); if (old) old.remove();
   const f = iso=>fmtTH(new Date(iso+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"});
-  const html = posterEvents(p).map(ev=>{
+  const html = evProgressListHtml(posterEvents(p));
+  const box = document.createElement('div'); box.className = 'pp';
+  box.innerHTML = `<button type="button" class="pp-back" data-pp-back>← กลับไปดูโปสเตอร์</button><div class="pp-t">📊 ความคืบหน้าของทีม</div><div class="pp-hint">แสดงเฉพาะคนที่มียอดแล้ว · แตะชื่อเพื่อเปิดผลงานของคนนั้น</div>${html}`;
+  pv.appendChild(box);
+}
+function evProgressListHtml(evs){
+  const f = iso=>fmtTH(new Date(iso+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"});
+  return evs.map(ev=>{
     const rows = Object.keys(state.agents||{}).map(n=>{ const en = state.agents[n].entries||[]; const v = eventValue(effectiveEntries(en), ev), vp = eventValue(effectiveEntries(projEntries(en)), ev); return { n, v, vp, p:evProg(v, ev), miss:eventMissingPrem(en, ev) }; })
       .filter(r=>r.v>0 || r.vp>0).sort((a,b)=>(b.v-a.v)||(b.vp-a.vp));
     const st = compStatus(...evRange(ev));
@@ -6457,9 +6509,6 @@ function posterProgressOpen(pv, p){
       ${rows.length ? rows.map((r,k)=>`<div class="pp-row ${r.p.ok?'ok':''}" data-pp-agent="${esc(r.n)}"><span class="rk">${k+1}</span><div class="w"><b>${esc(r.n)}</b><small>${evUnit(ev)} ${THB(r.v)}${r.vp>r.v?` <i>(+รออนุมัติ ${THB(r.vp-r.v)})</i>`:''}<br>${r.p.ok?`✅ ${esc(r.p.label)} · `:''}${evNextTxt(r.p, ev)}${r.miss?` · <i style="color:#C8173F;">ยังไม่คีย์เบี้ย ${r.miss} เคส</i>`:''}</small></div><span class="go">›</span></div>`).join('') : '<div class="pp-empty">ยังไม่มีตัวแทนที่มียอดในการแข่งขันนี้</div>'}
     </div>`;
   }).join('');
-  const box = document.createElement('div'); box.className = 'pp';
-  box.innerHTML = `<button type="button" class="pp-back" data-pp-back>← กลับไปดูโปสเตอร์</button><div class="pp-t">📊 ความคืบหน้าของทีม</div><div class="pp-hint">แสดงเฉพาะคนที่มียอดแล้ว · แตะชื่อเพื่อเปิดผลงานของคนนั้น</div>${html}`;
-  pv.appendChild(box);
 }
 document.addEventListener('click', e=>{
   const t = e.target.closest('[data-poster-open]');
@@ -6480,6 +6529,68 @@ document.addEventListener('click', e=>{
   const au = e.target.closest('[data-ev-poster-auto]');
   if (au){ e.preventDefault(); e.stopPropagation(); const ev = evAll()[+au.dataset.evPosterAuto]; if (ev){ delete ev.posters; saveState(); render(); } }
 }, true);
+
+
+/* ================= beta6: ลิงก์ทั้งแอป · กล่องรายงานหน้าหลัก ================= */
+function agLink(n){ return `<a class="lk" data-go-agent="${esc(n)}">${esc(n)}</a>`; }
+function evLink(ev){ return `<a class="lk" data-go-ev="${esc(ev.key)}">${esc(ev.name)}</a>`; }
+function goAgent(n, tab){
+  if (!state.agents[n]) return;
+  if (typeof qzKey!=='undefined' && qzKey) qzClose();
+  bCollapseAll(); betaGroup=null; betaArr=false; closeAllCalendars();
+  state.currentAgent = n; try{ syncAgentFormState(); }catch(e){}
+  activeSection='agent'; activeTab = tab || 'entry'; saveState(); render(); window.scrollTo(0,0);
+}
+function evProgressOpen(key){
+  const ev = evAll().find(x=>x && x.key===key); if (!ev) return;
+  let pv = document.getElementById('pv'); if (!pv){ pv = document.createElement('div'); pv.id='pv'; document.body.appendChild(pv); }
+  pv.innerHTML = `<div class="bar"><span>📊 ความคืบหน้าของทีม</span></div><button type="button" class="x" aria-label="ปิด">✕</button>
+    <div class="pp"><button type="button" class="pp-back" data-pp-back>← ปิด</button><div class="pp-t">${posterThumbs(posterMatches(ev.name, ev.key, ev))} ${esc(ev.name)}</div><div class="pp-hint">แสดงเฉพาะคนที่มียอดแล้ว · แตะชื่อเพื่อเปิดผลงานของคนนั้น</div>${evProgressListHtml([ev])}</div>`;
+  pv.hidden = false; document.body.style.overflow='hidden';
+  const close = ()=>{ pv.hidden=true; pv.innerHTML=''; document.body.style.overflow=''; };
+  pv.onclick = e=>{
+    if (e.target.closest('[data-poster-open]')) return;
+    if (e.target.closest('.x') || e.target.closest('[data-pp-back]')) return close();
+    const ar = e.target.closest('[data-pp-agent]'); if (ar){ close(); goAgent(ar.dataset.ppAgent, 'competitions'); }
+  };
+}
+document.addEventListener('click', e=>{
+  const a = e.target.closest('[data-go-agent]'); if (a){ e.preventDefault(); e.stopPropagation(); goAgent(a.dataset.goAgent); return; }
+  const c = e.target.closest('[data-go-card]'); if (c){ e.preventDefault(); e.stopPropagation(); bOpenAgentCard(c.dataset.goCard); return; }
+  const v = e.target.closest('[data-go-ev]'); if (v){ e.preventDefault(); e.stopPropagation(); evProgressOpen(v.dataset.goEv); return; }
+  const g = e.target.closest('[data-go-grp]'); if (g){ e.preventDefault(); e.stopPropagation(); const [grp, f] = g.dataset.goGrp.split('|'); if (typeof qzKey!=='undefined' && qzKey) qzClose(); activeSection='um'; betaGroup=null; bOpenGroup(grp, null, f.startsWith('tb:') ? f : new RegExp(f)); return; }
+}, true);
+
+// กล่องรายงานหน้าหลัก: ผลงานเดือนนี้ + รออนุมัติ
+function bReportBoxes(S){
+  const names = Object.keys(state.agents||{});
+  const y = selYear, m = (S && S.viewMonth!=null) ? S.viewMonth : (y===new Date().getFullYear() ? new Date().getMonth() : 11);
+  const t0 = new Date(); t0.setHours(0,0,0,0);
+  const mon = names.map(n=>{
+    const en = state.agents[n].entries||[];
+    const org = effectiveEntries(en).filter(e=>isOrigin(e) && D(e.date).getFullYear()===y && D(e.date).getMonth()===m);
+    return { n, c: org.length, fyp: org.reduce((s,e)=>s+(Number(e.premium)||0),0), fyc: mEff(en, y, m) };
+  }).filter(r=>r.c>0 || r.fyc>0).sort((a,b)=>b.fyc-a.fyc);
+  const pen = names.map(n=>{
+    const pe = (state.agents[n].entries||[]).filter(e=>e.pending && isOrigin(e));
+    const oldest = pe.length ? Math.max(...pe.map(e=>Math.round((t0-new Date(D(e.date).getFullYear(), D(e.date).getMonth(), D(e.date).getDate()))/86400000))) : 0;
+    return { n, c: pe.length, fyp: pe.reduce((s,e)=>s+(Number(e.premium)||0),0), fyc: pe.reduce((s,e)=>s+(e.fyc||0),0), oldest };
+  }).filter(r=>r.c>0).sort((a,b)=>b.oldest-a.oldest);
+  const tot = arr=>arr.reduce((s,r)=>({ c:s.c+r.c, fyp:s.fyp+r.fyp, fyc:s.fyc+r.fyc }), { c:0, fyp:0, fyc:0 });
+  const T1 = tot(mon), T2 = tot(pen);
+  const num = v=>v ? Number(Math.round(v)).toLocaleString('en-US') : '—';
+  const table = (rows, T, pend)=>`<table class="rb-t"><thead><tr><th>ตัวแทน</th><th>ราย</th><th>FYP</th><th>FYC</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr data-go-agent="${esc(r.n)}"><td><span class="lk">${esc(r.n)}</span>${pend?`<small class="${r.oldest>=14?'hot':''}">ค้างนานสุด ${r.oldest} วัน</small>`:''}</td><td>${r.c}</td><td>${num(r.fyp)}</td><td>${num(r.fyc)}</td></tr>`).join('')}
+    </tbody><tfoot><tr><td>รวม</td><td>${T.c}</td><td>${num(T.fyp)}</td><td>${num(T.fyc)}</td></tr></tfoot></table>`;
+  return `<div class="rb-two">
+    <section class="rb rb-a"><div class="rb-h">📊 ผลงานเดือน${THAI_MONTH_NAMES[m]} ${toBE(y)}</div>
+      ${mon.length ? table(mon, T1, false) : '<div class="rb-empty">ยังไม่มีผลงานที่อนุมัติในเดือนนี้</div>'}
+      <div class="rb-note">นับเฉพาะที่อนุมัติแล้ว · เรียงตาม FYC · แตะชื่อเพื่อเปิดผลงาน</div></section>
+    <section class="rb rb-b"><div class="rb-h">⏳ รออนุมัติ</div>
+      ${pen.length ? table(pen, T2, true) : '<div class="rb-empty">ไม่มีงานรออนุมัติ 👍</div>'}
+      <div class="rb-note">ค้างนานสุดอยู่บน · แตะชื่อเพื่อไปอนุมัติ</div></section>
+  </div>`;
+}
 
 // แถบโปสเตอร์หน้าหลักค่อยๆ เลื่อนสลับเอง · แตะ/ปัดแล้วหยุด 5 วินาที
 let pAutoIdle = 0;
@@ -6599,6 +6710,7 @@ document.addEventListener('click', e=>{
 });
 
 // ตั้งค่าแบบการแข่งขัน (นับจาก / แบบรางวัล / รางวัล / เกณฑ์ UM)
+document.addEventListener('click', e=>{ const k = e.target.closest && e.target.closest('[data-coach-kind]'); if (!k) return; e.preventDefault(); coachDraft.kind = k.dataset.coachKind; if (coachDraft.kind==='info') coachDraft.followUp=''; render(); });
 document.addEventListener('change', e=>{
   const el = e.target.closest && e.target.closest('[data-ev-f]'); if (!el) return;
   const [f, i] = el.dataset.evF.split('|'); const ev = evAll()[+i]; if (!ev) return;
