@@ -593,7 +593,7 @@ html[data-mode="light"] .t-tab.on{background:#0F56B2;color:#fff;border-color:#0F
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-beta13</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-beta14</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -6556,7 +6556,7 @@ function bSkyStart(){
 /* ================= beta2: โปสเตอร์ (อ่านจาก GitHub ทุกคนเห็นเหมือนกัน) ================= */
 const POSTER_REPO = 'pedru-boop/Yearplan';
 const POSTER_BASE = /\.github\.io$/.test(location.hostname) ? 'posters/' : 'https://pedru-boop.github.io/Yearplan/posters/';
-const POSTER_TTL = 30*60*1000; // จำรายการไว้ 30 นาที ไม่ต้องดึงทุกครั้งที่เปิด
+const POSTER_TTL = 0; // ดึงรายการโปสเตอร์ใหม่ทุกครั้งที่เปิดแอป (โชว์ของที่จำไว้ก่อน แล้วอัปเดตทันทีเมื่อโหลดเสร็จ)
 let posterList = [];
 function pNorm(s){ return String(s||'').toLowerCase().replace(/[\s\-_.·,:;()\/'"!?&+—–]/g,''); }
 function pBase(f){ return String(f||'').split('/').pop(); }
@@ -6995,6 +6995,7 @@ document.addEventListener('click', e=>{
 }, true);
 
 posterLoad();
+document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) posterLoad(); }); // กลับมาเปิดแอปจากพื้นหลัง ก็ดึงโปสเตอร์ใหม่
 boot();
 
 // ทุกช่องกรอก: แตะแล้วล้างค่าเดิมทันที ถ้าไม่พิมพ์อะไรแล้วออก ให้คืนค่าเดิม (ไม่ต้องคอยลบเอง)
