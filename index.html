@@ -34,6 +34,37 @@
   #ui-panel .seg{display:flex;gap:6px;} #ui-panel .seg button{flex:1;padding:10px 4px;border-radius:10px;border:1.5px solid #123F6B33;background:#fff;font-size:17px;color:#082238;cursor:pointer;font-family:inherit;}
   #ui-panel .seg button.on{background:#0F56B2;color:#fff;border-color:#0F56B2;font-weight:700;}
   #ui-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:99;}
+  /* โปสเตอร์ & โปร · อบรม */
+  .p-home{margin:0 0 16px;}
+  .t-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:6px 2px 8px;}
+  .t-head h2{margin:0;font-size:24px;color:var(--navy-deep);}
+  .t-head span{font-size:15px;color:#4B5563;}
+  .p-strip{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 2px 10px;-webkit-overflow-scrolling:touch;}
+  .p-card{flex:none;width:150px;scroll-snap-align:start;border:1px solid #0F56B233;border-radius:14px;background:#fff;padding:6px;color:var(--ink);text-align:left;font:inherit;cursor:pointer;box-shadow:0 2px 8px #08223814;}
+  .p-card img{width:100%;aspect-ratio:1/1.414;object-fit:cover;border-radius:9px;display:block;background:#E7F2FB;}
+  .p-card .t{display:block;font-weight:700;font-size:15.5px;margin-top:6px;line-height:1.3;color:var(--navy-deep);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+  .p-card .d{display:block;font-size:14.5px;font-weight:700;color:#8A4B00;margin-top:3px;}
+  .p-card .d.hot{color:var(--bad);}
+  .p-card .k{display:inline-block;font-size:13px;padding:1px 8px;border-radius:999px;background:#5B4BD6;color:#fff;margin-top:4px;}
+  .t-sec{margin-top:6px;}
+  .t-tabs{display:flex;gap:8px;margin:0 0 10px;flex-wrap:wrap;}
+  .t-tab{flex:1;min-width:0;white-space:nowrap;padding-left:8px!important;padding-right:8px!important;font:inherit;font-size:18px;font-weight:700;padding:11px 12px;border-radius:12px;border:2px solid var(--navy);background:#fff;color:var(--navy);cursor:pointer;}
+  .t-tab b{display:inline-block;min-width:24px;font-size:15px;padding:1px 7px;border-radius:999px;background:#0F56B21F;margin-left:4px;}
+  .t-tab.on{background:var(--navy);color:#fff;}
+  .t-tab.on b{background:#ffffff33;}
+  .t-empty{padding:14px;border:1px dashed #0F56B255;border-radius:12px;color:#4B5563;font-size:17px;text-align:center;background:#fff;}
+  .t-btn{margin-top:10px;font:inherit;font-size:18px;font-weight:700;padding:11px 16px;border-radius:12px;border:0;background:var(--navy);color:#fff;cursor:pointer;}
+  #pv[hidden]{display:none!important;}
+  #pv{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.95);display:flex;flex-direction:column;color:#fff;font-family:'Sarabun','Mali','Noto Sans Thai',sans-serif;}
+  #pv .bar{padding:calc(16px + env(safe-area-inset-top,0px)) 76px 8px 16px;font-size:19px;font-weight:700;min-height:70px;}
+  #pv .bar small{display:block;font-size:15px;font-weight:400;color:#C9D3E0;}
+  #pv .x{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:12px;z-index:201;width:54px;height:54px;border-radius:50%;border:0;background:#fff;color:#03131F;font-size:28px;font-weight:700;cursor:pointer;}
+  #pv .track{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}
+  #pv .sl{flex:none;width:100%;height:100%;scroll-snap-align:center;overflow:auto;display:flex;flex-direction:column;align-items:center;padding:0 10px 16px;}
+  #pv .sl img{max-width:100%;max-height:calc(100dvh - 190px);object-fit:contain;border-radius:8px;cursor:zoom-in;}
+  #pv .sl.big{align-items:flex-start;} #pv .sl.big img{max-width:none;max-height:none;width:220%;cursor:zoom-out;}
+  #pv .cap{font-size:17px;text-align:center;margin-top:10px;color:#eee;line-height:1.5;max-width:640px;}
+  #pv .hint{text-align:center;font-size:15px;color:#9fb0c8;padding:0 0 calc(10px + env(safe-area-inset-bottom,0px));}
   :root{
     --navy:#0F56B2; --navy-deep:#082238; --gold:#4FAE74; --gold-soft:#9CE3B8;
     --cream:#E7F2FB; --card:#FFFFFF; --ink:#1B2430; --muted:#000000;
@@ -214,7 +245,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.10-2</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-1</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -524,6 +555,11 @@ function renewalShort(ri){
   return `<span style="color:var(--good);">🟢 บัตรปกติ</span>`;
 }
 function renewalAlertHtml(ri){
+  const h = renewalAlertHtml0(ri);
+  if (!h || !ri || (ri.stage!=='need' && ri.stage!=='expired')) return h;
+  return h.replace(/<\/div>$/, trainBtnHtml('renew','ดูรอบอบรมต่อบัตรที่เปิดรับ')+'</div>');
+}
+function renewalAlertHtml0(ri){
   if (!ri || ri.stage==='ok') return '';
   const expTxt = fmtTH(ri.exp,{day:"numeric",month:"long",year:"numeric"});
   if (ri.stage==='expired') return `<div class="alert-box" style="background:#FBEEEC;border-color:var(--bad);margin-bottom:14px;"><div class="line" style="color:var(--bad);font-weight:700;">❌ บัตรตัวแทนหมดอายุแล้ว (${expTxt})</div><div class="line" style="color:var(--muted);font-size:15px;">${ri.trained?'อบรมต่อบัตรแล้ว — ยื่นต่อบัตรให้เร็วที่สุด':'ยังไม่มีบันทึกอบรมต่อบัตร'} · ต่อบัตรแล้วให้แก้วันหมดอายุเป็นวันใหม่</div></div>`;
@@ -3350,7 +3386,7 @@ function __renderInner(){
   else if (activeTab==="goals") body = renderGoalsTab();
   else if (activeTab==="entry") body = renderEntryTab();
   else if (activeTab==="competitions") body = renderCompetitionsTab();
-  c.innerHTML = IS_AGENT_APP ? (renderBackupReminder() + body) : (renderAskBox() + body);
+  c.innerHTML = IS_AGENT_APP ? (renderBackupReminder() + body) : (renderAskBox() + (activeSection==="um" && !activeTeamUmName ? posterHomeHtml() : "") + body);
   bindEvents();
   if (activeSection==="um") enhanceCollapsibleCards(c);
   positionOpenCalendars();
@@ -5498,7 +5534,140 @@ function uiOpenPanel(){
   pn.querySelectorAll("[data-ui]").forEach(b=>{ b.onclick=(ev)=>{ ev.stopPropagation(); const [k,v]=b.dataset.ui.split("|"); const nu={...uiPrefs(), [k]: k==="font"?v:Number(v)}; uiApply(nu); uiOpenPanel(); }; });
 }
 document.getElementById("btn-ui-settings").onclick = (ev)=>{ ev.stopPropagation(); uiOpenPanel(); };
-boot();
+/* ================= โปสเตอร์ & โปร (อ่านจาก GitHub ทุกคนเห็นเหมือนกัน · ใช้ไฟล์ชุดเดียวกับเวอร์ชันเบต้า) ================= */
+const POSTER_REPO = 'pedru-boop/Yearplan';
+const POSTER_BASE = /\.github\.io$/.test(location.hostname) ? 'posters/' : 'https://pedru-boop.github.io/Yearplan/posters/';
+const POSTER_TTL = 30*60*1000;
+let posterList = [];
+function pBase(f){ return String(f||'').split('/').pop(); }
+function pSrc(p){ return POSTER_BASE + String(p.file).split('/').map(encodeURIComponent).join('/'); }
+function pIsArchived(p){ return !!p.archived || /^archive\//.test(p.file||''); }
+function posterActive(p){ const t=todayIso(); return !pIsArchived(p) && (!p.start || t>=p.start) && (!p.end || t<=p.end); }
+function posterFromName(path){
+  const f = pBase(path);
+  return { file:path, title:f.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').trim(), start:'', end:'', archived:/^archive\//.test(path) };
+}
+function posterLoad(force){
+  let cache = null; try{ cache = JSON.parse(localStorage.getItem('ped-posters')||'null'); }catch(e){}
+  if (cache && Array.isArray(cache.list)) posterList = cache.list;
+  if (!force && cache && Date.now()-cache.at < POSTER_TTL) return;
+  fetch(POSTER_BASE+'posters.json?v='+Date.now(), { cache:'no-store' })
+    .then(r=>{ if (!r.ok) throw new Error('no manifest'); return r.json(); })
+    .then(j=>Array.isArray(j) ? j : (j.posters||[]))
+    .then(list=>{
+      list = (list||[]).filter(p=>p && p.file);
+      const changed = JSON.stringify(list)!==JSON.stringify(posterList);
+      posterList = list;
+      try{ localStorage.setItem('ped-posters', JSON.stringify({ at:Date.now(), list })); }catch(e){}
+      if (changed) render();
+    }).catch(()=>{});
+}
+function posterDaysLeft(p){ if (!p.end) return null; return tDays(p.end); }
+function pDateTxt(p){
+  if (tIsTraining(p)) return tCaption(p);
+  const L = [];
+  if (p.start || p.end) L.push(`ผลงาน ${p.start?tFmt(p.start):''}${p.end?` – ${tFmt(p.end)}`:''}`);
+  if (p.approve) L.push(`อนุมัติภายใน ${tFmt(p.approve)}`);
+  return L.join(' · ');
+}
+function posterStripHtml(){
+  const act = posterList.filter(p=>posterActive(p) && !tIsTraining(p)).sort((a,b)=>(a.end||'9999').localeCompare(b.end||'9999'));
+  if (!act.length) return '';
+  const files = esc(act.map(p=>p.file).join('|'));
+  return `<div class="t-head"><h2>🏆 โปสเตอร์ & โปร</h2><span>ปัดดูต่อ · แตะดูเต็มจอ</span></div>
+    <div class="p-strip">${act.map((p,i)=>{ const d=posterDaysLeft(p); return `<button type="button" class="p-card" data-poster-open="${files}" data-poster-i="${i}">
+      <img src="${esc(pSrc(p))}" loading="lazy" alt="โปสเตอร์ ${esc(p.title||'')}">
+      <span class="t">${esc(p.title||'')}</span>
+      ${d!==null?`<span class="d">${d===0?'วันสุดท้าย!':`เหลือ ${d} วัน`}</span>`:''}${p.kind==='promo'?'<span class="k">โปรลูกค้า</span>':''}
+    </button>`; }).join('')}</div>`;
+}
+function posterHomeHtml(){
+  const a = posterStripHtml(), b = trainingHtml();
+  return (a||b) ? `<div class="p-home">${a}${b}</div>` : '';
+}
+// ดูโปสเตอร์เต็มจอ (ปัดซ้าย-ขวา · แตะรูปเพื่อขยาย · ✕ หรือแตะพื้นดำเพื่อปิด)
+function posterView(files, startIdx){
+  const list = files.map(f=>posterList.find(p=>p.file===f) || posterFromName(f));
+  if (!list.length) return;
+  let pv = document.getElementById('pv');
+  if (!pv){ pv = document.createElement('div'); pv.id='pv'; document.body.appendChild(pv); }
+  pv.innerHTML = `<div class="bar"><span id="pv-t"></span><small id="pv-c"></small></div>
+    <button type="button" class="x" aria-label="ปิด">✕</button>
+    <div class="track">${list.map((p,i)=>`<div class="sl" data-i="${i}"><img src="${esc(pSrc(p))}" alt="โปสเตอร์ ${esc(p.title||'')}">
+      <div class="cap">${esc(pDateTxt(p))}${pIsArchived(p)?' · จบแล้ว':''}</div></div>`).join('')}</div>
+    <div class="hint">${list.length>1?'ปัดซ้าย-ขวาเพื่อดูใบอื่น · ':''}แตะรูปเพื่อขยาย</div>`;
+  pv.hidden = false; document.body.style.overflow = 'hidden';
+  const track = pv.querySelector('.track');
+  const setHead = ()=>{ const i = Math.round(track.scrollLeft/Math.max(1,track.clientWidth)); const p=list[Math.min(list.length-1,Math.max(0,i))]; pv.querySelector('#pv-t').textContent = p.title||''; pv.querySelector('#pv-c').textContent = list.length>1?`${i+1} / ${list.length}`:''; };
+  requestAnimationFrame(()=>{ track.scrollLeft = (startIdx||0)*track.clientWidth; setHead(); });
+  track.onscroll = setHead;
+  const close = ()=>{ pv.hidden = true; pv.innerHTML=''; document.body.style.overflow = ''; };
+  pv.onclick = e=>{
+    if (e.target.closest('.x')) return close();
+    const img = e.target.closest('.sl img'); if (img){ img.parentElement.classList.toggle('big'); return; }
+    if (e.target.classList.contains('sl') || e.target.classList.contains('track') || e.target.classList.contains('hint')) close();
+  };
+}
+document.addEventListener('click', e=>{
+  const t = e.target.closest('[data-poster-open]');
+  if (t){ e.preventDefault(); e.stopPropagation(); posterView(t.dataset.posterOpen.split('|').filter(Boolean), +(t.dataset.posterI||0)); }
+}, true);
+document.addEventListener('keydown', e=>{ const pv=document.getElementById('pv'); if (e.key==='Escape' && pv && !pv.hidden){ pv.hidden=true; pv.innerHTML=''; document.body.style.overflow=''; } });
+
+/* ================= อบรม: โปสเตอร์อบรมขอรับ/ต่อบัตร และอบรมอื่นๆ (อ่านจาก posters.json · kind:'training') ================= */
+let trainTab = 'license';
+const TRAIN_TABS = { license:'🪪 ขอรับ/ต่อบัตร', other:'🎓 อบรมอื่นๆ' };
+function tIsTraining(p){ return !!p && p.kind==='training'; }
+function tDays(iso){ const t0=new Date(); t0.setHours(0,0,0,0); return Math.round((new Date(iso+"T00:00:00")-t0)/86400000); }
+function tNextClose(p){ const t=todayIso(); return (p.closes||[]).filter(d=>d>=t).sort()[0] || null; }
+function tFmt(iso){ return fmtTH(new Date(iso+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"}); }
+function tList(group){
+  return posterList.filter(p=>tIsTraining(p) && posterActive(p) && (group==='renew' ? p.license==='renew' : group==='new' ? p.license==='new' : (p.train||'other')===group))
+    .sort((a,b)=>(tNextClose(a)||'9999').localeCompare(tNextClose(b)||'9999'));
+}
+function tBadge(p){
+  const c = tNextClose(p);
+  if (c){ const d=tDays(c); return d===0 ? 'ปิดรับวันนี้!' : `ปิดรับรอบถัดไปอีก ${d} วัน`; }
+  return p.end ? `ปิดรับแล้ว · อบรมถึง ${tFmt(p.end)}` : 'ปิดรับแล้ว';
+}
+function tCaption(p){
+  const c = tNextClose(p);
+  return [p.note||'', c ? `ปิดรับรอบถัดไป ${tFmt(c)} (${tDays(c)===0?'วันนี้':`อีก ${tDays(c)} วัน`})` : 'ปิดรับสมัครครบทุกรอบแล้ว'].filter(Boolean).join(' · ');
+}
+function trainingHtml(){
+  if (!posterList.some(p=>tIsTraining(p) && posterActive(p))) return '';
+  const L = tList(trainTab);
+  const files = esc(L.map(p=>p.file).join('|'));
+  return `<div id="t-sec" class="t-sec">
+    <div class="t-head"><h2>📚 อบรม</h2><span>แตะดูเต็มจอ · ปัดดูต่อ</span></div>
+    <div class="t-tabs">${Object.entries(TRAIN_TABS).map(([k,lab])=>`<button type="button" class="t-tab ${trainTab===k?'on':''}" data-train-tab="${k}">${lab}</button>`).join('')}</div>
+    ${L.length ? `<div class="p-strip t-strip">${L.map((p,i)=>{ const c=tNextClose(p); const d=c?tDays(c):null; return `<button type="button" class="p-card t-card" data-poster-open="${files}" data-poster-i="${i}">
+      <img src="${esc(pSrc(p))}" loading="lazy" alt="โปสเตอร์ ${esc(p.title||'')}">
+      <span class="t">${esc(p.title||'')}</span>
+      <span class="d ${d!==null&&d<=3?'hot':''}">${esc(tBadge(p))}</span>
+    </button>`; }).join('')}</div>` : `<div class="t-empty">ตอนนี้ยังไม่มีรอบอบรมที่เปิดรับในหมวดนี้</div>`}
+  </div>`;
+}
+// ปุ่มในกล่องเตือนบัตรตัวแทน → เปิดโปสเตอร์รอบอบรมที่เกี่ยวข้อง
+function trainBtnHtml(group, label){ return `<button type="button" class="t-btn" data-train-open="${group}">📚 ${label}</button>`; }
+function trainOpen(group){
+  const L = tList(group);
+  if (!L.length){ showToast(group==='renew' ? 'ยังไม่มีรอบอบรมต่อบัตรที่เปิดรับอยู่' : 'ยังไม่มีรอบอบรมที่เปิดรับอยู่'); posterLoad(true); return; }
+  posterView(L.map(p=>p.file), 0);
+}
+document.addEventListener('click', e=>{
+  const tb = e.target.closest('[data-train-tab]');
+  if (tb){
+    e.preventDefault(); e.stopPropagation();
+    trainTab = tb.dataset.trainTab;
+    const sec = document.getElementById('t-sec'); if (sec) sec.outerHTML = trainingHtml();
+    return;
+  }
+  const to = e.target.closest('[data-train-open]');
+  if (to){ e.preventDefault(); e.stopPropagation(); trainOpen(to.dataset.trainOpen); }
+}, true);
+try{ const __pc = JSON.parse(localStorage.getItem('ped-posters')||'null'); if (__pc && Array.isArray(__pc.list)) posterList = __pc.list; }catch(e){}
+boot().then(()=>{ if (!__bootFailed) posterLoad(); });
 
 // ทุกช่องกรอก: แตะแล้วล้างค่าเดิมทันที ถ้าไม่พิมพ์อะไรแล้วออก ให้คืนค่าเดิม (ไม่ต้องคอยลบเอง)
 (function(){
