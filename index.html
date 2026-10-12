@@ -281,7 +281,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-6</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-7</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -515,7 +515,8 @@ function evRoot(){ return mainAppState || state; }
 function evList(){
   const r = evRoot();
   if (!Array.isArray(r.specialEvents)) r.specialEvents = JSON.parse(JSON.stringify(DEFAULT_SPECIAL_EVENTS));
-  return r.specialEvents.filter(ev=>ev && ev.start && ev.end && Array.isArray(ev.tiers) && ev.tiers.length);
+  rbMigrate(r);
+  return r.specialEvents.filter(ev=>ev && !ev.inTrack && ev.start && ev.end && Array.isArray(ev.tiers) && ev.tiers.length);
 }
 function evAll(){ evList(); return evRoot().specialEvents; }
 function renderEventsSettingsCard(){
@@ -975,7 +976,7 @@ function renderProgramsCard(){
 // ===== ถาม-ตอบในแอป (ค้นหาด้วยคำสำคัญ ตอบจากตัวเลขที่แอปคำนวณ) =====
 let askQuery = "", askResult = "";
 const ASK_CHIPS = ["ใครใกล้ได้โบนัสไตรมาส","Kick Off ใครติดบ้าง","ใครติดอะไรบ้าง","งานรอพิจารณา","บัตรใกล้หมดอายุ","ผลงานเดือนนี้","ผลประโยชน์ UM","Fast / Growth","เส้นตาย"];
-const EVENT_ALIASES = { kickoff:["คิกออฟ","คิ๊กออฟ","คิ้กออฟ","คิกอ็อฟ"], regional:["รีเจียน","รีจินอล","รีจินัล"], beijing:["beijing","ปักกิ่ง"] };
+const EVENT_ALIASES = { kickoff:["คิกออฟ","คิ๊กออฟ","คิ้กออฟ","คิกอ็อฟ"], regional:["รีเจียน","รีจินอล","รีจินัล"], beijing:["beijing","ปักกิ่ง"], roadbj:["Road to Beijing","beijing","ปักกิ่ง","ตั๋วปักกิ่ง","Kick Off","kickoff","คิกออฟ","คิ๊กออฟ","Regional","รีเจียน","รีจินอล"] };
 const MONTH_KEYS = ["มกรา","กุมภา","มีนา","เมษา","พฤษภา","มิถุนา","กรกฎา","สิงหา","กันยา","ตุลา","พฤศจิ","ธันวา"];
 function askNorm(s){ return String(s||'').toLowerCase().replace(/\s+/g,''); }
 function renderAskBox(){
@@ -1474,8 +1475,9 @@ function renderAllUmDashboard(){
   </div>`;
 }
 function renderTeamUmTab(){
+  const __rb = rbTeamUmCardHtml();
   const names = Object.keys(state.teamUMs);
-  return renderAllUmDashboard() + `
+  return __rb + renderAllUmDashboard() + `
     <div class="card">
       <h3>🧑‍💼 ทีม UM</h3>
       <p class="sub">แตะชื่อเพื่อเข้าไปดู/จัดการทีมของ UM คนนั้นแบบเต็มรูปแบบ (ทีมตัวแทน, เป้าหมาย, ผลประโยชน์ทุกตัว) แยกขาดจากทีมของพี่เองโดยสิ้นเชิง</p>
@@ -1926,6 +1928,7 @@ function renderTeamTab(){
     })()}
 
     ${renderDeadlinesCard(names, selectedPosition)}
+    ${(()=>{ const ev=rbEvent(); if(!rbActive(ev)) return ''; const s=rbSumAgents(state.agents, ev); return rbCardHtml({ ev, um:true, v:s.v, vp:s.vp, who: activeTeamUmName ? activeTeamUmName : '', barLabel: activeTeamUmName ? 'ยอดรวมทีม' : 'ขายเอง + ตัวแทนตรง' }); })()}
 
     ${renderProgramsCard()}
     ${renderEventsSettingsCard()}
@@ -2915,6 +2918,7 @@ function renderSpecialEventsSection(entries){
   if (!eventsThisYear.length) return '';
   const evStatus = ev=>compStatus(new Date(ev.start+"T00:00:00"), new Date(ev.end+"T23:59:59"));
   const cardOf = ev=>{
+    if (ev.track){ const r = rbValOf(agent().entries, ev); return rbCardHtml({ ev, um:false, v:eventAchieved(entries, ev), vp:r.vp }); }
     const achieved = eventAchieved(entries, ev);
     const reachedCount = ev.tiers.filter(t=>achieved>=t).length;
     const achievedProj = eventAchieved(effectiveEntries(projEntries(agent().entries)), ev);
@@ -5797,6 +5801,129 @@ document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) poster
   const ok = el => el && el.tagName==='INPUT' && !SKIP.includes((el.type||'text').toLowerCase()) && !el.readOnly && !el.disabled && el.id!=='entry-search' && el.id!=='n-search';
   document.addEventListener('focus', e=>{ const el = e.target; if (!ok(el)) return; el.dataset.prevVal = el.value; if (el.value!=='') el.value = ''; }, true);
   document.addEventListener('blur', e=>{ const el = e.target; if (!ok(el)) return; const prev = el.dataset.prevVal; delete el.dataset.prevVal; if (prev!==undefined && prev!=='' && el.value.trim()==='') el.value = prev; }, true);
+})();
+
+/* ================= Road to Beijing: Kick Off → Regional → ปักกิ่ง รวมเป็นแถบเดียว (ผลงาน 28 ส.ค.–30 พ.ย. 69) ================= */
+const RB_KEY = 'roadbj';
+const RB_PARTS = ['kickoff','regional','beijing'];
+const RB_LABELS = ['Kick Off · สิทธิ์เข้างาน','Kick Off · + Pocket Money 500','Top Producer · Regional + Kick Off (PM 1,000 · แจ็กเก็ต)','ปักกิ่ง 1 ที่นั่ง','ปักกิ่ง 2 ที่นั่ง','ปักกิ่ง 3 ที่นั่ง','ปักกิ่ง 4 ที่นั่ง'];
+const RB_EVENT = {
+  key: RB_KEY, name: 'Road to Beijing', track: true,
+  start: '2026-08-28', end: '2026-11-30', approve: '2026-11-30', basis: 'fyc', mode: 'tier',
+  tiers:   [15000, 30000, 45000, 75000, 150000, 225000, 300000],
+  umTiers: [45000, 90000, 135000, 225000, 450000, 675000, 900000],
+  tierLabels: RB_LABELS, umTierLabels: RB_LABELS,
+  tierIcons: ['🎫','🎫','⭐','✈️','✈️','✈️','✈️'],
+  tierPosters: ['2026-11_kickoff.jpg','2026-11_kickoff.jpg','2026-11_regional.jpg','2026-11_beijing-trip.jpg','2026-11_beijing-trip.jpg','2026-11_beijing-trip.jpg','2026-11_beijing-trip.jpg'],
+  posters: ['2026-11_kickoff.jpg','2026-11_regional.jpg','2026-11_beijing-trip.jpg'],
+  rewardText: 'Kick Off → Regional → ปักกิ่ง · อนุมัติภายใน 30 พ.ย. 69'
+};
+// ทำครั้งเดียว: ซ่อน Kick Off / Regional / ปักกิ่ง เดิม แล้วใช้ Road to Beijing แทน (ไม่ลบข้อมูลเดิม)
+function rbMigrate(r){
+  if (!r || !Array.isArray(r.specialEvents) || r.rbSeed1) return;
+  r.rbSeed1 = true;
+  r.specialEvents.forEach(ev=>{ if (ev && RB_PARTS.includes(ev.key)) ev.inTrack = RB_KEY; });
+  const i = r.specialEvents.findIndex(ev=>ev && ev.key===RB_KEY);
+  const fresh = JSON.parse(JSON.stringify(RB_EVENT));
+  if (i>=0) r.specialEvents[i] = fresh; else r.specialEvents.unshift(fresh);
+}
+// ตำแหน่งบนแถบ: ทุกขั้นห่างเท่ากัน (ไม่งั้นขั้นเล็กจะกองชิดกันจนกดไม่ได้)
+function rbPct(ticks, x){
+  const n = ticks.length; if (!n || !(x>0)) return 0;
+  for (let i=0;i<n;i++){ if (x<=ticks[i]){ const lo = i?ticks[i-1]:0; return ((i + (x-lo)/Math.max(1,ticks[i]-lo))/n)*94; } }
+  return Math.min(100, 94 + 6*Math.min(1, (x-ticks[n-1])/ticks[n-1]));
+}
+function rbK(v){ v=Number(v)||0; return v>=1000 ? (Math.round(v/100)/10).toString().replace(/\.0$/,'')+'K' : String(v); }
+function rbEvent(){ try{ return (typeof evAll==='function' ? evAll() : []).find(ev=>ev && ev.key===RB_KEY) || RB_EVENT; }catch(e){ return RB_EVENT; } }
+function rbValOf(entries, ev){
+  const fn = (typeof eventValue==='function') ? eventValue : eventAchieved;
+  const en = entries||[];
+  return { v: fn(effectiveEntries(en), ev), vp: fn(effectiveEntries(projEntries(en)), ev) };
+}
+function rbSumAgents(agents, ev){
+  let v=0, vp=0;
+  Object.values(agents||{}).forEach(ag=>{ if (!ag) return; const r = rbValOf(ag.entries, ev); v+=r.v; vp+=Math.max(r.v, r.vp); });
+  return { v, vp };
+}
+function rbActive(ev){ const t = todayIso(); return t>=ev.start && t<=ev.end; }
+function rbDaysLeft(ev){ const t0=new Date(); t0.setHours(0,0,0,0); return Math.round((new Date(ev.end+"T00:00:00")-t0)/86400000); }
+// แถบเดียว (ไม่มีรายการขั้น) — ใช้ซ้ำในรายชื่อตัวแทน / UM ในทีม
+function rbBar(label, v, vp, ev, um){
+  vp = Math.max(v, vp||0);
+  const t = (um ? ev.umTiers : ev.tiers) || [], labs = (um ? ev.umTierLabels : ev.tierLabels) || [], ic = ev.tierIcons || [];
+  const n = t.filter(x=>v>=x).length, next = t[n];
+  const tk = t.map((x,i)=>{ const hit=v>=x, soon=!hit&&vp>=x, p=rbPct(t,x); return `<i class="rb-tk ${hit?'hit':''} ${soon?'soon':''}" style="left:${p}%"><em>${hit?(ic[i]||'🎉'):soon?'⏳':''}</em></i><span class="rb-lb ${hit?'hit':''}" style="left:${p}%">${rbK(x)}</span>`; }).join('');
+  const st = next===undefined ? `🏆 ครบทุกขั้นแล้ว! (${esc(labs[n-1]||'')})`
+    : `${n?`✅ ได้ <b>${esc(labs[n-1]||'')}</b><br>`:''}อีก <b class="rb-need">${THB(next-v)}</b> ถึง ${ic[n]||''} ${esc(labs[n]||rbK(next))}`;
+  return `<div class="rb-bar">
+    <div class="rb-top"><b>${esc(label)}</b><span>FYC <b>${THB(v)}</b>${vp>v?` <i>(+รอ ${THB(vp-v)})</i>`:''}</span></div>
+    <div class="rb-track"><div class="rb-pend" style="left:${rbPct(t,v)}%;width:${Math.max(0,rbPct(t,vp)-rbPct(t,v))}%"></div><div class="rb-fill" style="width:${rbPct(t,v)}%"></div>${tk}</div>
+    <div class="rb-note">${st}</div>
+  </div>`;
+}
+// การ์ดเต็ม: โปสเตอร์ + แถบ + รายการเป้าหมายทุกขั้น (แตะ 🖼 เพื่อดูโปสเตอร์ของขั้นนั้น)
+function rbCardHtml(opt){
+  const ev = opt.ev || rbEvent(), um = !!opt.um;
+  const t = (um ? ev.umTiers : ev.tiers) || [], labs = (um ? ev.umTierLabels : ev.tierLabels) || [], ic = ev.tierIcons || [], tp = ev.tierPosters || [];
+  const v = opt.v||0, vp = Math.max(v, opt.vp||0);
+  const all = (ev.posters||[]).join('|');
+  const f = iso=>fmtTH(new Date(iso+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"});
+  const dl = rbDaysLeft(ev);
+  const thumbs = (ev.posters||[]).map((p,i)=>`<button type="button" class="rb-th" data-poster-open="${esc(all)}" data-poster-i="${i}" aria-label="ดูโปสเตอร์"><img src="${esc(POSTER_BASE+encodeURIComponent(p))}" loading="lazy" alt=""></button>`).join('');
+  const rows = t.map((x,i)=>{ const hit=v>=x, soon=!hit&&vp>=x, pi=Math.max(0,(ev.posters||[]).indexOf(tp[i]));
+    return `<div class="rb-ms ${hit?'hit':''}"><span class="rb-ck">${hit?'✔':soon?'⏳':'○'}</span><span class="rb-ic">${ic[i]||''}</span><span class="rb-ml"><b>${THB(x)}</b> ${esc(labs[i]||'')}</span>${tp[i]?`<button type="button" class="rb-pb" data-poster-open="${esc(all)}" data-poster-i="${pi}" aria-label="ดูโปสเตอร์">🖼</button>`:''}</div>`; }).join('');
+  return `<div class="card rb-card">
+    <h3 style="margin:0 0 4px;">🐼 ${esc(opt.title || ev.name)}</h3>
+    <div class="rb-sub">${um?'ผู้บริหารตัวแทน · ':'ระดับตัวแทน · '}${esc(opt.who||'')}${opt.who?' · ':''}ผลงาน ${f(ev.start)} – ${f(ev.end)}${dl>=0?` · เหลือ <b>${dl}</b> วัน`:' · จบแล้ว'}</div>
+    <div class="rb-thumbs">${thumbs}</div>
+    ${rbBar(opt.barLabel || (um?'ขายเอง + ตัวแทนตรง':'ผลงานขายเอง'), v, vp, ev, um)}
+    <div class="rb-list">${rows}</div>
+    ${opt.extra||''}
+  </div>`;
+}
+// ทีม UM: แถบผู้บริหารของทุก UM (ใช้ยอดที่กรอกของแต่ละคน ตัวใครตัวมัน)
+function rbTeamUmCardHtml(){
+  const ev = rbEvent(); if (!rbActive(ev)) return '';
+  const root = (typeof mainAppState!=='undefined' && mainAppState) ? mainAppState : state;
+  const ums = root.teamUMs || {};
+  const par = n=>{ const p = (ums[n]||{}).parentUM; return p && ums[p] && p!==n ? p : ''; };
+  const me = rbSumAgents(root.agents, ev);
+  const list = Object.keys(ums).filter(n=>ums[n]).map(n=>({ n, p:par(n), ...rbSumAgents(ums[n].agents, ev) })).sort((a,b)=>b.v-a.v);
+  const bars = [`<div class="rb-row">${rbBar('ฉัน (ป้าเป็ด)', me.v, me.vp, ev, true)}</div>`]
+    .concat(list.map(u=>`<div class="rb-row" data-open-team-um="${esc(u.n)}">${rbBar(u.n + (u.p?` (ใต้${u.p})`:''), u.v, u.vp, ev, true)}</div>`)).join('');
+  return `<div class="card rb-card">
+    <h3 style="margin:0 0 4px;">🐼 Road to Beijing · ทีม UM</h3>
+    <div class="rb-sub">เกณฑ์ผู้บริหารตัวแทน · ใช้ยอดที่กรอกของแต่ละคน (ตัวใครตัวมัน) · เหลือ <b>${Math.max(0,rbDaysLeft(ev))}</b> วัน · แตะชื่อเพื่อเข้าไปดูทีม</div>
+    <div class="rb-thumbs">${(ev.posters||[]).map((p,i)=>`<button type="button" class="rb-th" data-poster-open="${esc((ev.posters||[]).join('|'))}" data-poster-i="${i}"><img src="${esc(POSTER_BASE+encodeURIComponent(p))}" loading="lazy" alt=""></button>`).join('')}</div>
+    ${bars}
+  </div>`;
+}
+(function(){
+  const css = `.rb-card .rb-sub{font-size:15px;opacity:.8;margin-bottom:8px;line-height:1.45}
+  .rb-thumbs{display:flex;gap:8px;margin:4px 0 10px}
+  .rb-th{flex:1;max-width:96px;padding:0;border:0;background:none;border-radius:8px;overflow:hidden;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+  .rb-th img{width:100%;display:block;aspect-ratio:3/4;object-fit:cover}
+  .rb-bar{margin:6px 0 4px}
+  .rb-top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:17px;align-items:baseline}
+  .rb-top i{font-style:normal;opacity:.75;font-size:15px}
+  .rb-track{position:relative;height:16px;border-radius:9px;background:rgba(127,140,160,.25);margin:24px 0 26px}
+  .rb-fill{position:absolute;left:0;top:0;bottom:0;border-radius:9px;background:linear-gradient(90deg,#4FAE74,#2F7A4F)}
+  .rb-pend{position:absolute;top:0;bottom:0;background:rgba(79,174,116,.35);border-radius:9px}
+  .rb-tk{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1.5px;background:rgba(127,140,160,.75);border-radius:2px}
+  .rb-tk.hit{background:#2F7A4F}.rb-tk.soon{background:#B8862E}
+  .rb-tk em{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-style:normal;font-size:15px;line-height:1.2}
+  .rb-lb{position:absolute;top:22px;transform:translateX(-50%);font-size:13.5px;font-weight:700;white-space:nowrap;opacity:.8}
+  .rb-lb.hit{color:#2F7A4F;opacity:1}
+  .rb-note{font-size:16.5px;line-height:1.5}
+  .rb-need{color:#B8862E;font-size:19px}
+  .rb-list{margin-top:8px;border-top:1px solid rgba(127,140,160,.3);padding-top:6px}
+  .rb-ms{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:16px;opacity:.75}
+  .rb-ms.hit{opacity:1;color:#2F7A4F;font-weight:700}
+  .rb-ck{width:20px;text-align:center}.rb-ml{flex:1;min-width:0;line-height:1.35}
+  .rb-pb{border:1px solid rgba(127,140,160,.45);background:transparent;border-radius:8px;font-size:18px;padding:3px 9px;cursor:pointer;color:inherit}
+  .rb-row{padding:6px 0;border-bottom:1px solid rgba(127,140,160,.2);cursor:pointer}
+  .rb-row:last-child{border-bottom:0}`;
+  const s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
 })();
 </script>
 </body>
