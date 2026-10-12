@@ -281,7 +281,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-11</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-12</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -299,7 +299,7 @@
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.12-11 · อัปเดต 12 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.12-12 · อัปเดต 12 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -3436,7 +3436,7 @@ function __renderInner(){
   else if (activeTab==="competitions") body = renderCompetitionsTab();
   c.innerHTML = IS_AGENT_APP ? (renderBackupReminder() + body) : ((activeTeamUmName && activeSection==="um" ? '' : renderAskBox()) + (activeSection==="um" && !activeTeamUmName ? posterHomeHtml() : "") + body);
   if (activeTeamUmName && activeSection==="um"){ // หน้า UM ในทีม: เหลือแค่กล่องเป้าหมาย + ตารางผลงานรายไตรมาส
-    Array.from(c.children).forEach(el=>{ if (el.querySelector && el.querySelector('#btn-backup-now')) return; const h = el.querySelector && el.querySelector('h3'); if (!h || !/เป้าหมายของ UM|ผลงานรายไตรมาส|ควบคุมผลงานเพื่อ DPO/.test(h.textContent)) el.remove(); });
+    Array.from(c.children).forEach(el=>{ if (el.querySelector && el.querySelector('#btn-backup-now')) return; const h = el.querySelector && el.querySelector('h3'); if (!h || !/เป้าหมายของ UM|ผลงานรายไตรมาส|ควบคุมผลงานเพื่อ DPO|คำนวณผลประโยชน์ UM รายเดือน/.test(h.textContent)) el.remove(); });
   }
   bindEvents();
   if (activeSection==="um" && !activeTeamUmName) enhanceCollapsibleCards(c);
