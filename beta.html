@@ -630,7 +630,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-beta19</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-beta20</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -648,7 +648,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta19 · อัปเดต 12 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta20 · อัปเดต 12 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -2316,9 +2316,7 @@ function renderTeamTab(){
   }
 
   const umCompHistory = [];
-  return `
-    ${teamEarlyWarningHtml}
-    <div class="card dark">
+  const __goalCard = `<div class="card dark">
       <div class="grid-bg"></div>
       <div style="position:relative;">
         <h3 style="color:#fff;">🎯 เป้าหมายของ UM (แยกจากตัวแทน)</h3>
@@ -2330,7 +2328,7 @@ function renderTeamTab(){
               ${UM_POSITIONS.map(p=>`<option value="${p.value}" ${p.value===umPosition?"selected":""}>${p.label} (CFYC ${THB(p.cfycYear)}/ปี)</option>`).join("")}
             </select>
           </label>
-          ${selectedPosition?`<div style="font-size:16px;color:#B9C4D6;margin-top:6px;">เงินเดือน ${THB(selectedPosition.salary)}/เดือน · ค่าขยายงาน ${selectedPosition.tenurePct}% · CFYC ขั้นต่ำ ${THB(selectedPosition.cfycMonth)}/เดือน</div>`:''}
+          ${!activeTeamUmName && selectedPosition?`<div style="font-size:16px;color:#B9C4D6;margin-top:6px;">เงินเดือน ${THB(selectedPosition.salary)}/เดือน · ค่าขยายงาน ${selectedPosition.tenurePct}% · CFYC ขั้นต่ำ ${THB(selectedPosition.cfycMonth)}/เดือน</div>`:''}
         </div>
 
         <div style="border-top:1px dashed #ffffff33;padding-top:14px;margin-bottom:6px;">
@@ -2402,7 +2400,11 @@ function renderTeamTab(){
           :umGoalFYC>0 && teamAchievedInUmPeriod>=umGoalFYC?`<div style="margin-top:14px;background:#C69A3B33;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;">⏳ ถ้างานรอพิจารณาผ่านทั้งหมด จะถึงเป้าหมาย UM — ยอดที่อนุมัติแล้วยังขาดอีก ${THB(umRemaining)}</div>`
           :umGoalFYC>0 && umProgressPct>=80?`<div style="margin-top:14px;background:#C69A3B33;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;">🔥 ใกล้ถึงเป้าหมาย UM แล้ว! เหลืออีกแค่ ${THB(umRemaining)} (ขาดอีก ${Math.round(100-umProgressPct)}%)</div>`:''}
       </div>
-    </div>
+    </div>`;
+  if (activeTeamUmName) return __goalCard + subUmMonthlyHtml(monthlyTeamCFYC, umAnnualGoalFYC, selectedPosition, yearCapMonth);
+  return `
+    ${teamEarlyWarningHtml}
+    ${__goalCard}
 
     ${(()=>{
       const pendingByAgent = names.map(name=>{
@@ -3977,9 +3979,9 @@ function __renderInner(){
   else if (activeTab==="goals") body = renderGoalsTab();
   else if (activeTab==="entry") body = renderEntryTab();
   else if (activeTab==="competitions") body = renderCompetitionsTab();
-  c.innerHTML = IS_AGENT_APP ? (renderBackupReminder() + body) : (renderAskBox() + body);
+  c.innerHTML = IS_AGENT_APP ? (renderBackupReminder() + body) : ((activeTeamUmName && activeSection==="um" ? '' : renderAskBox()) + body);
   bindEvents();
-  if (activeSection==="um") enhanceCollapsibleCards(c);
+  if (activeSection==="um" && !activeTeamUmName) enhanceCollapsibleCards(c);
   betaLayout(c);
   positionOpenCalendars();
 }
@@ -6298,6 +6300,7 @@ function bPodSum(g, buckets, todos){
 function betaLayout(c){
   bNavSync();
   if (activeSection!=='um'){ betaGroup = null; return; }
+  if (activeTeamUmName){ betaGroup = null; return; } // หน้า UM ในทีม: แสดงแค่ผลงานรายเดือน ไม่จัดเป็นหมวด
   const L = bLayout();
   const kids = Array.from(c.children);
   const ask = c.querySelector('.ask-card');
@@ -7176,6 +7179,36 @@ function rbAskBody(rows, ev, nameHtml){
   });
   const blk = (t, a)=>`<div class="ask-sub">${t} ${a.length} คน</div>${a.length?`<ul class="ask-ul">${a.join('')}</ul>`:'<div class="ask-empty">ไม่มี</div>'}`;
   return blk('✈️ ติดปักกิ่ง', g.bj) + blk('⭐ ได้ Regional (ยังไม่ถึงปักกิ่ง)', g.reg) + blk('🎫 ได้ Kick Off (ยังไม่ถึง Regional)', g.ko) + blk('⏳ มียอดแต่ยังไม่ถึง Kick Off', g.none);
+}
+
+
+// ===== หน้า UM ในทีม: ดูแค่ผลงานรายเดือนเทียบเป้า (กรอก CFYC รายเดือนได้ตรงนี้) =====
+function subUmMonthlyHtml(monthlyTeamCFYC, annualGoal, selectedPosition, yearCapMonth){
+  if (!state.umGoal) state.umGoal = { targetFYC:0, startMonth:0, endMonth:11, position:"" };
+  if (!state.umGoal.monthOverrides) state.umGoal.monthOverrides = {};
+  const per = annualGoal>0 ? annualGoal/12 : (selectedPosition ? selectedPosition.cfycMonth : 0);
+  let cum = 0, cumT = 0;
+  const rows = monthlyTeamCFYC.map((v,m)=>{
+    const key = `${selYear}-${m}`, ov = state.umGoal.monthOverrides[key];
+    const past = m<=yearCapMonth;
+    cum += past ? (Number(v)||0) : 0; cumT += per;
+    const ok = per>0 && cum>=cumT;
+    const st = !past ? '<span style="color:var(--muted);">—</span>' : per<=0 ? '' : ok ? '<b style="color:var(--good);">✔ ทันเป้า</b>' : `<b style="color:var(--bad);">ขาด ${THB(cumT-cum)}</b>`;
+    return `<tr style="${m===yearCapMonth&&selYear===new Date().getFullYear()?'background:#FFF6DC;':''}">
+      <td style="font-weight:700;font-size:18px;color:var(--navy-deep);">${THAI_MONTH_SHORT[m]}</td>
+      <td class="r" style="font-size:16px;color:var(--muted);">${per>0?THB(per):'—'}</td>
+      <td class="r"><input type="text" inputmode="decimal" data-qty-override="${key}" value="${esc(formatThousands(String(Math.round(Number(v)||0))))}" style="width:110px;padding:5px 6px;font-size:21px;font-weight:700;text-align:right;">
+        ${ov!==undefined && ov!==null ? '' : '<div style="font-size:12px;color:var(--muted);">(อัตโนมัติ)</div>'}</td>
+      <td class="r" style="font-size:16px;line-height:1.35;">${past?`${THB(cum)}${per>0?`<br><span style="color:var(--muted);font-size:14px;">เป้า ${THB(cumT)}</span>`:''}`:''}<br>${st}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="card">
+    <h3>📅 ผลงานรายเดือน ปี ${toBE(selYear)}</h3>
+    <p class="sub">พิมพ์ CFYC ของแต่ละเดือนได้เลย · เป้ารายเดือน = ${annualGoal>0?'เป้าทั้งปี ÷ 12':selectedPosition?'โควตาตำแหน่งต่อเดือน':'ยังไม่ตั้งเป้า (ตั้งได้ในกล่องเป้าหมายด้านบน)'}</p>
+    <div style="overflow-x:auto;"><table class="qtable" style="width:100%;">
+      <thead><tr><th>เดือน</th><th class="r">เป้า</th><th class="r">CFYC</th><th class="r">สะสม</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+  </div>`;
 }
 
 /* ================= Road to Beijing: Kick Off → Regional → ปักกิ่ง รวมเป็นแถบเดียว (ผลงาน 28 ส.ค.–30 พ.ย. 69) ================= */
