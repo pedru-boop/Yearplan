@@ -281,7 +281,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-8</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-9</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -299,7 +299,7 @@
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.12-8 · อัปเดต 12 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.12-9 · อัปเดต 12 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -516,6 +516,7 @@ function evList(){
   const r = evRoot();
   if (!Array.isArray(r.specialEvents)) r.specialEvents = JSON.parse(JSON.stringify(DEFAULT_SPECIAL_EVENTS));
   rbMigrate(r);
+  if (!r.ixSeedPM){ r.ixSeedPM = true; if (!r.specialEvents.some(e=>e && e.key==='pocketmoney')) r.specialEvents.push(JSON.parse(JSON.stringify(IX_PM))); }
   return r.specialEvents.filter(ev=>ev && !ev.inTrack && ev.start && ev.end && Array.isArray(ev.tiers) && ev.tiers.length);
 }
 function evAll(){ evList(); return evRoot().specialEvents; }
@@ -1016,20 +1017,19 @@ function __answerQuestionRaw(raw){
     specific = true;
     if (!(new Date(ev.start+"T00:00:00").getFullYear()===selYear || new Date(ev.end+"T00:00:00").getFullYear()===selYear)){ out.push(sec(`🏁 ${esc(ev.name)}`, `<div class="ask-empty">ไม่มีการแข่งขันนี้ในปี ${toBE(selYear)}</div>`)); return; }
     const st = compStatus(new Date(ev.start+"T00:00:00"), new Date(ev.end+"T23:59:59"));
+    if (ev.track){ const rows = scope.map(n=>{ const en=state.agents[n].entries; return { n, v:eventAchieved(effectiveEntries(en), ev), vp:eventAchieved(effectiveEntries(projEntries(en)), ev) }; }); out.push(sec(`🏁 ${esc(ev.name)} (${st==='ended'?'จบแล้ว':st==='upcoming'?'ยังไม่เริ่ม':'กำลังแข่ง'} · ระดับตัวแทน)${scopeNote}`, rbAskBody(rows, ev, esc))); return; }
     const got = [], notYet = [];
     scope.forEach(n=>{
       const ag = state.agents[n];
       const ach = eventAchieved(effectiveEntries(ag.entries), ev);
-      const all = eventAchieved(ag.entries, ev);
-      const reached = ev.tiers.filter(t=>ach>=t).length;
       const allEff = eventAchieved(effectiveEntries(projEntries(ag.entries)), ev);
-      const rP = ev.tiers.filter(t=>allEff>=t).length;
-      const pendTxt = allEff>ach ? ` <span style="color:#8A4B00;">· ⏳ ถ้าอนุมัติครบ ${THB(allEff)} → ${rP?`ระดับ ${rP}`:'ยังไม่ติด'}</span>` : '';
-      if (reached) got.push({ html:`<b>${esc(n)}</b> — ระดับ ${reached}/${ev.tiers.length} (${THB(ach)})${reached<ev.tiers.length?` · ขาดอีก ${THB(ev.tiers[reached]-ach)} ถึงระดับ ${reached+1}`:''}${pendTxt}`, v:ach });
-      else notYet.push({ html:`<b>${esc(n)}</b> — ${THB(ach)} · ขาดอีก ${THB(ev.tiers[0]-ach)}${pendTxt}`, v:ach });
+      const p = ixProg(ach, ev), pP = ixProg(allEff, ev);
+      const pendTxt = allEff>ach ? ` <span style="color:#8A4B00;">· ⏳ ถ้าอนุมัติครบ ${THB(allEff)} → ${pP.ok?pP.label:'ยังไม่ติด'}</span>` : '';
+      if (p.ok) got.push({ html:`<b>${esc(n)}</b> — ${p.label} (${THB(ach)}) · ${p.next}${pendTxt}`, v:ach });
+      else if (ach>0 || allEff>0) notYet.push({ html:`<b>${esc(n)}</b> — ${THB(ach)} · ${p.next}${pendTxt}`, v:ach });
     });
     got.sort((a,b)=>b.v-a.v); notYet.sort((a,b)=>b.v-a.v);
-    out.push(sec(`🏁 ${esc(ev.name)} (${st==='ended'?'จบแล้ว':st==='upcoming'?'ยังไม่เริ่ม':'กำลังแข่ง'} · เกณฑ์ ${ev.tiers.map(THB).join(' / ')})${scopeNote}`,
+    out.push(sec(`🏁 ${esc(ev.name)} (${st==='ended'?'จบแล้ว':st==='upcoming'?'ยังไม่เริ่ม':'กำลังแข่ง'} · ${ev.mode==='every'?`FYC ทุกๆ ${THB(ev.tiers[0])}${ev.reward?` ได้ ${THB(ev.reward)}`:''}`:`เกณฑ์ ${ev.tiers.map(THB).join(' / ')}`})${scopeNote}`,
       `<div class="ask-sub">✅ ติดแล้ว ${got.length} คน</div>${li(got.map(x=>x.html))}<div class="ask-sub">⏳ ยังไม่ติด ${notYet.length} คน</div>${li(notYet.map(x=>x.html))}`));
   });
 
@@ -1186,7 +1186,7 @@ function __answerQuestionRaw(raw){
       const notes = (ag.coaching||[]).slice().sort((a,b)=>a.date<b.date?1:-1);
       const L = [`FYC ปี ${toBE(selYear)}: <b>${THB(yv)}</b>${yp>0?` <span style="color:var(--gold);">(+รอพิจารณา ${THB(yp)})</span>`:''}`];
       items.forEach(i=>L.push(`${i.ok?'✅':i.near?'🔥':'⏳'} ${i.title}: ${i.text}`));
-      evList().forEach(ev=>{ const a = eventAchieved(effectiveEntries(en), ev); if (a>0){ const r = ev.tiers.filter(t=>a>=t).length; L.push(`🏁 ${esc(ev.name)}: ${THB(a)} · ${r?`ระดับ ${r}/${ev.tiers.length}`:`ขาดอีก ${THB(ev.tiers[0]-a)}`}`); } });
+      evList().forEach(ev=>{ const a = eventAchieved(effectiveEntries(en), ev); if (a>0){ const p = ixProg(a, ev); L.push(`🏁 ${esc(ev.name)}: ${THB(a)} · ${p.ok?p.label+' · ':''}${p.next}`); } });
       if (ri) L.push(`🪪 บัตรหมดอายุ ${fmtTH(ri.exp,{day:"numeric",month:"short",year:"numeric"})} ${renewalShort(ri)}`);
       if (notes[0]) L.push(`🗣️ คุยล่าสุด ${fmtTH(new Date(notes[0].date+"T00:00:00"),{day:"numeric",month:"short"})}${notes[0].note?` · ${esc(notes[0].note.slice(0,50))}`:''}`);
       out.push(sec(`👤 ${esc(n)}`, li(L)));
@@ -1289,6 +1289,7 @@ function agentCompStatus(ag){
     const reached = ev.tiers.filter(t=>ach>=t).length, next = ev.tiers[reached];
     const running = now>=s0 && now<=e0;
     if (!running) return; // จบแล้ว/ยังไม่เริ่ม ไม่ขึ้นหน้าหลัก (ที่จบแล้วดูได้ในทำเนียบการแข่งขัน)
+    if (ev.track || ev.mode==='every'){ const p = ixProg(ach, ev); items.push({ isEv:true, has: ach>0, ok: p.ok, near: p.needNext!==null && p.needNext<=NEAR, title: ev.track && p.ok ? p.label : ev.name, text:`FYC ${THB(ach)} · ${ev.track?'':(p.ok?p.label+' · ':'')}${p.next}` }); return; }
     items.push({ has: ach>0, ok: reached>0, near: running && next!==undefined && next-ach<=NEAR, title:`${ev.name}${running?'':' (จบแล้ว)'}`,
       text:`${reached>0?`ได้ระดับ ${reached}${ev.tiers.length>1?`/${ev.tiers.length}`:''}`:'ยังไม่ถึง'}${next!==undefined?(running?` · ขาดอีก <b>${THBC(next-ach)}</b> ถึง${reached>0?'ระดับถัดไป':''} ${THB(next)}`:''):' · ครบทุกระดับ 🎉'}` });
   });
@@ -2918,6 +2919,12 @@ function renderSpecialEventsSection(entries){
   if (!eventsThisYear.length) return '';
   const evStatus = ev=>compStatus(new Date(ev.start+"T00:00:00"), new Date(ev.end+"T23:59:59"));
   const cardOf = ev=>{
+    if (ev.mode==='every'){ const a = eventAchieved(entries, ev), ap = eventAchieved(effectiveEntries(projEntries(agent().entries)), ev); const p = ixProg(a, ev), step=Number(ev.tiers[0])||1, frac=Math.max(0,Math.min(1,(a%step)/step));
+      return `<div class="card" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;"><h3 style="margin:0;">${esc(ev.name)}</h3><span style="font-size:15px;color:var(--muted);">${thDate(ev.start)} – ${thDate(ev.end)}</span></div>
+        <div style="font-size:17px;color:var(--muted);margin:4px 0 10px;">FYC ทุกๆ ${THB(step)}${ev.reward?` ได้ ${THB(ev.reward)}`:''} · ทำได้ <b style="color:var(--navy-deep);">${THB(a)}</b>${ap>a?` <span style="color:#8A4B00;">(+รอ ${THB(ap-a)})</span>`:''}</div>
+        <div style="font-size:22px;font-weight:800;color:${p.ok?'var(--good)':'var(--navy-deep)'};">${p.label}</div>
+        <div style="background:#123F6B14;border-radius:8px;height:16px;overflow:hidden;margin:8px 0;"><div style="height:100%;width:${Math.round(frac*100)}%;background:linear-gradient(90deg,var(--gold-soft),var(--gold));"></div></div>
+        <div style="font-size:17px;">${p.next}</div></div>`; }
     if (ev.track){ const r = rbValOf(agent().entries, ev); return rbCardHtml({ ev, um:false, v:eventAchieved(entries, ev), vp:r.vp }); }
     const achieved = eventAchieved(entries, ev);
     const reachedCount = ev.tiers.filter(t=>achieved>=t).length;
@@ -5804,6 +5811,54 @@ document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) poster
   document.addEventListener('focus', e=>{ const el = e.target; if (!ok(el)) return; el.dataset.prevVal = el.value; if (el.value!=='') el.value = ''; }, true);
   document.addEventListener('blur', e=>{ const el = e.target; if (!ok(el)) return; const prev = el.dataset.prevVal; delete el.dataset.prevVal; if (prev!==undefined && prev!=='' && el.value.trim()==='') el.value = prev; }, true);
 })();
+
+// ===== Road to Beijing: ขั้นที่ได้จริง (Kick Off / Regional / ปักกิ่ง) — ห้ามนับรวมเป็น "ติดแล้ว" ก้อนเดียว =====
+function rbStage(v, ev, um){ const t=((um?ev.umTiers:ev.tiers)||[]); const n=t.filter(x=>v>=x).length; return { t, n, ko:n>=1, reg:n>=3, bj:n>=4, seats:Math.max(0,n-3) }; }
+function rbStageName(v, ev, um){
+  const s = rbStage(v, ev, um);
+  if (s.bj) return `✈️ ปักกิ่ง ${s.seats} ที่นั่ง`;
+  if (s.reg) return '⭐ Top Producer + Regional (Kick Off · PM 1,000 · แจ็กเก็ต)';
+  if (s.n===2) return '🎫 Kick Off + Pocket Money 500';
+  if (s.n===1) return '🎫 Kick Off (สิทธิ์เข้างาน)';
+  return '';
+}
+function rbNextTxt(v, ev, um){
+  const s = rbStage(v, ev, um), t = s.t, L = [];
+  if (!s.ko) L.push(`อีก ${THB(t[0]-v)} ถึง Kick Off`);
+  else if (s.n===1) L.push(`อีก ${THB(t[1]-v)} ถึง Pocket Money 500`);
+  if (s.ko && !s.reg) L.push(`อีก ${THB(t[2]-v)} ถึง Regional`);
+  if (!s.bj) L.push(`อีก ${THB(t[3]-v)} ถึงปักกิ่ง`);
+  else if (s.n<t.length) L.push(`อีก ${THB(t[s.n]-v)} ได้ ${s.seats+1} ที่นั่ง`);
+  else L.push('ครบ 4 ที่นั่งแล้ว 🏆');
+  return L.join(' · ');
+}
+function rbCountTxt(vals, ev, um){
+  let ko=0, reg=0, bj=0, seats=0;
+  vals.forEach(v=>{ const s=rbStage(v,ev,um); if (s.ko) ko++; if (s.reg) reg++; if (s.bj){ bj++; seats+=s.seats; } });
+  return `🎫 Kick Off ${ko} คน · ⭐ Regional ${reg} คน · ✈️ ปักกิ่ง ${bj} คน${seats?` (${seats} ที่นั่ง)`:''}`;
+}
+// ถามแอป: แยกเป็นกลุ่มตามขั้นที่ได้จริง (แสดงเฉพาะคนที่มียอดในช่วงแข่ง)
+function rbAskBody(rows, ev, nameHtml){
+  const g = { bj:[], reg:[], ko:[], none:[] };
+  rows.filter(r=>r.v>0 || r.vp>0).sort((a,b)=>b.v-a.v).forEach(r=>{
+    const s = rbStage(r.v, ev, false);
+    const pend = r.vp>r.v ? ` <span style="color:#8A4B00;">· ⏳ ถ้าอนุมัติครบ ${THB(r.vp)} → ${rbStageName(r.vp, ev, false)||'ยังไม่ถึง Kick Off'}</span>` : '';
+    const line = `<b>${nameHtml(r.n)}</b> — FYC ${THB(r.v)}${s.ko?` · ${rbStageName(r.v, ev, false)}`:''} · ${rbNextTxt(r.v, ev, false)}${pend}`;
+    (s.bj ? g.bj : s.reg ? g.reg : s.ko ? g.ko : g.none).push(`<li>${line}</li>`);
+  });
+  const blk = (t, a)=>`<div class="ask-sub">${t} ${a.length} คน</div>${a.length?`<ul class="ask-ul">${a.join('')}</ul>`:'<div class="ask-empty">ไม่มี</div>'}`;
+  return blk('✈️ ติดปักกิ่ง', g.bj) + blk('⭐ ได้ Regional (ยังไม่ถึงปักกิ่ง)', g.reg) + blk('🎫 ได้ Kick Off (ยังไม่ถึง Regional)', g.ko) + blk('⏳ มียอดแต่ยังไม่ถึง Kick Off', g.none);
+}
+
+
+// ===== แอปทีม: ความคืบหน้าการแข่งขัน (ขั้นบันได / ทุกๆ / Road to Beijing) =====
+function ixProg(v, ev){
+  if (ev.track){ const s=rbStage(v,ev,false); return { ok:s.ko, label: rbStageName(v,ev,false)||'ยังไม่ถึง Kick Off', next: rbNextTxt(v,ev,false), needNext: s.t[s.n]!==undefined ? s.t[s.n]-v : null }; }
+  if (ev.mode==='every'){ const step=Number(ev.tiers[0])||1, n=Math.floor(v/step); return { ok:n>0, label: n>0?`ได้ ${n} ครั้ง${ev.reward?` = ${THB(n*ev.reward)}`:''}`:'ยังไม่ถึง', next:`ขาดอีก ${THB((n+1)*step-v)} ได้ครั้งที่ ${n+1}`, needNext:(n+1)*step-v }; }
+  const n = ev.tiers.filter(t=>v>=t).length, nx = ev.tiers[n];
+  return { ok:n>0, label: n>0 ? (ev.tiers.length>1?`ระดับ ${n}/${ev.tiers.length}`:'ผ่านแล้ว') : 'ยังไม่ถึง', next: nx!==undefined ? `ขาดอีก ${THB(nx-v)} ถึง ${THB(nx)}` : 'ครบทุกระดับ 🎉', needNext: nx!==undefined ? nx-v : null };
+}
+const IX_PM = { key:"pocketmoney", name:"Pocket Money เที่ยวปักกิ่ง", start:"2026-10-01", end:"2026-10-31", basis:"fyc", mode:"every", tiers:[25000], reward:2500, rewardText:"แคชเชียร์เช็ค (อนุมัติภายใน 30 พ.ย. 69)", posters:["2026-10_pocket-money-beijing.jpg"] };
 
 /* ================= Road to Beijing: Kick Off → Regional → ปักกิ่ง รวมเป็นแถบเดียว (ผลงาน 28 ส.ค.–30 พ.ย. 69) ================= */
 const RB_KEY = 'roadbj';
