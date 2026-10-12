@@ -234,6 +234,32 @@
     form.entry-form{grid-template-columns:1fr;}
     .qgrid{grid-template-columns:1fr;}
   }
+
+:root{--n-bg:#fff;--n-field:#fff;--n-line:#0F56B255;--n-ink:var(--navy-deep);--n-dim:#4B5563;--n-accent:var(--navy);--n-accent-ink:#fff;--n-chip:#E8F0FB;--n-chip-ink:var(--navy);}
+
+.tn-row{display:grid;grid-template-columns:minmax(0,1fr);column-gap:18px;align-items:start;}
+.tn-row>*{min-width:0;}
+@media (min-width:900px){ .tn-row:has(.t-sec){grid-template-columns:minmax(0,1fr) minmax(0,1fr);} }
+.n-cnt{font-size:15px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--n-chip);color:var(--n-chip-ink);white-space:nowrap;}
+.n-panel{border:1px solid var(--n-line);border-radius:14px;background:var(--n-bg);padding:12px;margin:0 2px 12px;}
+.n-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.n-lab{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:var(--n-ink);}
+.n-form input,.n-search{font:inherit;font-size:18px;padding:10px 12px;border-radius:10px;border:1px solid var(--n-line);background:var(--n-field);color:var(--n-ink);min-height:46px;box-sizing:border-box;}
+#n-text{flex:1 1 100%;min-width:0;}
+.n-btns{display:flex;gap:8px;flex:1 1 100%;}
+.n-save,.n-cancel,.n-more{font:inherit;font-size:18px;font-weight:700;padding:10px 16px;border-radius:10px;cursor:pointer;min-height:46px;}
+.n-save{flex:1;border:0;background:var(--n-accent);color:var(--n-accent-ink);}
+.n-cancel,.n-more{border:1px solid var(--n-line);background:transparent;color:var(--n-ink);}
+.n-more{width:100%;margin-top:8px;}
+.n-search{width:100%;margin-top:12px;}
+.n-mon{margin:14px 2px 6px;font-size:17px;font-weight:800;color:var(--n-accent);}
+.n-item{display:flex;gap:10px;align-items:flex-start;padding:10px 4px;border-top:1px solid var(--n-line);}
+.n-item.edit{background:var(--n-chip);border-radius:10px;}
+.n-d{flex:none;min-width:84px;font-size:16px;font-weight:700;color:var(--n-dim);padding-top:2px;}
+.n-t{flex:1;min-width:0;font-size:18px;line-height:1.45;color:var(--n-ink);overflow-wrap:anywhere;white-space:pre-wrap;}
+.n-act{flex:none;display:flex;gap:4px;}
+.n-act button{font-size:18px;width:42px;height:42px;border-radius:10px;border:1px solid var(--n-line);background:transparent;cursor:pointer;padding:0;}
+.n-empty{padding:14px 4px 4px;color:var(--n-dim);font-size:17px;text-align:center;}
 </style>
 </head>
 <body>
@@ -248,7 +274,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-4</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-5</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -5586,7 +5612,7 @@ function posterStripHtml(){
 }
 function posterHomeHtml(){
   const a = posterStripHtml(), b = trainingHtml();
-  return (a||b) ? `<div class="p-home">${a}${b}</div>` : '';
+  return `<div class="p-home">${a}<div class="tn-row">${b}${notesHtml()}</div></div>`;
 }
 // ดูโปสเตอร์เต็มจอ (ปัดซ้าย-ขวา · แตะรูปเพื่อขยาย · ✕ หรือแตะพื้นดำเพื่อปิด)
 function posterView(files, startIdx){
@@ -5652,6 +5678,81 @@ function trainingHtml(){
     </button>`; }).join('')}</div>` : `<div class="t-empty">ตอนนี้ยังไม่มีรอบอบรมที่เปิดรับในหมวดนี้</div>`}`:''}
   </div>`;
 }
+/* ================= 📝 บันทึกย่อส่วนตัว — ของใครของมัน เก็บในเครื่องคนนั้น (อยู่ในไฟล์แบ็กอัพด้วย) ================= */
+let noteDraft = { date:'', text:'' }, noteEditId = null, noteQ = '', noteAll = false;
+function nOpen(){ try{ return localStorage.getItem('ped-notes-open')==='1'; }catch(e){ return false; } }
+function nArr(){ const r = progRoot(); if (!Array.isArray(r.notes)) r.notes = []; return r.notes; }
+function nFmt(iso){ return iso ? fmtTH(new Date(iso+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"}) : ''; }
+function nMonthCount(){ const ym = todayIso().slice(0,7); return nArr().filter(n=>(n.date||'').slice(0,7)===ym).length; }
+function nSorted(){ return nArr().slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'') || (b.at||0)-(a.at||0)); }
+function nListHtml(){
+  const q = noteQ.trim().toLowerCase();
+  let L = nSorted();
+  if (q) L = L.filter(n=>(n.text||'').toLowerCase().includes(q) || nFmt(n.date).includes(q));
+  if (!L.length) return `<div class="n-empty">${q?'ไม่พบบันทึกที่ค้นหา':'ยังไม่มีบันทึก — จดสิ่งที่ทำไปแล้ววันนี้ได้เลย'}</div>`;
+  const LIM = 10, show = (q||noteAll) ? L : L.slice(0,LIM);
+  let html = '', cur = '';
+  show.forEach(n=>{
+    const ym = (n.date||'').slice(0,7);
+    if (ym!==cur){ cur = ym; const [y,m] = ym.split('-').map(Number); html += `<div class="n-mon">${THAI_MONTH_NAMES[m-1]||''} ${y+543}</div>`; }
+    html += `<div class="n-item ${noteEditId===n.id?'edit':''}"><div class="n-d">${esc(nFmt(n.date))}</div><div class="n-t">${esc(n.text)}</div>
+      <div class="n-act"><button type="button" data-note-edit="${esc(n.id)}" aria-label="แก้ไข">✏️</button><button type="button" data-note-del="${esc(n.id)}" aria-label="ลบ">🗑️</button></div></div>`;
+  });
+  if (!q && L.length>LIM) html += `<button type="button" class="n-more" data-note-more>${noteAll?'▲ ย่อเหลือล่าสุด':`ดูทั้งหมด (${L.length} รายการ)`}</button>`;
+  return html;
+}
+function notesHtml(){
+  const open = nOpen(), mc = nMonthCount();
+  if (!noteDraft.date) noteDraft.date = todayIso();
+  return `<div id="n-sec" class="n-sec">
+    <div class="t-box n-box" role="button" tabindex="0" data-note-toggle aria-expanded="${open}"><span class="t-ttl">📝 บันทึกย่อ</span>${mc?`<span class="n-cnt">เดือนนี้ ${mc}</span>`:''}<span class="t-arr">${open?'▲ ย่อ':'▼ ขยาย'}</span></div>
+    ${open?`<div class="n-panel">
+      <div class="n-form">
+        <label class="n-lab">วันที่<input type="date" id="n-date" value="${esc(noteDraft.date)}"></label>
+        <input type="text" id="n-text" value="${esc(noteDraft.text)}" maxlength="300" enterkeyhint="done" placeholder="พิมพ์สิ่งที่ทำไปแล้ว">
+        <div class="n-btns"><button type="button" class="n-save" data-note-save>${noteEditId?'💾 บันทึกการแก้ไข':'➕ บันทึก'}</button>${noteEditId?'<button type="button" class="n-cancel" data-note-cancel>ยกเลิก</button>':''}</div>
+      </div>
+      ${nArr().length?`<input type="search" id="n-search" class="n-search" value="${esc(noteQ)}" placeholder="🔍 ค้นหาบันทึก">`:''}
+      <div id="n-list">${nListHtml()}</div>
+    </div>`:''}
+  </div>`;
+}
+function nRerender(){ const s = document.getElementById('n-sec'); if (s) s.outerHTML = notesHtml(); }
+function nReset(){ noteEditId = null; noteDraft = { date: todayIso(), text:'' }; }
+function nSave(){
+  const text = (noteDraft.text||'').trim();
+  if (!text){ showToast('พิมพ์ข้อความบันทึกก่อนนะคะ'); return; }
+  const date = noteDraft.date || todayIso(), A = nArr();
+  if (noteEditId){ const n = A.find(x=>x.id===noteEditId); if (n){ n.date = date; n.text = text; } showToast('แก้ไขบันทึกแล้ว'); }
+  else { A.push({ id:'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), date, text, at:Date.now() }); showToast('บันทึกแล้ว'); }
+  nReset(); saveState(); nRerender();
+}
+document.addEventListener('click', e=>{
+  const g = s=>e.target.closest(s); let el;
+  const stop = ()=>{ e.preventDefault(); e.stopPropagation(); };
+  if (g('[data-note-toggle]')){ stop(); try{ localStorage.setItem('ped-notes-open', nOpen()?'0':'1'); }catch(_){} nRerender(); return; }
+  if (g('[data-note-save]')){ stop(); nSave(); return; }
+  if (g('[data-note-cancel]')){ stop(); nReset(); nRerender(); return; }
+  if (g('[data-note-more]')){ stop(); noteAll = !noteAll; nRerender(); return; }
+  if ((el = g('[data-note-edit]'))){ stop(); const n = nArr().find(x=>x.id===el.dataset.noteEdit);
+    if (n){ noteEditId = n.id; noteDraft = { date:n.date, text:n.text }; nRerender(); const f = document.querySelector('#n-sec .n-form'); if (f) f.scrollIntoView({block:'center', behavior:'smooth'}); } return; }
+  if ((el = g('[data-note-del]'))){ stop(); const A = nArr(), id = el.dataset.noteDel, i = A.findIndex(x=>x.id===id); if (i<0) return;
+    if (!confirm(`ลบบันทึกนี้ใช่ไหม?\n\n${nFmt(A[i].date)} — ${A[i].text}`)) return;
+    A.splice(i,1); if (noteEditId===id) nReset(); saveState(); nRerender(); showToast('ลบบันทึกแล้ว'); return; }
+}, true);
+function nInput(e){
+  const id = e.target && e.target.id;
+  if (id==='n-text') noteDraft.text = e.target.value;
+  else if (id==='n-date') noteDraft.date = e.target.value;
+  else if (id==='n-search'){ noteQ = e.target.value; const l = document.getElementById('n-list'); if (l) l.innerHTML = nListHtml(); }
+}
+document.addEventListener('input', nInput, true);
+document.addEventListener('change', nInput, true);
+document.addEventListener('keydown', e=>{
+  if (e.target && e.target.id==='n-text' && e.key==='Enter' && !e.isComposing){ e.preventDefault(); noteDraft.text = e.target.value; nSave(); }
+  else if (e.target && e.target.closest && e.target.closest('[data-note-toggle]') && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); e.target.click(); }
+}, true);
+
 // ปุ่มในกล่องเตือนบัตรตัวแทน → เปิดโปสเตอร์รอบอบรมที่เกี่ยวข้อง
 function trainBtnHtml(group, label){ return `<button type="button" class="t-btn" data-train-open="${group}">📚 ${label}</button>`; }
 function trainOpen(group){
@@ -5684,7 +5785,7 @@ document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) poster
 // ทุกช่องกรอก: แตะแล้วล้างค่าเดิมทันที ถ้าไม่พิมพ์อะไรแล้วออก ให้คืนค่าเดิม (ไม่ต้องคอยลบเอง)
 (function(){
   const SKIP = ['checkbox','radio','button','submit','reset','file','range','color','hidden','date','time','datetime-local','month','week'];
-  const ok = el => el && el.tagName==='INPUT' && !SKIP.includes((el.type||'text').toLowerCase()) && !el.readOnly && !el.disabled && el.id!=='entry-search';
+  const ok = el => el && el.tagName==='INPUT' && !SKIP.includes((el.type||'text').toLowerCase()) && !el.readOnly && !el.disabled && el.id!=='entry-search' && el.id!=='n-search';
   document.addEventListener('focus', e=>{ const el = e.target; if (!ok(el)) return; el.dataset.prevVal = el.value; if (el.value!=='') el.value = ''; }, true);
   document.addEventListener('blur', e=>{ const el = e.target; if (!ok(el)) return; const prev = el.dataset.prevVal; delete el.dataset.prevVal; if (prev!==undefined && prev!=='' && el.value.trim()==='') el.value = prev; }, true);
 })();
