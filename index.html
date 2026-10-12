@@ -47,7 +47,9 @@
   .p-card .d.hot{color:var(--bad);}
   .p-card .k{display:inline-block;font-size:13px;padding:1px 8px;border-radius:999px;background:#5B4BD6;color:#fff;margin-top:4px;}
   .t-sec{margin-top:6px;}
-  .t-tabs{display:flex;gap:8px;margin:0 0 10px;flex-wrap:wrap;}
+  .t-tog{cursor:pointer;user-select:none;}
+.t-arr{font-weight:700;padding:4px 10px;border-radius:999px;border:1px solid currentColor;}
+.t-tabs{display:flex;gap:8px;margin:0 0 10px;flex-wrap:wrap;}
   .t-tab{flex:1;min-width:0;white-space:nowrap;padding-left:8px!important;padding-right:8px!important;font:inherit;font-size:18px;font-weight:700;padding:11px 12px;border-radius:12px;border:2px solid var(--navy);background:#fff;color:var(--navy);cursor:pointer;}
   .t-tab b{display:inline-block;min-width:24px;font-size:15px;padding:1px 7px;border-radius:999px;background:#0F56B21F;margin-left:4px;}
   .t-tab.on{background:var(--navy);color:#fff;}
@@ -245,7 +247,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-2</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-3</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -5616,6 +5618,7 @@ document.addEventListener('keydown', e=>{ const pv=document.getElementById('pv')
 
 /* ================= อบรม: โปสเตอร์อบรมขอรับ/ต่อบัตร และอบรมอื่นๆ (อ่านจาก posters.json · kind:'training') ================= */
 let trainTab = 'license';
+function tOpen(){ try{ return localStorage.getItem('ped-train-open')!=='0'; }catch(e){ return true; } }
 const TRAIN_TABS = { license:'🪪 ขอรับ/ต่อบัตร', other:'🎓 อบรมอื่นๆ' };
 function tIsTraining(p){ return !!p && p.kind==='training'; }
 function tDays(iso){ const t0=new Date(); t0.setHours(0,0,0,0); return Math.round((new Date(iso+"T00:00:00")-t0)/86400000); }
@@ -5639,13 +5642,13 @@ function trainingHtml(){
   const L = tList(trainTab);
   const files = esc(L.map(p=>p.file).join('|'));
   return `<div id="t-sec" class="t-sec">
-    <div class="t-head"><h2>📚 อบรม</h2><span>แตะดูเต็มจอ · ปัดดูต่อ</span></div>
-    <div class="t-tabs">${Object.entries(TRAIN_TABS).map(([k,lab])=>`<button type="button" class="t-tab ${trainTab===k?'on':''}" data-train-tab="${k}">${lab}</button>`).join('')}</div>
+    <div class="t-head t-tog" role="button" tabindex="0" data-train-toggle aria-expanded="${tOpen()}"><h2>📚 อบรม</h2><span class="t-arr">${tOpen()?'▲ ย่อ':'▼ ขยาย'}</span></div>
+    ${tOpen()?`<div class="t-tabs">${Object.entries(TRAIN_TABS).map(([k,lab])=>`<button type="button" class="t-tab ${trainTab===k?'on':''}" data-train-tab="${k}">${lab}</button>`).join('')}</div>
     ${L.length ? `<div class="p-strip t-strip">${L.map((p,i)=>{ const c=tNextClose(p); const d=c?tDays(c):null; return `<button type="button" class="p-card t-card" data-poster-open="${files}" data-poster-i="${i}">
       <img src="${esc(pSrc(p))}" loading="lazy" alt="โปสเตอร์ ${esc(p.title||'')}">
       <span class="t">${esc(p.title||'')}</span>
       <span class="d ${d!==null&&d<=3?'hot':''}">${esc(tBadge(p))}</span>
-    </button>`; }).join('')}</div>` : `<div class="t-empty">ตอนนี้ยังไม่มีรอบอบรมที่เปิดรับในหมวดนี้</div>`}
+    </button>`; }).join('')}</div>` : `<div class="t-empty">ตอนนี้ยังไม่มีรอบอบรมที่เปิดรับในหมวดนี้</div>`}`:''}
   </div>`;
 }
 // ปุ่มในกล่องเตือนบัตรตัวแทน → เปิดโปสเตอร์รอบอบรมที่เกี่ยวข้อง
@@ -5660,6 +5663,13 @@ document.addEventListener('click', e=>{
   if (tb){
     e.preventDefault(); e.stopPropagation();
     trainTab = tb.dataset.trainTab;
+    const sec = document.getElementById('t-sec'); if (sec) sec.outerHTML = trainingHtml();
+    return;
+  }
+  const tg = e.target.closest('[data-train-toggle]');
+  if (tg){
+    e.preventDefault(); e.stopPropagation();
+    try{ localStorage.setItem('ped-train-open', tOpen()?'0':'1'); }catch(_){}
     const sec = document.getElementById('t-sec'); if (sec) sec.outerHTML = trainingHtml();
     return;
   }
