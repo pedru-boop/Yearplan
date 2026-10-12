@@ -281,7 +281,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-7</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-8</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -1928,7 +1928,7 @@ function renderTeamTab(){
     })()}
 
     ${renderDeadlinesCard(names, selectedPosition)}
-    ${(()=>{ const ev=rbEvent(); if(!rbActive(ev)) return ''; const s=rbSumAgents(state.agents, ev); return rbCardHtml({ ev, um:true, v:s.v, vp:s.vp, who: activeTeamUmName ? activeTeamUmName : '', barLabel: activeTeamUmName ? 'ยอดรวมทีม' : 'ขายเอง + ตัวแทนตรง' }); })()}
+    ${(()=>{ const ev=rbEvent(); if(!rbActive(ev)) return ''; const s=rbSumAgents(state.agents, ev); return `<div class="card"><h3>🏁 การแข่งขันระดับ UM (กำลังแข่ง)</h3><p class="sub">ผู้บริหารตัวแทน · รวมผลงานขายเองและตัวแทนตรง · ตัวเลขหลักใช้ยอดอนุมัติแล้ว</p>${rbCardHtml({ ev, um:true, inner:true, v:s.v, vp:s.vp, who: activeTeamUmName ? activeTeamUmName : '', barLabel: activeTeamUmName ? 'ยอดรวมทีม' : 'ขายเอง + ตัวแทนตรง' })}</div>`; })()}
 
     ${renderProgramsCard()}
     ${renderEventsSettingsCard()}
@@ -5638,12 +5638,14 @@ function posterView(files, startIdx){
     <div class="hint">${list.length>1?'ปัดซ้าย-ขวาเพื่อดูใบอื่น · ':''}แตะรูปเพื่อขยาย</div>`;
   pv.hidden = false; document.body.style.overflow = 'hidden';
   const track = pv.querySelector('.track');
-  const setHead = ()=>{ const i = Math.round(track.scrollLeft/Math.max(1,track.clientWidth)); const p=list[Math.min(list.length-1,Math.max(0,i))]; pv.querySelector('#pv-t').textContent = p.title||''; pv.querySelector('#pv-c').textContent = list.length>1?`${i+1} / ${list.length}`:''; };
+  const setHead = ()=>{ const i = Math.round(track.scrollLeft/Math.max(1,track.clientWidth)); const p=list[Math.min(list.length-1,Math.max(0,i))]; pv.querySelector('#pv-t').textContent = p.title||''; pv.querySelector('#pv-c').textContent = list.length>1?`ใบที่ ${i+1} จาก ${list.length}`:''; pv.querySelectorAll('.pv-nav').forEach(b=>{ b.disabled = b.classList.contains('prev') ? i<=0 : i>=list.length-1; }); };
   requestAnimationFrame(()=>{ track.scrollLeft = (startIdx||0)*track.clientWidth; setHead(); });
   track.onscroll = setHead;
+  if (list.length>1) pv.insertAdjacentHTML('beforeend','<button type="button" class="pv-nav prev" aria-label="ใบก่อนหน้า">◀</button><button type="button" class="pv-nav next" aria-label="ใบถัดไป">▶</button>');
   const close = ()=>{ pv.hidden = true; pv.innerHTML=''; document.body.style.overflow = ''; };
   pv.onclick = e=>{
     if (e.target.closest('.x')) return close();
+    const nv = e.target.closest('.pv-nav'); if (nv){ const i = Math.round(track.scrollLeft/Math.max(1,track.clientWidth)) + (nv.classList.contains('prev')?-1:1); track.scrollTo({ left: Math.max(0,Math.min(list.length-1,i))*track.clientWidth, behavior:'smooth' }); return; }
     const img = e.target.closest('.sl img'); if (img){ img.parentElement.classList.toggle('big'); return; }
     if (e.target.classList.contains('sl') || e.target.classList.contains('track') || e.target.classList.contains('hint')) close();
   };
@@ -5872,7 +5874,7 @@ function rbCardHtml(opt){
   const thumbs = (ev.posters||[]).map((p,i)=>`<button type="button" class="rb-th" data-poster-open="${esc(all)}" data-poster-i="${i}" aria-label="ดูโปสเตอร์"><img src="${esc(POSTER_BASE+encodeURIComponent(p))}" loading="lazy" alt=""></button>`).join('');
   const rows = t.map((x,i)=>{ const hit=v>=x, soon=!hit&&vp>=x, pi=Math.max(0,(ev.posters||[]).indexOf(tp[i]));
     return `<div class="rb-ms ${hit?'hit':''}"><span class="rb-ck">${hit?'✔':soon?'⏳':'○'}</span><span class="rb-ic">${ic[i]||''}</span><span class="rb-ml"><b>${THB(x)}</b> ${esc(labs[i]||'')}</span>${tp[i]?`<button type="button" class="rb-pb" data-poster-open="${esc(all)}" data-poster-i="${pi}" aria-label="ดูโปสเตอร์">🖼</button>`:''}</div>`; }).join('');
-  return `<div class="card rb-card">
+  return `<div class="${opt.inner?'rb-box rb-card':'card rb-card'}">
     <h3 style="margin:0 0 4px;">🐼 ${esc(opt.title || ev.name)}</h3>
     <div class="rb-sub">${um?'ผู้บริหารตัวแทน · ':'ระดับตัวแทน · '}${esc(opt.who||'')}${opt.who?' · ':''}ผลงาน ${f(ev.start)} – ${f(ev.end)}${dl>=0?` · เหลือ <b>${dl}</b> วัน`:' · จบแล้ว'}</div>
     <div class="rb-thumbs">${thumbs}</div>
@@ -5921,8 +5923,14 @@ function rbTeamUmCardHtml(){
   .rb-ms.hit{opacity:1;color:#2F7A4F;font-weight:700}
   .rb-ck{width:20px;text-align:center}.rb-ml{flex:1;min-width:0;line-height:1.35}
   .rb-pb{border:1px solid rgba(127,140,160,.45);background:transparent;border-radius:8px;font-size:18px;padding:3px 9px;cursor:pointer;color:inherit}
-  .rb-row{padding:6px 0;border-bottom:1px solid rgba(127,140,160,.2);cursor:pointer}
-  .rb-row:last-child{border-bottom:0}`;
+    .rb-row:last-child{border-bottom:0}
+  .pv-nav{position:fixed;top:50%;transform:translateY(-50%);z-index:202;width:58px;height:58px;border-radius:50%;border:0;background:rgba(255,255,255,.92);color:#03131F;font-size:26px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.5);cursor:pointer}
+  .pv-nav.prev{left:8px}.pv-nav.next{right:8px}.pv-nav:disabled{opacity:.25}
+  #pv .bar small{font-size:17px!important;color:#FFE08A!important;font-weight:700!important}
+  .rb-row,.rb-box{background:#fff;color:#1B2430;border:1.5px solid #D5DEEA;border-radius:12px;padding:10px 12px;margin:10px 0}
+  .rb-box{border-color:#E8B64A;background:#FFFBF0}
+  .rb-row .rb-top>b,.cb .rb-top>b{font-size:19px;color:#0B2D5C}
+  .rb-card .rb-row{cursor:pointer}`;
   const s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
 })();
 </script>
