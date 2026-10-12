@@ -568,8 +568,9 @@ p.sub:not(.card *):not(#pv *),.foot-note:not(.card *){color:var(--b-ink)!importa
 .t-head{display:flex;align-items:baseline;justify-content:space-between;margin:16px 2px 8px;color:var(--b-ink);}
 .t-head h2{margin:0;font-family:var(--b-display);font-size:20px;color:var(--b-ink);}
 .t-head span{font-size:14px;color:var(--b-dim);}
-.t-tog{cursor:pointer;user-select:none;}
-.t-arr{font-weight:700;padding:4px 10px;border-radius:999px;border:1px solid currentColor;}
+.t-box{display:inline-flex;align-items:center;gap:12px;max-width:100%;margin:14px 2px 10px;padding:8px 10px 8px 14px;border:1px solid var(--b-line);border-radius:14px;background:var(--b-panel);color:var(--b-ink);cursor:pointer;user-select:none;}
+.t-ttl{font-family:var(--b-display);font-size:19px;font-weight:700;}
+.t-arr{flex:none;font-size:15px;font-weight:700;padding:4px 10px;border-radius:999px;border:1px solid currentColor;white-space:nowrap;}
 .t-tabs{display:flex;gap:8px;margin:0 0 10px;flex-wrap:wrap;}
 .t-tab{flex:1;min-width:0;white-space:nowrap;padding-left:8px!important;padding-right:8px!important;font:inherit;font-size:17px;font-weight:700;padding:11px 12px;border-radius:12px;border:1px solid var(--b-line);background:var(--b-panel);color:var(--b-ink);cursor:pointer;}
 .t-tab b{display:inline-block;min-width:24px;font-size:14px;padding:1px 7px;border-radius:999px;background:var(--b-line);margin-left:4px;}
@@ -595,7 +596,7 @@ html[data-mode="light"] .t-tab.on{background:#0F56B2;color:#fff;border-color:#0F
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-beta15</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.12-beta16</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -918,7 +919,7 @@ function renderAgentCompCard(names){
   if (activeTeamUmName && false) return '';
   const now = new Date();
   const act = evList().filter(ev=>{ const [s,e]=evRange(ev); return now>=s && now<=e; });
-  const evHtml = act.length ? evProgressListHtml(act) : '<div class="pp-empty">ตอนนี้ไม่มีการแข่งขันพิเศษที่กำลังแข่ง</div>';
+  const evHtml = act.length ? evProgressListHtml(act, { noUm:true }) : '<div class="pp-empty">ตอนนี้ไม่มีการแข่งขันพิเศษที่กำลังแข่ง</div>';
   const groups = {};
   names.forEach(n=>{ agentCompStatus(state.agents[n]).filter(it=>!evList().some(ev=>ev.name===it.title)).forEach(it=>{ const k = it.title.replace(/\s*Q\d.*$/,'').replace(/\s*\d{4}$/,''); (groups[k]=groups[k]||[]).push({ n, it }); }); });
   const fixed = Object.entries(groups).map(([k, arr])=>`<div class="pp-ev"><h4>🏅 ${esc(arr[0].it.title)}</h4>
@@ -6692,7 +6693,7 @@ function evBar(label, v, vp, ev, um, warn){
     <div class="cb-note">${status}${warn?` · <span class="cb-warn">${esc(warn)}</span>`:''}</div>
   </div>`;
 }
-function evProgressListHtml(evs){
+function evProgressListHtml(evs, opt){
   const f = iso=>fmtTH(new Date(iso+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"});
   return withDueView(()=>evs.map(ev=>{
     const [es, ee] = evRange(ev);
@@ -6700,7 +6701,7 @@ function evProgressListHtml(evs){
       .filter(r=>r.v>0 || r.vp>0).sort((a,b)=>(b.v-a.v)||(b.vp-a.vp));
     const st = compStatus(...evRange(ev));
     let um = '';
-    if ((ev.umTiers||[]).length){ const tv = rows.reduce((s,r)=>s+r.v,0), tvp = rows.reduce((s,r)=>s+Math.max(r.v,r.vp),0); um = `<div class="pp-um">${evBar('👔 ระดับ UM (ขายเอง+ตัวแทนตรง)', tv, tvp, ev, true, '')}</div>`; }
+    if ((ev.umTiers||[]).length && !(opt && opt.noUm)){ const tv = rows.reduce((s,r)=>s+r.v,0), tvp = rows.reduce((s,r)=>s+Math.max(r.v,r.vp),0); um = `<div class="pp-um">${evBar('👔 ระดับ UM (ขายเอง+ตัวแทนตรง)', tv, tvp, ev, true, '')}</div>`; }
     return `<div class="pp-ev"><h4 style="display:flex;align-items:center;gap:10px;">${posterThumbs(posterMatches(ev.name, ev.key, ev))}<span>🏁 ${esc(ev.name)}</span></h4>
       <div class="pp-rule">${evRuleTxt(ev)}<br>${f(ev.start)} – ${f(ev.end)} · ${st==='ended'?'จบแล้ว':st==='upcoming'?'ยังไม่เริ่ม':'กำลังแข่ง'} · มียอด ${rows.length} คน · ติดแล้ว ${rows.filter(r=>r.p.ok).length} คน</div>${um}
       ${rows.length ? rows.map((r,k)=>`<div class="cb-row" data-pp-agent="${esc(r.n)}">${evBar(`${k+1}. ${r.n}`, r.v, r.vp, ev, false, r.miss?`ยังไม่คีย์เบี้ย ${r.miss} เคส`:'')}</div>`).join('') : '<div class="pp-empty">ยังไม่มีตัวแทนที่มีงานรายใหม่ในช่วงแข่ง</div>'}
@@ -6969,7 +6970,7 @@ function trainingHtml(){
   const L = tList(trainTab);
   const files = esc(L.map(p=>p.file).join('|'));
   return `<div id="t-sec" class="t-sec">
-    <div class="t-head t-tog" role="button" tabindex="0" data-train-toggle aria-expanded="${tOpen()}"><h2>📚 อบรม</h2><span class="t-arr">${tOpen()?'▲ ย่อ':'▼ ขยาย'}</span></div>
+    <div class="t-box" role="button" tabindex="0" data-train-toggle aria-expanded="${tOpen()}"><span class="t-ttl">📚 ตารางอบรมต่างๆ</span><span class="t-arr">${tOpen()?'▲ ย่อ':'▼ ขยาย'}</span></div>
     ${tOpen()?`<div class="t-tabs">${Object.entries(TRAIN_TABS).map(([k,lab])=>`<button type="button" class="t-tab ${trainTab===k?'on':''}" data-train-tab="${k}">${lab}</button>`).join('')}</div>
     ${L.length ? `<div class="p-strip t-strip">${L.map((p,i)=>{ const c=tNextClose(p); const d=c?tDays(c):null; return `<button type="button" class="p-card t-card" data-poster-open="${files}" data-poster-i="${i}">
       <img src="${esc(pSrc(p))}" loading="lazy" alt="โปสเตอร์ ${esc(p.title||'')}">
