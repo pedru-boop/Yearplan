@@ -586,10 +586,17 @@ html[data-mode="light"] .t-tab.on{background:#0F56B2;color:#fff;border-color:#0F
 :root{--n-bg:var(--b-panel);--n-field:var(--b-panel2);--n-line:var(--b-line);--n-ink:var(--b-ink);--n-dim:var(--b-dim);--n-accent:var(--b-cyan);--n-accent-ink:#03131F;--n-chip:rgba(69,227,255,.18);--n-chip-ink:var(--b-ink);}
 html[data-mode="light"]{--n-accent-ink:#fff;}
 
-.tn-row{display:grid;grid-template-columns:minmax(0,1fr);column-gap:18px;align-items:start;}
-.tn-row>*{min-width:0;}
-@media (min-width:900px){ .tn-row:has(.t-sec){grid-template-columns:minmax(0,1fr) minmax(0,1fr);} }
-.n-cnt{font-size:15px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--n-chip);color:var(--n-chip-ink);white-space:nowrap;}
+.tn-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:10px;align-items:start;margin-top:8px;}
+.tn-row>.t-sec,.tn-row>.n-sec{display:contents;}
+.tn-row>*>*{grid-column:1/-1;min-width:0;}
+.tn-row .t-box{grid-column:1;grid-row:1;display:flex;width:100%;box-sizing:border-box;justify-content:space-between;gap:8px;margin:4px 0 10px;padding:10px 10px 10px 14px;}
+.tn-row .n-box{grid-column:2;grid-row:1;}
+.tn-row:not(:has(.t-sec)) .n-box{grid-column:1;}
+.tn-row .t-ttl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tn-row .t-arr{padding:3px 9px;}
+@media (max-width:420px){ .tn-row .t-ic{display:none;} }
+.t-ic{font-style:normal;}
+@media (max-width:480px){ .tn-row{column-gap:8px;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);} .tn-row .t-ttl{font-size:18px;text-overflow:clip;} .tn-row .t-box{gap:4px;padding:10px 8px;} .tn-row .t-arr{border:0;padding:0 2px;font-size:16px;} }
 .n-panel{border:1px solid var(--n-line);border-radius:14px;background:var(--n-bg);padding:12px;margin:0 2px 12px;}
 .n-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
 .n-lab{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:var(--n-ink);}
@@ -6997,7 +7004,7 @@ function trainingHtml(){
   const L = tList(trainTab);
   const files = esc(L.map(p=>p.file).join('|'));
   return `<div id="t-sec" class="t-sec">
-    <div class="t-box" role="button" tabindex="0" data-train-toggle aria-expanded="${tOpen()}"><span class="t-ttl">📚 ตารางอบรมต่างๆ</span><span class="t-arr">${tOpen()?'▲ ย่อ':'▼ ขยาย'}</span></div>
+    <div class="t-box" role="button" tabindex="0" data-train-toggle aria-expanded="${tOpen()}"><span class="t-ttl"><i class="t-ic">📚 </i>ตารางอบรม</span><span class="t-arr">${tOpen()?'▲':'▼'}</span></div>
     ${tOpen()?`<div class="t-tabs">${Object.entries(TRAIN_TABS).map(([k,lab])=>`<button type="button" class="t-tab ${trainTab===k?'on':''}" data-train-tab="${k}">${lab}</button>`).join('')}</div>
     ${L.length ? `<div class="p-strip t-strip">${L.map((p,i)=>{ const c=tNextClose(p); const d=c?tDays(c):null; return `<button type="button" class="p-card t-card" data-poster-open="${files}" data-poster-i="${i}">
       <img src="${esc(pSrc(p))}" loading="lazy" alt="โปสเตอร์ ${esc(p.title||'')}">
@@ -7011,7 +7018,6 @@ let noteDraft = { date:'', text:'' }, noteEditId = null, noteQ = '', noteAll = f
 function nOpen(){ try{ return localStorage.getItem('ped-notes-open')==='1'; }catch(e){ return false; } }
 function nArr(){ const r = progRoot(); if (!Array.isArray(r.notes)) r.notes = []; return r.notes; }
 function nFmt(iso){ return iso ? fmtTH(new Date(iso+"T00:00:00"),{day:"numeric",month:"short",year:"2-digit"}) : ''; }
-function nMonthCount(){ const ym = todayIso().slice(0,7); return nArr().filter(n=>(n.date||'').slice(0,7)===ym).length; }
 function nSorted(){ return nArr().slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'') || (b.at||0)-(a.at||0)); }
 function nListHtml(){
   const q = noteQ.trim().toLowerCase();
@@ -7030,10 +7036,10 @@ function nListHtml(){
   return html;
 }
 function notesHtml(){
-  const open = nOpen(), mc = nMonthCount();
+  const open = nOpen();
   if (!noteDraft.date) noteDraft.date = todayIso();
   return `<div id="n-sec" class="n-sec">
-    <div class="t-box n-box" role="button" tabindex="0" data-note-toggle aria-expanded="${open}"><span class="t-ttl">📝 บันทึกย่อ</span>${mc?`<span class="n-cnt">เดือนนี้ ${mc}</span>`:''}<span class="t-arr">${open?'▲ ย่อ':'▼ ขยาย'}</span></div>
+    <div class="t-box n-box" role="button" tabindex="0" data-note-toggle aria-expanded="${open}"><span class="t-ttl"><i class="t-ic">📝 </i>บันทึกย่อ</span><span class="t-arr">${open?'▲':'▼'}</span></div>
     ${open?`<div class="n-panel">
       <div class="n-form">
         <label class="n-lab">วันที่<input type="date" id="n-date" value="${esc(noteDraft.date)}"></label>
@@ -7058,7 +7064,9 @@ function nSave(){
 document.addEventListener('click', e=>{
   const g = s=>e.target.closest(s); let el;
   const stop = ()=>{ e.preventDefault(); e.stopPropagation(); };
-  if (g('[data-note-toggle]')){ stop(); try{ localStorage.setItem('ped-notes-open', nOpen()?'0':'1'); }catch(_){} nRerender(); return; }
+  if (g('[data-note-toggle]')){ stop(); try{ localStorage.setItem('ped-notes-open', nOpen()?'0':'1'); }catch(_){}
+    if (nOpen() && typeof tOpen==='function' && tOpen()){ try{ localStorage.setItem('ped-train-open','0'); }catch(_){} const ts = document.getElementById('t-sec'); if (ts) ts.outerHTML = trainingHtml(); }
+    nRerender(); return; }
   if (g('[data-note-save]')){ stop(); nSave(); return; }
   if (g('[data-note-cancel]')){ stop(); nReset(); nRerender(); return; }
   if (g('[data-note-more]')){ stop(); noteAll = !noteAll; nRerender(); return; }
@@ -7100,6 +7108,7 @@ document.addEventListener('click', e=>{
   if (tg){
     e.preventDefault(); e.stopPropagation();
     try{ localStorage.setItem('ped-train-open', tOpen()?'0':'1'); }catch(_){}
+    if (tOpen() && nOpen()){ try{ localStorage.setItem('ped-notes-open','0'); }catch(_){} nRerender(); }
     const sec = document.getElementById('t-sec'); if (sec) sec.outerHTML = trainingHtml();
     return;
   }
