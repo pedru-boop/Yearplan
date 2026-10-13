@@ -267,6 +267,10 @@
 .n-act{flex:none;display:flex;gap:4px;}
 .n-act button{font-size:18px;width:42px;height:42px;border-radius:10px;border:1px solid var(--n-line);background:transparent;cursor:pointer;padding:0;}
 .n-empty{padding:14px 4px 4px;color:var(--n-dim);font-size:17px;text-align:center;}
+
+  /* ช่องกรอกตารางไตรมาส (ตัวแทน/UM) อยู่กลางช่อง */
+  td:has(> input[data-qty-override]),td:has(> input[data-direct-override]),td:has(> input[data-fyc-override]){text-align:center!important}
+  input[data-qty-override],input[data-direct-override],input[data-fyc-override]{text-align:center!important;display:block;margin:0 auto}
 </style>
 </head>
 <body>
@@ -299,7 +303,7 @@
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.13-6 · อัปเดต 13 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.13-7 · อัปเดต 13 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -1584,9 +1588,9 @@ function renderManageAgentsTab(){
             <div class="mg-name" style="font-weight:700;color:${r.isCurrent?'#0B6B3A':'var(--navy)'};line-height:1.3;">${r.isCurrent?'▶ ':''}${esc(r.name)}</div>${r.urgent?'<span class=\"mg-urg\">⚠ เร่งด่วน</span>':''}
             <div class="mg-sub" style="font-size:11px;color:var(--muted);">FYC <b>${THB(r.yearFyc)}</b></div>
           </td>
-          <td class="mg-num" style="padding:8px 4px;font-weight:600;word-break:break-all;">${esc(r.lic.agentCode)||dash}</td>
-          <td class="mg-num" style="padding:8px 4px;font-weight:600;word-break:break-all;">${esc(r.lic.cardNumber)||dash}</td>
-          <td style="padding:8px 4px;white-space:nowrap;">${r.st.short}</td>
+          <td class="mg-num" style="padding:8px 4px;font-weight:600;word-break:break-all;"><div class="mg-lab">รหัสตัวแทน</div>${esc(r.lic.agentCode)||dash}</td>
+          <td class="mg-num" style="padding:8px 4px;font-weight:600;word-break:break-all;"><div class="mg-lab">เลขที่บัตร</div>${esc(r.lic.cardNumber)||dash}</td>
+          <td style="padding:8px 4px;white-space:nowrap;"><div class="mg-lab">วันหมดอายุบัตร</div>${r.st.short}</td>
           <td style="padding:4px 2px;text-align:right;">
             <button class="icon-btn" data-edit-license="${esc(r.name)}" title="แก้ไข">${editing?'✖':'📝'}</button>
           </td>
@@ -5854,7 +5858,7 @@ document.addEventListener('change', e=>{
   .mg-tab .mg-name{font-size:23px!important;font-weight:800!important}
   .mg-tab .mg-sub{display:none!important}
   .mg-tab tbody>tr>td.mg-num{word-break:normal!important;overflow-wrap:normal!important;white-space:nowrap;font-size:19px!important;font-weight:800!important}
-  .mg-tab tbody>tr>td:nth-child(3)::before{content:'·';margin-right:8px;color:var(--muted);font-weight:400}
+  .mg-tab .mg-lab{display:block;font-size:14px!important;font-weight:600!important;color:var(--muted)!important;letter-spacing:0;margin-bottom:1px}
   .mg-tab .mg-docs{justify-content:flex-start;margin-top:4px}
   .mg-tab tbody>tr>td.mg-dtd{grid-column:1/5;grid-row:3}
   .mg-tab tbody>tr>td[colspan]{grid-column:1/5;grid-row:auto;display:block}
