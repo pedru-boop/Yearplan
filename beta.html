@@ -630,7 +630,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.13-beta23</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.13-beta24</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -648,7 +648,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta23 · อัปเดต 13 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta24 · อัปเดต 13 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -2131,15 +2131,16 @@ function renderManageAgentsTab(){
         const dash = '<span style="color:var(--muted);">—</span>';
         return `<tr style="border-bottom:${editing?'none':'1px solid #123F6B14'};vertical-align:top;${r.st.rank===0?'background:#FFF8EC;':''}">
           <td data-go-agent="${esc(r.name)}" data-go-tab="competitions" style="padding:8px 4px;cursor:pointer;min-width:84px;">
-            <div class="mg-name" style="font-weight:700;color:${r.isCurrent?'#0B6B3A':'var(--navy)'};font-size:14px;line-height:1.3;">${r.isCurrent?'▶ ':''}${esc(r.name)}</div>
+            <div class="mg-name" style="font-weight:700;color:${r.isCurrent?'#0B6B3A':'var(--navy)'};line-height:1.3;">${r.isCurrent?'▶ ':''}${esc(r.name)}</div>
             <div class="mg-sub" style="font-size:11px;color:var(--muted);">FYC <b>${THB(r.yearFyc)}</b></div>
           </td>
           <td class="mg-num" style="padding:8px 4px;font-weight:600;word-break:break-all;">${esc(r.lic.agentCode)||dash}</td>
           <td class="mg-num" style="padding:8px 4px;font-weight:600;word-break:break-all;">${esc(r.lic.cardNumber)||dash}</td>
-          <td style="padding:8px 4px;white-space:nowrap;">${r.st.short}${licNeedsRenew(r.lic.cardExpiryDate)?`<label class="mg-docs ${licDocsSent(r.lic)?'on':''}"><input type="checkbox" data-docs-sent="${esc(r.name)}" ${licDocsSent(r.lic)?'checked':''}> ส่งเอกสารต่อบัตรแล้ว</label>`:''}</td>
+          <td style="padding:8px 4px;white-space:nowrap;">${r.st.short}</td>
           <td style="padding:4px 2px;text-align:right;">
             <button class="icon-btn" data-edit-license="${esc(r.name)}" title="แก้ไข">${editing?'✖':'📝'}</button>
           </td>
+          ${licNeedsRenew(r.lic.cardExpiryDate)?`<td class="mg-dtd"><label class="mg-docs ${licDocsSent(r.lic)?'on':''}"><input type="checkbox" data-docs-sent="${esc(r.name)}" ${licDocsSent(r.lic)?'checked':''}> ส่งเอกสารต่อบัตรแล้ว</label></td>`:''}
         </tr>
         ${editing?`<tr style="border-bottom:1px solid #123F6B14;"><td colspan="5" style="padding:0 6px 10px;">
           <div style="background:#123F6B08;border-radius:8px;padding:10px;">
@@ -3987,6 +3988,7 @@ function __renderInner(){
   bindEvents();
   if (activeSection==="um" && !activeTeamUmName) enhanceCollapsibleCards(c);
   betaLayout(c);
+  try{ tlAfterRender(c); }catch(e){ console.error(e); }
   positionOpenCalendars();
 }
 // เตือนแบ็กอัพทุก 3 วัน (เฉพาะหน้าของตัวเอง ไม่แสดงตอนดู UM คนอื่น)
@@ -6330,7 +6332,7 @@ function betaLayout(c){
     if (!list.length && G.id!=='set') wrap.innerHTML = '<div class="b-empty">ยังไม่มีข้อมูลในหมวดนี้</div>';
     sec.appendChild(wrap); frag.appendChild(sec);
   });
-  betaFlashKey = null; betaLaunch = false;
+  tlFlashPending = betaFlashKey; betaFlashKey = null; betaLaunch = false;
   c.appendChild(frag);
   bBindLayout(c, todos);
   if (!betaGaugeDone && !betaGroup && gBase>0) bGaugeAnim(pct);
@@ -6850,7 +6852,7 @@ function qzClose(){
 function qzAfterRender(){
   if (!qzKey) return;
   const L = qzLayer(); L.querySelector('.qz-inner').innerHTML='';
-  const card = document.querySelector(`#tab-content .qcard[data-qz="${qzKey}"]`);
+  const card = document.querySelector(`.qcard[data-qz="${qzKey}"]`);
   if (card){ const k=qzKey, st=L.scrollTop; qzOpen(card); qzKey=k; L.scrollTop=st; } else { L.hidden=true; qzKey=null; document.body.style.overflow=''; }
 }
 document.addEventListener('click', e=>{
@@ -7186,23 +7188,211 @@ document.addEventListener('change', e=>{
   .mg-docs.on{color:var(--good)}
   .mg-tab table,.mg-tab tbody{display:block;width:100%}
   .mg-tab thead{display:none}
-  .mg-tab tbody>tr{display:grid;grid-template-columns:auto 1fr 48px;gap:4px 12px;padding:12px 4px}
-  .mg-tab tbody>tr>td{padding:2px 4px!important;min-width:0!important}
+  .mg-tab tbody>tr{display:grid;grid-template-columns:auto 1fr auto 40px;gap:2px 10px;padding:12px 2px;align-items:start}
+  .mg-tab tbody>tr>td{padding:0 2px!important;min-width:0!important}
   .mg-tab tbody>tr>td:nth-child(1){grid-column:1/3;grid-row:1}
-  .mg-tab tbody>tr>td:nth-child(5){grid-column:3;grid-row:1}
   .mg-tab tbody>tr>td:nth-child(2){grid-column:1;grid-row:2}
-  .mg-tab tbody>tr>td:nth-child(3){grid-column:2;grid-row:2}
-  .mg-tab tbody>tr>td:nth-child(4){grid-column:1/4;grid-row:3;white-space:normal!important}
-  .mg-tab tbody>tr>td:nth-child(2)::before{content:'รหัส'}
-  .mg-tab tbody>tr>td:nth-child(3)::before{content:'เลขบัตร'}
-  .mg-tab tbody>tr>td:nth-child(4)::before{content:'บัตรหมดอายุ'}
-  .mg-tab tbody>tr>td:nth-child(n+2):nth-child(-n+4)::before{display:block;font-size:15px;font-weight:600;color:var(--muted);letter-spacing:0}
-  .mg-tab tbody>tr>td:nth-child(4) br{display:none}
-  .mg-tab tbody>tr>td:nth-child(4) span[style*="border-radius:999px"]{margin-left:8px}
-  .mg-tab tbody>tr>td.mg-num{word-break:normal!important;overflow-wrap:normal!important;white-space:nowrap}
-  .mg-tab tbody>tr>td:nth-child(n+2):nth-child(-n+4)::before{font-weight:600!important;font-size:15px!important}
-  .mg-tab tbody>tr>td[colspan]{grid-column:1/4;grid-row:auto;display:block}
-  .mg-tab tbody>tr>td[colspan]::before{content:none!important}
+  .mg-tab tbody>tr>td:nth-child(3){grid-column:2/5;grid-row:2}
+  .mg-tab tbody>tr>td:nth-child(4){grid-column:3;grid-row:1;text-align:right;white-space:nowrap}
+  .mg-tab tbody>tr>td:nth-child(4) br{display:block!important}
+  .mg-tab tbody>tr>td:nth-child(5){grid-column:4;grid-row:1}
+  .mg-tab .mg-name{font-size:23px!important;font-weight:800!important}
+  .mg-tab .mg-sub{display:none!important}
+  .mg-tab tbody>tr>td.mg-num{word-break:normal!important;overflow-wrap:normal!important;white-space:nowrap;font-size:19px!important;font-weight:800!important}
+  .mg-tab tbody>tr>td:nth-child(3)::before{content:'·';margin-right:8px;color:var(--muted);font-weight:400}
+  .mg-tab .mg-docs{justify-content:flex-start;margin-top:4px}
+  .mg-tab tbody>tr>td.mg-dtd{grid-column:1/5;grid-row:3}
+  .mg-tab tbody>tr>td[colspan]{grid-column:1/5;grid-row:auto;display:block}
+`; document.head.appendChild(s); })();
+
+
+/* ================= beta: ทุกกล่องเป็นการ์ดสี่เหลี่ยม แตะแล้วขยายเต็มจอ (แตะชื่อหัวข้อ/ลูกศรเพื่อย่อกลับ) ================= */
+const TL_COLORS = ['#45E3FF','#FFC857','#FF5B79','#43F0A8','#8B7BFF','#9FB4D8','#FF9F5B','#5BC0FF'];
+let tlOpen = null;      // { page, key, rect }
+let tlLastPage = '';
+let tlFlashUsed = null, tlFlashPending = null;
+function tlPage(){ return [activeSection, activeTab, (typeof betaGroup!=='undefined'?betaGroup:''), activeTeamUmName||'', (typeof bCompTab!=='undefined'?bCompTab:'')].join('|'); }
+function tlStrip(s){ return String(s||'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim(); }
+function tlSplitTitle(raw){
+  let t = String(raw||'').replace(/[▶▼]\s*(แตะเพื่อดู|ย่อ)/g,'').replace(/\s+/g,' ').trim();
+  const em = (t.match(/^(\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*)\s*/u)||[])[1] || '';
+  if (em) t = t.slice(t.indexOf(em)+em.length).trim();
+  let sub = '';
+  const dot = t.indexOf(' · '); if (dot>0){ sub = t.slice(dot+3); t = t.slice(0,dot); }
+  const par = t.match(/^(.*?)\s*\(([^()]*\d[^()]*)\)\s*$/); if (par && !/ผู้จัดการหน่วย|ม\.ค\.|ปี /.test(par[2])){ t = par[1]; sub = sub || par[2]; }
+  const KW = [[/รายได้/,'💰'],[/Pocket/i,'💵'],[/CAO/,'👕'],[/iPhone/i,'📱'],[/Joining/i,'🎁'],[/เพิ่มรายการ/,'➕'],[/รายการผลงาน/,'🧾'],[/เป้าหมาย/,'🎯'],[/สรุป|คำแนะนำ/,'💡'],[/Top of|รางวัล|แข่งขัน/,'🏆'],[/บัตร|อบรม/,'🪪'],[/ตัวแทน/,'👥']];
+  const em2 = em || ((KW.find(([re])=>re.test(t))||[])[1]) || '📌';
+  return { em: em2, t, sub };
+}
+function tlEvFor(title){ try{ return evList().find(ev=>ev && title.includes(ev.name)); }catch(e){ return null; } }
+function tlSum(card, title){
+  const T = THB, now = new Date(), m = (selYear===now.getFullYear()) ? now.getMonth() : 11;
+  const txt = sel=>{ const e = card.querySelector(sel); return e ? tlStrip(e.textContent) : ''; };
+  try{
+    if (activeSection==='agent'){
+      const ag = agent(), en = ag.entries||[], eff = effectiveEntries(en);
+      if (/เพิ่มรายการผลงาน/.test(title)) return 'แตะเพื่อบันทึกผลงานใหม่';
+      if (/รายการผลงาน/.test(title)){ const yr = en.filter(e=>D(e.date).getFullYear()===selYear && isOrigin(e)); return `${yr.length} ราย · FYC ปีนี้ <b>${T(eff.filter(e=>D(e.date).getFullYear()===selYear).reduce((s,e)=>s+e.fyc,0))}</b>`; }
+      if (/ผลงานรายเดือน/.test(title)) return `${THAI_MONTH_NAMES[m]} FYC <b>${T(mEff(en, selYear, m))}</b><br>ทั้งปี <b>${T(eff.filter(e=>D(e.date).getFullYear()===selYear).reduce((s,e)=>s+e.fyc,0))}</b>`;
+      if (/ถ้างานรอพิจารณา/.test(title)){ const p = en.filter(e=>e.pending && isOrigin(e)); return `รออนุมัติ <b class="warn">${p.length}</b> ราย · FYC ${T(p.reduce((s,e)=>s+e.fyc,0))}`; }
+      if (/รายได้รวม/.test(title)){ const v = txt('.mono'); return v ? `รวม <b>${v}</b>` : ''; }
+      if (/ตั้งเป้าหมาย/.test(title)){ try{ const g = getAgentTargetFYC(state.currentAgent, selYear); return g>0 ? `เป้า FYC <b>${T(g)}</b>` : 'ยังไม่ตั้งเป้า'; }catch(e){ return ''; } }
+      if (/Road to Beijing/.test(title)){ const v = eventValue ? eventValue(eff, rbEvent()) : 0; const nm = rbStageName(v, rbEvent(), false); return `FYC <b>${T(v)}</b>${nm?`<br><span class="ok">${nm}</span>`:''}`; }
+      const ev = tlEvFor(title);
+      if (ev){ const v = eventValue(eff, ev), p = evProg(v, ev); return `${evUnit(ev)} <b>${T(v)}</b><br>${p.ok?`<span class="ok">${tlStrip(p.label)}</span>`:tlStrip(evNextTxt(p, ev)).slice(0,40)}`; }
+      if (/Joining/.test(title)) return 'ตัวแทนใหม่ 4 เดือนแรก';
+    }
+    if (/Road to Beijing/.test(title)){ const n = txt('.rb-note'); if (n) return n.slice(0,48); }
+    if (/เป้าหมายของ UM/.test(title)){ const S = betaSum||{}; return S.annualGoal>0 ? `เป้าปี <b>${Math.round(S.annualPct||0)}%</b> · CFYC ${T(S.annualAchieved)}` : `CFYC ปีนี้ <b>${T((S||{}).annualAchieved)}</b>`; }
+    if (/การแข่งขันระดับ UM|การแข่งขันของตัวแทน/.test(title)){ const a = evList().filter(ev=>{ const [s,e]=evRange(ev); return now>=s && now<=e; }); return `กำลังแข่ง <b>${a.length}</b> รายการ`; }
+  }catch(e){}
+  return '';
+}
+function tlLayer(){
+  let L = document.getElementById('tl-layer');
+  if (!L){
+    L = document.createElement('div'); L.id = 'tl-layer'; L.hidden = true;
+    L.innerHTML = '<div class="tl-panel"><button type="button" class="tl-head" data-tl-close><span class="tl-ic"></span><span class="tl-t"></span><span class="tl-ar" aria-label="ย่อกลับ">▲</span></button><div class="tl-body"></div></div>';
+    document.body.appendChild(L);
+    L.addEventListener('click', e=>{
+      if (e.target.closest('[data-tl-close]')){ e.preventDefault(); e.stopPropagation(); tlClose(); return; }
+      const h = e.target.closest('.tl-body h3');
+      if (h){ const cd = L.querySelector('.tl-body > *'), fh = cd && cd.querySelector('h3'); if (h===fh && !e.target.closest('button,input,select,a,label,[data-poster-open]')){ e.preventDefault(); e.stopPropagation(); tlClose(); } }
+    }, true);
+  }
+  return L;
+}
+function tlCollapseCard(n){
+  if (!n) return;
+  const tb = n.querySelector && n.querySelector('[data-toggle-box]');
+  if (tb){ collapsedBoxes[tb.dataset.toggleBox] = true; return; }
+  const h = n.querySelector && n.querySelector('h3'); if (!h) return;
+  const x = h.cloneNode(true); x.querySelectorAll('.gc-ind').forEach(e=>e.remove());
+  try{ genericCollapsed[gcKey(x)] = true; }catch(e){}
+}
+function tlCalm(){ try{ return bCalm(); }catch(e){ return false; } }
+function tlOpenTile(tile, card){
+  tlOpen = { page: tlPage(), key: tile.dataset.tlKey, rect: tile.getBoundingClientRect(), anim: true };
+  try{ bOpenCard(card); }catch(e){}
+  render();
+}
+function tlClose(){
+  const L = document.getElementById('tl-layer'); if (!L || L.hidden){ tlOpen = null; return; }
+  const key = tlOpen && tlOpen.key, card = L.querySelector('.tl-body > *');
+  const finish = ()=>{ L.hidden = true; L.classList.remove('closing'); L.querySelector('.tl-body').innerHTML=''; document.body.style.overflow=''; tlOpen = null; tlCollapseCard(card); render();
+    const tile = document.querySelector(`.b-tdeck [data-tl-key="${CSS.escape(key||'')}"]`); if (tile && !tlCalm()){ tile.classList.add('tl-back'); setTimeout(()=>tile.classList.remove('tl-back'), 500); } };
+  const tile = document.querySelector(`.b-tdeck [data-tl-key="${CSS.escape(key||'')}"]`);
+  document.querySelectorAll('.b-tdeck').forEach(d=>d.classList.remove('dim'));
+  if (tlCalm() || !tile){ finish(); return; }
+  const P = L.querySelector('.tl-panel'), r = tile.getBoundingClientRect();
+  L.classList.add('closing');
+  P.style.transition = 'transform .38s cubic-bezier(.4,0,.2,1), border-radius .38s, opacity .38s';
+  P.style.transform = `translate(${r.left}px,${r.top}px) scale(${r.width/innerWidth},${r.height/innerHeight})`;
+  P.style.borderRadius = '60px'; P.style.opacity = '.2';
+  setTimeout(finish, 380);
+}
+function tlShow(item, tile, anim){
+  const L = tlLayer(), P = L.querySelector('.tl-panel'), B = L.querySelector('.tl-body');
+  const st = L.hidden ? 0 : P.scrollTop;
+  const sp = tlSplitTitle(tile.dataset.tlTitle);
+  L.querySelector('.tl-ic').textContent = sp.em || '📦'; L.querySelector('.tl-t').textContent = sp.t;
+  L.querySelector('.tl-head').style.setProperty('--c', tile.style.getPropertyValue('--c'));
+  B.innerHTML = ''; B.appendChild(item);
+  L.hidden = false; document.body.style.overflow = 'hidden';
+  tile.closest('.b-tdeck').classList.add('dim');
+  P.style.transition = 'none'; P.style.transform = ''; P.style.opacity = ''; P.style.borderRadius = '';
+  if (anim && !tlCalm() && tlOpen && tlOpen.rect){
+    const r = tlOpen.rect;
+    P.style.transform = `translate(${r.left}px,${r.top}px) scale(${r.width/innerWidth},${r.height/innerHeight})`;
+    P.style.borderRadius = '60px'; P.style.opacity = '.3'; B.style.opacity = '0';
+    P.getBoundingClientRect();
+    requestAnimationFrame(()=>{ P.style.transition = 'transform .42s cubic-bezier(.2,.9,.25,1.05), border-radius .42s, opacity .3s'; P.style.transform = 'none'; P.style.borderRadius = '0'; P.style.opacity = '1'; B.style.transition = 'opacity .3s .18s'; B.style.opacity = '1'; });
+    P.scrollTop = 0;
+  } else { B.style.transition='none'; B.style.opacity = '1'; P.scrollTop = st; }
+  tlOpen.anim = false;
+}
+// สร้างการ์ดจากกล่อง: items = [{ el:ตัวที่ซ่อน, card:กล่องจริง, key }]
+function tlBuild(host, items, pid){
+  if (!items.length) return;
+  const stash = document.createElement('div'); stash.className = 'tl-stash'; stash.hidden = true;
+  const deck = document.createElement('div'); deck.className = 'b-deck b-tdeck';
+  const enter = pid !== tlLastPage;
+  if (enter && !tlCalm()) deck.classList.add('enter');
+  items.forEach((it,i)=>{
+    const raw = (it.card.querySelector('h3') ? bH3Text(it.card.querySelector('h3')) : (it.card.querySelector('.title')||it.card).textContent) || '';
+    const sp = tlSplitTitle(raw);
+    const sum = tlSum(it.card, raw) || (sp.sub ? esc(sp.sub) : '<span style="opacity:.7">แตะเพื่อดู</span>');
+    const w = document.createElement('div'); w.className = 'b-podw'; w.style.setProperty('--i', i);
+    const c = TL_COLORS[i % TL_COLORS.length];
+    w.innerHTML = `<div class="b-pod b-tile" role="button" tabindex="0" data-tl-key="${esc(it.key)}" data-tl-title="${esc(raw)}" style="--c:${c}"><div class="b-orb"><span class="tl-em">${esc(sp.em||'📦')}</span></div><div class="b-pname">${esc(sp.t)}</div><div class="b-pval">${sum}</div></div>`;
+    w.firstChild._tl = it;
+    deck.appendChild(w);
+    stash.appendChild(it.el);
+  });
+  host.appendChild(deck); host.appendChild(stash);
+  deck.addEventListener('click', e=>{ const t = e.target.closest('.b-tile'); if (!t) return; e.preventDefault(); tlOpenTile(t, t._tl.card); });
+  deck.addEventListener('keydown', e=>{ if ((e.key==='Enter'||e.key===' ') && e.target.classList.contains('b-tile')){ e.preventDefault(); tlOpenTile(e.target, e.target._tl.card); } });
+  return deck;
+}
+function tlAfterRender(c){
+  const pid = tlPage();
+  if (tlOpen && tlOpen.page !== pid) tlOpen = null;
+  const L = document.getElementById('tl-layer');
+  let decks = [];
+  if (!(typeof betaArr!=='undefined' && betaArr)){
+    if (activeSection==='um' && !activeTeamUmName){
+      const sec = typeof betaGroup!=='undefined' && betaGroup && betaGroup!=='set' ? c.querySelector(`.b-grp[data-g="${betaGroup}"]`) : null;
+      const list = sec && sec.querySelector('[data-b-list]');
+      if (list){
+        const items = Array.from(list.querySelectorAll(':scope > .b-citem')).filter(x=>!x.hidden).map(x=>({ el:x, card:x.querySelector('.b-gcard')||x.lastElementChild, key:x.dataset.k }));
+        const d = tlBuild(list, items, pid); if (d) decks.push(d);
+        if (tlFlashPending && !tlOpen){ const k = tlFlashPending; tlFlashPending = null; const t = list.querySelector(`[data-tl-key="${CSS.escape(k)}"]`); if (t){ tlOpen = { page:pid, key:k, rect:t.getBoundingClientRect(), anim:true }; } }
+      }
+    } else if (activeSection!=='manage'){
+      const kids = Array.from(c.children).filter(el=>el.nodeType===1 && !el.classList.contains('ask-card') && !(el.querySelector && el.querySelector('#btn-backup-now')));
+      const cards = kids.filter(el=>el.classList.contains('card') || el.classList.contains('hist-box') || (el.querySelector && el.querySelector(':scope > h3') && el.tagName==='DIV'));
+      const items = cards.map(el=>({ el, card:el, key: bCardKey(el) }));
+      const holder = document.createElement('div'); holder.className = 'tl-host';
+      const first = cards[0];
+      if (first){ first.before(holder); kids.filter(el=>!cards.includes(el)).forEach(el=>{ if (!/^(H2|H3|P)$/.test(el.tagName) && !el.classList.contains('comp-upcoming')) return; el.remove(); }); const d = tlBuild(holder, items, pid); if (d) decks.push(d); }
+    }
+  }
+  tlLastPage = pid;
+  if (tlOpen){
+    const tile = document.querySelector(`.b-tdeck [data-tl-key="${CSS.escape(tlOpen.key)}"]`);
+    if (tile){ tlShow(tile._tl.card, tile, tlOpen.anim); return; }
+    tlOpen = null;
+  }
+  if (L && !L.hidden){ L.hidden = true; L.querySelector('.tl-body').innerHTML=''; document.body.style.overflow=''; }
+}
+document.addEventListener('keydown', e=>{ if (e.key==='Escape' && tlOpen && !(typeof qzKey!=='undefined' && qzKey)) tlClose(); });
+(function(){ const s = document.createElement('style'); s.textContent = `
+  .b-tdeck{margin:6px 0 18px}
+  .b-tile{min-height:150px}
+  .b-tile .b-orb{background:radial-gradient(circle at 32% 28%,#fff8,transparent 42%),var(--c)}
+  .b-tile .tl-em{font-size:26px;line-height:1;filter:drop-shadow(0 1px 1px #0005)}
+  .b-tile .b-pname{font-size:18.5px;overflow-wrap:anywhere}
+  .b-tile .b-pval{font-size:15.5px}
+  .b-tdeck.enter .b-pod{animation:tlpop .5s cubic-bezier(.2,1.5,.4,1) both;animation-delay:calc(var(--i,0)*55ms)}
+  @keyframes tlpop{0%{opacity:0;transform:scale(.55) translateY(24px)}100%{opacity:1;transform:none}}
+  .b-tdeck .b-pod{transition:transform .4s cubic-bezier(.2,.9,.25,1),opacity .4s,filter .4s}
+  .b-tdeck.dim .b-pod{transform:scale(.82)!important;opacity:.25;filter:blur(1.5px)}
+  .b-tile.tl-back{animation:tlback .45s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes tlback{0%{transform:scale(1.08)}100%{transform:none}}
+  #tl-layer{position:fixed;inset:0;z-index:90;background:rgba(3,6,15,.55);backdrop-filter:blur(3px)}
+  #tl-layer[hidden]{display:none!important}
+  #tl-layer.closing{background:transparent;backdrop-filter:none}
+  #tl-layer .tl-panel{position:absolute;inset:0;overflow:auto;-webkit-overflow-scrolling:touch;transform-origin:0 0;background:var(--b-bg,#060B1C);padding:0 10px calc(40px + env(safe-area-inset-bottom,0px))}
+  html[data-mode="light"] #tl-layer .tl-panel{background:#EEF3FA}
+  #tl-layer .tl-head{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:12px;width:calc(100% + 20px);margin:0 -10px 12px;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 14px;border:0;border-bottom:2px solid var(--c,#45E3FF);background:rgba(6,11,28,.94);backdrop-filter:blur(8px);color:#fff;text-align:left;cursor:pointer;font-family:var(--b-display,'Mali'),sans-serif}
+  html[data-mode="light"] #tl-layer .tl-head{background:rgba(255,255,255,.95);color:#0B2D5C}
+  #tl-layer .tl-ic{width:46px;height:46px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:24px;background:radial-gradient(circle at 32% 28%,#fff8,transparent 42%),var(--c,#45E3FF)}
+  #tl-layer .tl-t{flex:1;min-width:0;font-size:21px;font-weight:700;line-height:1.25}
+  #tl-layer .tl-ar{flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:22px;background:#ffffff1f;border:1px solid #ffffff40}
+  html[data-mode="light"] #tl-layer .tl-ar{background:#0B2D5C14;border-color:#0B2D5C33}
+  #tl-layer .tl-body > *{margin-top:0}
+  #tl-layer .tl-body .gc-ind{display:none!important}
+  #tl-layer .tl-body > .card > h3:first-of-type,#tl-layer .tl-body > .b-gcard > h3:first-of-type{cursor:pointer}
 `; document.head.appendChild(s); })();
 
 /* ================= Road to Beijing: Kick Off → Regional → ปักกิ่ง รวมเป็นแถบเดียว (ผลงาน 28 ส.ค.–30 พ.ย. 69) ================= */

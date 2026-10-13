@@ -281,7 +281,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.13-1</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.13-2</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -299,7 +299,7 @@
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.13-1 · อัปเดต 13 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.13-2 · อัปเดต 13 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -1605,15 +1605,16 @@ function renderManageAgentsTab(){
         const dash = '<span style="color:var(--muted);">—</span>';
         return `<tr style="border-bottom:${editing?'none':'1px solid #123F6B14'};vertical-align:top;${r.st.rank===0?'background:#FFF8EC;':''}">
           <td data-switch-agent="${esc(r.name)}" style="padding:8px 4px;cursor:pointer;min-width:84px;">
-            <div class="mg-name" style="font-weight:700;color:${r.isCurrent?'var(--gold-soft)':'var(--navy)'};font-size:14px;line-height:1.3;">${r.isCurrent?'▶ ':''}${esc(r.name)}</div>
+            <div class="mg-name" style="font-weight:700;color:${r.isCurrent?'#0B6B3A':'var(--navy)'};line-height:1.3;">${r.isCurrent?'▶ ':''}${esc(r.name)}</div>
             <div class="mg-sub" style="font-size:11px;color:var(--muted);">FYC <b>${THB(r.yearFyc)}</b></div>
           </td>
           <td class="mg-num" style="padding:8px 4px;font-weight:600;word-break:break-all;">${esc(r.lic.agentCode)||dash}</td>
           <td class="mg-num" style="padding:8px 4px;font-weight:600;word-break:break-all;">${esc(r.lic.cardNumber)||dash}</td>
-          <td style="padding:8px 4px;white-space:nowrap;">${r.st.short}${licNeedsRenew(r.lic.cardExpiryDate)?`<label class="mg-docs ${licDocsSent(r.lic)?'on':''}"><input type="checkbox" data-docs-sent="${esc(r.name)}" ${licDocsSent(r.lic)?'checked':''}> ส่งเอกสารต่อบัตรแล้ว</label>`:''}</td>
+          <td style="padding:8px 4px;white-space:nowrap;">${r.st.short}</td>
           <td style="padding:4px 2px;text-align:right;">
             <button class="icon-btn" data-edit-license="${esc(r.name)}" title="แก้ไข">${editing?'✖':'📝'}</button>
           </td>
+          ${licNeedsRenew(r.lic.cardExpiryDate)?`<td class="mg-dtd"><label class="mg-docs ${licDocsSent(r.lic)?'on':''}"><input type="checkbox" data-docs-sent="${esc(r.name)}" ${licDocsSent(r.lic)?'checked':''}> ส่งเอกสารต่อบัตรแล้ว</label></td>`:''}
         </tr>
         ${editing?`<tr style="border-bottom:1px solid #123F6B14;"><td colspan="5" style="padding:0 6px 10px;">
           <div style="background:#123F6B08;border-radius:8px;padding:10px;">
@@ -5866,23 +5867,21 @@ document.addEventListener('change', e=>{
   .mg-docs.on{color:var(--good)}
   .mg-tab table,.mg-tab tbody{display:block;width:100%}
   .mg-tab thead{display:none}
-  .mg-tab tbody>tr{display:grid;grid-template-columns:auto 1fr 48px;gap:4px 12px;padding:12px 4px}
-  .mg-tab tbody>tr>td{padding:2px 4px!important;min-width:0!important}
+  .mg-tab tbody>tr{display:grid;grid-template-columns:auto 1fr auto 40px;gap:2px 10px;padding:12px 2px;align-items:start}
+  .mg-tab tbody>tr>td{padding:0 2px!important;min-width:0!important}
   .mg-tab tbody>tr>td:nth-child(1){grid-column:1/3;grid-row:1}
-  .mg-tab tbody>tr>td:nth-child(5){grid-column:3;grid-row:1}
   .mg-tab tbody>tr>td:nth-child(2){grid-column:1;grid-row:2}
-  .mg-tab tbody>tr>td:nth-child(3){grid-column:2;grid-row:2}
-  .mg-tab tbody>tr>td:nth-child(4){grid-column:1/4;grid-row:3;white-space:normal!important}
-  .mg-tab tbody>tr>td:nth-child(2)::before{content:'รหัส'}
-  .mg-tab tbody>tr>td:nth-child(3)::before{content:'เลขบัตร'}
-  .mg-tab tbody>tr>td:nth-child(4)::before{content:'บัตรหมดอายุ'}
-  .mg-tab tbody>tr>td:nth-child(n+2):nth-child(-n+4)::before{display:block;font-size:15px;font-weight:600;color:var(--muted);letter-spacing:0}
-  .mg-tab tbody>tr>td:nth-child(4) br{display:none}
-  .mg-tab tbody>tr>td:nth-child(4) span[style*="border-radius:999px"]{margin-left:8px}
-  .mg-tab tbody>tr>td.mg-num{word-break:normal!important;overflow-wrap:normal!important;white-space:nowrap}
-  .mg-tab tbody>tr>td:nth-child(n+2):nth-child(-n+4)::before{font-weight:600!important;font-size:15px!important}
-  .mg-tab tbody>tr>td[colspan]{grid-column:1/4;grid-row:auto;display:block}
-  .mg-tab tbody>tr>td[colspan]::before{content:none!important}
+  .mg-tab tbody>tr>td:nth-child(3){grid-column:2/5;grid-row:2}
+  .mg-tab tbody>tr>td:nth-child(4){grid-column:3;grid-row:1;text-align:right;white-space:nowrap}
+  .mg-tab tbody>tr>td:nth-child(4) br{display:block!important}
+  .mg-tab tbody>tr>td:nth-child(5){grid-column:4;grid-row:1}
+  .mg-tab .mg-name{font-size:23px!important;font-weight:800!important}
+  .mg-tab .mg-sub{display:none!important}
+  .mg-tab tbody>tr>td.mg-num{word-break:normal!important;overflow-wrap:normal!important;white-space:nowrap;font-size:19px!important;font-weight:800!important}
+  .mg-tab tbody>tr>td:nth-child(3)::before{content:'·';margin-right:8px;color:var(--muted);font-weight:400}
+  .mg-tab .mg-docs{justify-content:flex-start;margin-top:4px}
+  .mg-tab tbody>tr>td.mg-dtd{grid-column:1/5;grid-row:3}
+  .mg-tab tbody>tr>td[colspan]{grid-column:1/5;grid-row:auto;display:block}
 `; document.head.appendChild(s); })();
 
 /* ================= Road to Beijing: Kick Off → Regional → ปักกิ่ง รวมเป็นแถบเดียว (ผลงาน 28 ส.ค.–30 พ.ย. 69) ================= */
