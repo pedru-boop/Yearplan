@@ -281,7 +281,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.13-2</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.13-3</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -299,7 +299,7 @@
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.13-2 · อัปเดต 13 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.13-3 · อัปเดต 13 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -1576,8 +1576,9 @@ function renderManageAgentsTab(){
     const effEntries = effectiveEntries(ag.entries);
     const yearFyc = effEntries.filter(e=>D(e.date).getFullYear()===selYear).reduce((s,e)=>s+e.fyc,0);
     const originCount = effEntries.filter(e=>D(e.date).getFullYear()===selYear && isOrigin(e)).length;
-    return { name, lic, yearFyc, originCount, isCurrent: name===state.currentAgent, st: licenseStatus(lic.cardExpiryDate, lic) };
+    return { name, lic, yearFyc, originCount, isCurrent: name===state.currentAgent, st: licenseStatus(lic.cardExpiryDate, lic), urgent: licNeedsRenew(lic.cardExpiryDate) && !licDocsSent(lic) };
   }).sort((a,b)=>{
+    if (a.urgent!==b.urgent) return a.urgent?-1:1;
     // บัตรหมดอายุใกล้สุดอยู่บน (รวมที่หมดแล้ว) — ยังไม่ระบุวันหมดอายุไว้ล่างสุด
     const ea=a.lic.cardExpiryDate, eb=b.lic.cardExpiryDate;
     if (ea && eb) return ea<eb?-1:ea>eb?1:0;
@@ -1600,12 +1601,12 @@ function renderManageAgentsTab(){
           <th style="padding:8px 2px;"></th>
         </tr></thead>
         <tbody>
-      ${rows.map(r=>{
+      ${rows.map((r,ri)=>{
         const enc = encodeURIComponent(r.name), editing = editLicenseAgent===r.name;
         const dash = '<span style="color:var(--muted);">—</span>';
-        return `<tr style="border-bottom:${editing?'none':'1px solid #123F6B14'};vertical-align:top;${r.st.rank===0?'background:#FFF8EC;':''}">
+        return `<tr class="${r.urgent?'mg-urgent':''} ${ri%2?'mg-alt':'mg-row0'}" style="border-bottom:${editing?'none':'1px solid #123F6B14'};vertical-align:top;${r.st.rank===0?'background:#FFF8EC;':''}">
           <td data-switch-agent="${esc(r.name)}" style="padding:8px 4px;cursor:pointer;min-width:84px;">
-            <div class="mg-name" style="font-weight:700;color:${r.isCurrent?'#0B6B3A':'var(--navy)'};line-height:1.3;">${r.isCurrent?'▶ ':''}${esc(r.name)}</div>
+            <div class="mg-name" style="font-weight:700;color:${r.isCurrent?'#0B6B3A':'var(--navy)'};line-height:1.3;">${r.isCurrent?'▶ ':''}${esc(r.name)}</div>${r.urgent?'<span class=\"mg-urg\">⚠ เร่งด่วน</span>':''}
             <div class="mg-sub" style="font-size:11px;color:var(--muted);">FYC <b>${THB(r.yearFyc)}</b></div>
           </td>
           <td class="mg-num" style="padding:8px 4px;font-weight:600;word-break:break-all;">${esc(r.lic.agentCode)||dash}</td>
@@ -5570,7 +5571,7 @@ function posterStripHtml(){
   const act = posterList.filter(p=>posterActive(p) && !tIsTraining(p)).sort((a,b)=>(a.end||'9999').localeCompare(b.end||'9999'));
   if (!act.length) return '';
   const files = esc(act.map(p=>p.file).join('|'));
-  return `<div class="t-head"><h2>🏆 โปสเตอร์ & โปร</h2><span>ปัดดูต่อ · แตะดูเต็มจอ</span></div>
+  return `<div class="t-head"><h2>🏆 โปรโมชั่นประจำเดือน</h2><span>ปัดดูต่อ · แตะดูเต็มจอ</span></div>
     <div class="p-strip">${act.map((p,i)=>{ const d=posterDaysLeft(p); return `<button type="button" class="p-card" data-poster-open="${files}" data-poster-i="${i}">
       <img src="${esc(pSrc(p))}" loading="lazy" alt="โปสเตอร์ ${esc(p.title||'')}">
       <span class="t">${esc(p.title||'')}</span>
@@ -5882,6 +5883,13 @@ document.addEventListener('change', e=>{
   .mg-tab .mg-docs{justify-content:flex-start;margin-top:4px}
   .mg-tab tbody>tr>td.mg-dtd{grid-column:1/5;grid-row:3}
   .mg-tab tbody>tr>td[colspan]{grid-column:1/5;grid-row:auto;display:block}
+  .mg-tab tbody>tr{border-radius:14px;margin:8px 0;border:1.5px solid #123F6B22!important}
+  .mg-tab tbody>tr.mg-row0{background:#FFFFFF!important}
+  .mg-tab tbody>tr.mg-alt{background:#E3EEFF!important}
+  .mg-tab tbody>tr.mg-urgent{border:3px solid #D93025!important;background:#FFF0EE!important;box-shadow:0 0 0 4px #D9302520}
+  .mg-tab tbody>tr:has(>td[colspan]){border:0!important;background:transparent!important;margin-top:-6px}
+  .mg-tab .mg-name{white-space:nowrap}
+  .mg-urg{white-space:nowrap;display:inline-block;margin-top:4px;background:#D93025;color:#fff;font-size:14px;font-weight:800;padding:2px 9px;border-radius:999px}
 `; document.head.appendChild(s); })();
 
 /* ================= Road to Beijing: Kick Off → Regional → ปักกิ่ง รวมเป็นแถบเดียว (ผลงาน 28 ส.ค.–30 พ.ย. 69) ================= */
