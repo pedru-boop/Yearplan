@@ -630,7 +630,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.13-beta27</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.13-beta28</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -648,7 +648,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta27 · อัปเดต 13 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta28 · อัปเดต 13 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -3964,7 +3964,7 @@ function __renderInner(){
   bindEvents();
   if (activeSection==="um" && !activeTeamUmName) enhanceCollapsibleCards(c);
   betaLayout(c);
-  try{ tlAfterRender(c); }catch(e){ console.error(e); try{ showToast('การ์ดเปิดไม่ได้: '+(e && e.message || e)); }catch(_){} }
+  try{ tlAfterRender(c); }catch(e){ console.error(e); if (tlDiag) tlDiag.err = 'tlAfterRender: '+(e && e.message || e); try{ showToast('การ์ดเปิดไม่ได้: '+(e && e.message || e)); }catch(_){} }
   positionOpenCalendars();
 }
 // เตือนแบ็กอัพทุก 3 วัน (เฉพาะหน้าของตัวเอง ไม่แสดงตอนดู UM คนอื่น)
@@ -4361,7 +4361,6 @@ function renderGoalsTab(){
       </div>
     </div>
 
-    ${renderInsightsSection(agent().entries, selYear, pacing)}
 
     <div class="foot-note">* เป้าหมายคำนวณจากตารางเงินรางวัลตัวแทนรายปีเท่านั้น เป็นเพียงตัวช่วยวางแผน ไม่ใช่ยอดจ่ายจริงจากบริษัท</div>
   `;
@@ -7195,6 +7194,38 @@ const TL_COLORS = ['#45E3FF','#FFC857','#FF5B79','#43F0A8','#8B7BFF','#9FB4D8','
 let tlOpen = null;          // { page, path:[key], rects:[{...}], anim:[bool] }
 let tlReg = {};             // key -> { key,title,em,sum,el,kids,color }
 let tlLastPage = '', tlFlashPending = null, tlGhostUntil = 0, tlTapAt = 0;
+// เปิดการ์ด: จับการแตะที่ระดับหน้าต่าง และจำการ์ดด้วย "ชื่อ" ไม่ใช่ตัวกล่อง —
+// ถ้าระหว่างแตะมีการวาดหน้าใหม่ (เช่นช่องกรอกที่โฟกัสอยู่หลุดโฟกัสแล้วบันทึก) การแตะก็ยังเปิดการ์ดได้
+let tlDown = null, tlFired = 0;
+function tlTileAt(x, y, tgt){
+  let t = tgt && tgt.closest ? tgt.closest('.b-tdeck .b-tile') : null;
+  if (!t && document.elementFromPoint){ const el = document.elementFromPoint(x, y); t = el && el.closest ? el.closest('.b-tdeck .b-tile') : null; }
+  return t;
+}
+function tlFindTile(key){
+  const sel = `.b-tdeck .b-tile[data-tl-key="${CSS.escape(key)}"]`;
+  const layers = Array.from(document.querySelectorAll('.tl-layer:not([hidden])')).sort((a,b)=>(+b.id.split('-').pop())-(+a.id.split('-').pop()));
+  for (const L of layers){ const t = L.querySelector(sel); if (t) return t; }
+  return document.querySelector('#tab-content ' + sel);
+}
+function tlDownAt(x, y, tgt){ const t = tlTileAt(x, y, tgt); tlDown = t ? { key: t.dataset.tlKey, x, y, at: Date.now() } : null; }
+function tlUpAt(x, y, tgt, ev){
+  const d = tlDown; tlDown = null;
+  if (!d || Date.now()-d.at > 1500 || Math.abs(x-d.x)+Math.abs(y-d.y) > 14) return false;
+  if (Date.now()-tlFired < 700) return true;
+  const t = tlTileAt(x, y, tgt);
+  if (t && t.dataset.tlKey !== d.key) return false;
+  const tile = t && t.isConnected ? t : tlFindTile(d.key); if (!tile) return false;
+  tlFired = Date.now(); tlGhostUntil = tlFired + 650;
+  if (ev && ev.cancelable) ev.preventDefault();
+  tlTap(d.key, tile);
+  return true;
+}
+window.addEventListener('pointerdown', e=>{ if (e.isPrimary!==false) tlDownAt(e.clientX, e.clientY, e.target); }, true);
+window.addEventListener('pointerup', e=>{ if (e.isPrimary!==false) tlUpAt(e.clientX, e.clientY, e.target, e); }, true);
+window.addEventListener('touchstart', e=>{ const p = e.touches[0]; if (p && !tlDown) tlDownAt(p.clientX, p.clientY, e.target); }, { capture:true, passive:true });
+window.addEventListener('touchend', e=>{ const p = e.changedTouches[0]; if (p && tlDown) tlUpAt(p.clientX, p.clientY, e.target, e); }, { capture:true, passive:false });
+window.addEventListener('click', e=>{ if (Date.now() < tlGhostUntil) return; const t = e.target && e.target.closest ? e.target.closest('.b-tdeck .b-tile') : null; if (!t) return; e.preventDefault(); e.stopPropagation(); if (Date.now()-tlFired < 700) return; tlFired = Date.now(); tlTap(t.dataset.tlKey, t); }, true);
 window.addEventListener('error', e=>{ if (Date.now()-tlTapAt < 2500 && !/ResizeObserver/.test(e.message||'')) try{ showToast('การ์ดเปิดไม่ได้: '+(e.message||'')+' (บรรทัด '+(e.lineno||'?')+')'); }catch(_){} });
 // หลังเปิดการ์ดด้วยการยกนิ้ว เบราว์เซอร์จะส่ง click ตามมาที่จุดเดิม (ซึ่งตอนนี้เป็นหน้าการ์ดที่เพิ่งเปิด) — กลืนทิ้ง ไม่ให้ไปกดปุ่มย่อหรือปุ่มข้างใน
 window.addEventListener('click', e=>{ if (Date.now() < tlGhostUntil){ e.preventDefault(); e.stopImmediatePropagation(); tlGhostUntil = 0; } }, true);
@@ -7257,16 +7288,6 @@ function tlTileHtml(it, i){
 function tlDeck(items, cls){
   const d = document.createElement('div'); d.className = 'b-deck b-tdeck ' + (cls||'');
   d.innerHTML = items.map(tlTileHtml).join('');
-  // เปิดด้วยการยกนิ้ว (pointerup) เป็นหลัก — บน iPad/iPhone บางรุ่น click ไม่ถูกส่งมาที่การ์ดที่มีเอฟเฟกต์ 3 มิติ
-  let down = null, fired = 0;
-  d.addEventListener('pointerdown', e=>{ const t = e.target.closest('.b-tile'); down = t ? { t, x:e.clientX, y:e.clientY, at:Date.now() } : null; });
-  d.addEventListener('pointerup', e=>{ const t = e.target.closest('.b-tile') || (down && down.t); if (!down || !t || t!==down.t) { down = null; return; } const moved = Math.abs(e.clientX-down.x)+Math.abs(e.clientY-down.y); down = null; if (moved>14) return; fired = Date.now(); tlGhostUntil = fired + 650; e.preventDefault(); tlTap(t.dataset.tlKey, t); });
-  d.addEventListener('pointercancel', ()=>{ down = null; });
-  // สำรองสำหรับ iPad/iPhone: ถ้า pointer ไม่มา ใช้ touchend แทน
-  let tdown = null;
-  d.addEventListener('touchstart', e=>{ const t = e.target.closest && e.target.closest('.b-tile'), p = e.touches[0]; tdown = (t && p) ? { t, x:p.clientX, y:p.clientY } : null; }, { passive:true });
-  d.addEventListener('touchend', e=>{ const p = e.changedTouches[0]; if (!tdown || !p) return; const t = tdown.t, moved = Math.abs(p.clientX-tdown.x)+Math.abs(p.clientY-tdown.y); tdown = null; if (moved>14 || Date.now()-fired < 700) return; fired = Date.now(); tlGhostUntil = fired + 650; if (e.cancelable) e.preventDefault(); tlTap(t.dataset.tlKey, t); }, { passive:false });
-  d.addEventListener('click', e=>{ const t = e.target.closest('.b-tile'); if (!t) return; e.preventDefault(); e.stopPropagation(); if (Date.now()-fired < 700) return; tlTap(t.dataset.tlKey, t); });
   d.addEventListener('keydown', e=>{ if ((e.key==='Enter'||e.key===' ') && e.target.classList.contains('b-tile')){ e.preventDefault(); tlTap(e.target.dataset.tlKey, e.target); } });
   d.addEventListener('pointerdown', e=>{ const p = e.target.closest('.b-tile'); if (p) p.classList.add('press'); });
   d.addEventListener('pointermove', e=>{ if (tlCalm() || e.pointerType!=='mouse') return; const p = e.target.closest('.b-tile'); if (!p) return; const r = p.getBoundingClientRect(); p.style.setProperty('--ry', ((e.clientX-r.left)/r.width-.5)*16+'deg'); p.style.setProperty('--rx', (.5-(e.clientY-r.top)/r.height)*16+'deg'); });
@@ -7282,8 +7303,8 @@ function tlTap(key, tile){
   if (tlOpen.path.includes(key)) return;
   tlOpen.path.push(key); tlOpen.rects.push({ left:r.left, top:r.top, width:r.width, height:r.height }); tlOpen.anim.push(true);
   if (!it.kids && it.el){ try{ bOpenCard(it.el); }catch(e){} }
-  tlTapAt = Date.now();
-  try{ render(); }catch(err){ console.error(err); try{ showToast('การ์ดเปิดไม่ได้: '+(err && err.message || err)); }catch(_){} }
+  tlTapAt = Date.now(); if (tlDiag) tlDiag.tap = true;
+  try{ render(); if (tlDiag) tlDiag.rendered = !!document.querySelector('.tl-layer:not([hidden]) .tl-body > *'); }catch(err){ if (tlDiag) tlDiag.err = String(err && err.message || err); console.error(err); try{ showToast('การ์ดเปิดไม่ได้: '+(err && err.message || err)); }catch(_){} }
 }
 function tlLayerAt(lv){
   let L = document.getElementById('tl-layer-'+lv);
@@ -7361,6 +7382,7 @@ function tlShowLevel(lv, it, anim, rect){
   });
 }
 function tlClose(){
+  if (tlDiag) tlDiag.closed = true;
   if (!tlOpen || !tlOpen.path.length) return;
   const lv = tlOpen.path.length-1, key = tlOpen.path[lv], it = tlReg[key];
   const L = document.getElementById('tl-layer-'+lv);
@@ -7391,6 +7413,18 @@ function tlClose(){
     P.style.borderRadius = '60px'; P.style.opacity = '.2';
     setTimeout(finish, 360);
   }, wait);
+}
+// แท็บผลงานตัวแทน: รวมการแข่งขันทุกรายการ + Joining เป็นการ์ดเดียว
+function tlAgentCompGroup(roots){
+  const isComp = it=>/Road to Beijing|Joining/i.test(it.title) || !!tlEvFor(it.title);
+  const kids = roots.filter(isComp); if (kids.length < 2) return roots;
+  let won = 0;
+  try{ const eff = effectiveEntries(agent().entries||[]); evList().forEach(ev=>{ const [s,e]=evRange(ev), now=new Date(); if (now<s || now>e) return; if (evProg(eventValue(eff, ev), ev).ok) won++; }); }catch(e){}
+  kids.forEach((k,i)=>{ k.color = TL_COLORS[(i+1) % TL_COLORS.length]; });
+  const parent = tlItem('grp:agentcomp', '🏁 การแข่งขัน', null, `${kids.length} รายการ<br>ได้รางวัล <b class="ok">${won}</b> รายการ`, 1, { kids });
+  const out = []; let placed = false;
+  roots.forEach(it=>{ if (isComp(it)){ if (!placed){ out.push(parent); placed = true; } } else out.push(it); });
+  return out;
 }
 // หน้าการแข่งขัน: การ์ด 2 ใบ (ระดับตัวแทน / ระดับ UM) แต่ละใบกระจายเป็นการ์ดของแต่ละการแข่งขัน
 function tlCompRoots(citems){
@@ -7444,6 +7478,7 @@ function tlAfterRender(c){
         host = document.createElement('div'); host.className = 'tl-host'; cards[0].before(host);
         kids.filter(el=>!cards.includes(el) && (/^(H2|H3|P)$/.test(el.tagName) || el.classList.contains('comp-upcoming'))).forEach(el=>el.remove());
         roots = cards.map((el,i)=>{ const raw = el.querySelector('h3') ? bH3Text(el.querySelector('h3')) : tlStrip((el.querySelector('.title')||el).textContent).slice(0,40); return tlItem(bCardKey(el), raw, el, tlSum(el, raw), i); });
+        if (activeSection==='agent' && activeTab==='competitions') roots = tlAgentCompGroup(roots);
         stashEls = cards;
       }
     }
@@ -7516,6 +7551,43 @@ document.addEventListener('keydown', e=>{ if (e.key==='Enter' && !e.isComposing 
   .field > input,.field > select,.field > textarea,.field > div{flex:1 1 200px;min-width:0}
   input[type=text],input[type=search],input[type=number],input[type=tel],input:not([type]),input[inputmode]{text-align:left!important}
 `; document.head.appendChild(s); })();
+
+
+// ===== ตัวช่วยหาสาเหตุชั่วคราว: จิ้มการ์ดแล้วไม่เปิด → แสดงกล่องบอกว่าค้างขั้นไหน =====
+let tlDiag = null;
+function tlDiagShow(lines){
+  let h = document.getElementById('tl-diag');
+  if (!h){ h = document.createElement('div'); h.id = 'tl-diag'; document.body.appendChild(h); h.addEventListener('click', ()=>{ h.remove(); }); }
+  clearTimeout(tlDiagShow._t); tlDiagShow._t = setTimeout(()=>{ const x = document.getElementById('tl-diag'); if (x) x.remove(); }, 20000);
+  h.innerHTML = '<b>🔧 ตัวช่วยหาสาเหตุ (ถ่ายรูปกล่องนี้ส่งให้ Claude)</b><br>' + lines.map(esc).join('<br>') + '<br><span style="opacity:.8">แตะกล่องนี้เพื่อปิด</span>';
+}
+function tlDiagStart(e, kind){
+  const x = e.touches ? e.touches[0] : e; if (!x) return;
+  const tgt = e.target && e.target.nodeType===1 ? e.target : (e.target && e.target.parentElement);
+  const onTile = tgt && tgt.closest && tgt.closest('.b-tile');
+  let near = null;
+  document.querySelectorAll('.b-tdeck .b-tile').forEach(t=>{ const r = t.getBoundingClientRect(); if (x.clientX>=r.left && x.clientX<=r.right && x.clientY>=r.top && x.clientY<=r.bottom) near = t; });
+  if (!onTile && !near) return;
+  if (tlDiag && Date.now()-tlDiag.at < 400) { tlDiag.kinds.push(kind); return; }
+  tlDiag = { at: Date.now(), kinds:[kind], onTile: !!onTile, key: (onTile||near).dataset.tlKey, tag: tgt ? (tgt.tagName+'.'+String(tgt.className||'').slice(0,40)) : '?', tap:false, rendered:false, err:'' };
+  const d = tlDiag;
+  setTimeout(()=>{
+    if (tlDiag !== d || d.closed) return;
+    if (tlOpen && tlOpen.path.includes(d.key)) return;
+    const L = document.querySelector('.tl-layer:not([hidden])');
+    if (L){ const r = L.getBoundingClientRect(), P = L.querySelector('.tl-panel'), pr = P.getBoundingClientRect(), cs = getComputedStyle(L);
+      if (r.height>100 && pr.height>100 && cs.display!=='none' && cs.visibility!=='hidden' && parseFloat(getComputedStyle(P).opacity)>0.5) return; // เปิดได้ปกติ
+      tlDiagShow([`1) iPad รับการแตะ: ✓ (${d.kinds.join(',')})`, `2) เริ่มเปิดการ์ด: ${d.tap?'✓':'✗'}`, `3) สร้างหน้าการ์ด: ${d.rendered?'✓':'✗'}`, `4) ขึ้นจอ: ✗ ขนาด ${Math.round(r.width)}×${Math.round(r.height)} แผง ${Math.round(pr.width)}×${Math.round(pr.height)} display=${cs.display} op=${getComputedStyle(P).opacity} tf=${P.style.transform.slice(0,60)}`, d.err?`ข้อผิดพลาด: ${d.err}`:'']); return; }
+    tlDiagShow([`1) iPad รับการแตะ: ✓ (${d.kinds.join(',')}) ${d.onTile?'โดนการ์ด':'โดน '+d.tag}`, `2) เริ่มเปิดการ์ด: ${d.tap?'✓':'✗'}`, `3) สร้างหน้าการ์ด: ${d.rendered?'✓':'✗'}`, `4) ขึ้นจอ: ✗ ไม่มีหน้าการ์ด`, `การ์ด: ${d.key}`, `tlOpen: ${tlOpen?JSON.stringify(tlOpen.path):'null'} · หน้า ${tlPage()}`, d.err?`ข้อผิดพลาด: ${d.err}`:'']);
+  }, 900);
+}
+window.addEventListener('pointerdown', e=>tlDiagStart(e,'pointer'), true);
+window.addEventListener('touchstart', e=>tlDiagStart(e,'touch'), { capture:true, passive:true });
+window.addEventListener('mousedown', e=>tlDiagStart(e,'mouse'), true);
+window.addEventListener('error', e=>{ if (tlDiag && Date.now()-tlDiag.at < 2000) tlDiag.err = (e.message||'')+' @'+(e.lineno||'?'); });
+(function(){ const s=document.createElement('style'); s.textContent = `#tl-diag{position:fixed;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top,0px));z-index:99999;background:#B4231A;color:#fff;font:600 17px/1.5 'Sarabun',sans-serif;padding:14px 16px;border-radius:14px;box-shadow:0 10px 30px #0008;word-break:break-word}
+  #toast{z-index:400!important}
+  .calendar-pop{z-index:130!important}`; document.head.appendChild(s); })();
 
 /* ================= Road to Beijing: Kick Off → Regional → ปักกิ่ง รวมเป็นแถบเดียว (ผลงาน 28 ส.ค.–30 พ.ย. 69) ================= */
 const RB_KEY = 'roadbj';
