@@ -630,7 +630,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.13-beta25</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.13-beta26</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -648,7 +648,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta25 · อัปเดต 13 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta26 · อัปเดต 13 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -3989,7 +3989,7 @@ function __renderInner(){
   bindEvents();
   if (activeSection==="um" && !activeTeamUmName) enhanceCollapsibleCards(c);
   betaLayout(c);
-  try{ tlAfterRender(c); }catch(e){ console.error(e); }
+  try{ tlAfterRender(c); }catch(e){ console.error(e); try{ showToast('การ์ดเปิดไม่ได้: '+(e && e.message || e)); }catch(_){} }
   positionOpenCalendars();
 }
 // เตือนแบ็กอัพทุก 3 วัน (เฉพาะหน้าของตัวเอง ไม่แสดงตอนดู UM คนอื่น)
@@ -7218,7 +7218,9 @@ document.addEventListener('change', e=>{
 const TL_COLORS = ['#45E3FF','#FFC857','#FF5B79','#43F0A8','#8B7BFF','#9FB4D8','#FF9F5B','#5BC0FF'];
 let tlOpen = null;          // { page, path:[key], rects:[{...}], anim:[bool] }
 let tlReg = {};             // key -> { key,title,em,sum,el,kids,color }
-let tlLastPage = '', tlFlashPending = null;
+let tlLastPage = '', tlFlashPending = null, tlGhostUntil = 0;
+// หลังเปิดการ์ดด้วยการยกนิ้ว เบราว์เซอร์จะส่ง click ตามมาที่จุดเดิม (ซึ่งตอนนี้เป็นหน้าการ์ดที่เพิ่งเปิด) — กลืนทิ้ง ไม่ให้ไปกดปุ่มย่อหรือปุ่มข้างใน
+window.addEventListener('click', e=>{ if (Date.now() < tlGhostUntil){ e.preventDefault(); e.stopImmediatePropagation(); tlGhostUntil = 0; } }, true);
 function tlPage(){ return [activeSection, activeTab, (typeof betaGroup!=='undefined'?betaGroup:''), activeTeamUmName||''].join('|'); }
 function tlStrip(s){ return String(s||'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim(); }
 function tlSplitTitle(raw){
@@ -7278,17 +7280,24 @@ function tlTileHtml(it, i){
 function tlDeck(items, cls){
   const d = document.createElement('div'); d.className = 'b-deck b-tdeck ' + (cls||'');
   d.innerHTML = items.map(tlTileHtml).join('');
-  d.addEventListener('click', e=>{ const t = e.target.closest('.b-tile'); if (!t) return; e.preventDefault(); e.stopPropagation(); tlTap(t.dataset.tlKey, t); });
+  // เปิดด้วยการยกนิ้ว (pointerup) เป็นหลัก — บน iPad/iPhone บางรุ่น click ไม่ถูกส่งมาที่การ์ดที่มีเอฟเฟกต์ 3 มิติ
+  let down = null, fired = 0;
+  d.addEventListener('pointerdown', e=>{ const t = e.target.closest('.b-tile'); down = t ? { t, x:e.clientX, y:e.clientY, at:Date.now() } : null; });
+  d.addEventListener('pointerup', e=>{ const t = e.target.closest('.b-tile') || (down && down.t); if (!down || !t || t!==down.t) { down = null; return; } const moved = Math.abs(e.clientX-down.x)+Math.abs(e.clientY-down.y); down = null; if (moved>14) return; fired = Date.now(); tlGhostUntil = fired + 650; e.preventDefault(); tlTap(t.dataset.tlKey, t); });
+  d.addEventListener('pointercancel', ()=>{ down = null; });
+  d.addEventListener('click', e=>{ const t = e.target.closest('.b-tile'); if (!t) return; e.preventDefault(); e.stopPropagation(); if (Date.now()-fired < 700) return; tlTap(t.dataset.tlKey, t); });
   d.addEventListener('keydown', e=>{ if ((e.key==='Enter'||e.key===' ') && e.target.classList.contains('b-tile')){ e.preventDefault(); tlTap(e.target.dataset.tlKey, e.target); } });
   d.addEventListener('pointerdown', e=>{ const p = e.target.closest('.b-tile'); if (p) p.classList.add('press'); });
-  d.addEventListener('pointermove', e=>{ if (tlCalm()) return; const p = e.target.closest('.b-tile'); if (!p || (e.pointerType!=='mouse' && !p.classList.contains('press'))) return; const r = p.getBoundingClientRect(); p.style.setProperty('--ry', ((e.clientX-r.left)/r.width-.5)*16+'deg'); p.style.setProperty('--rx', (.5-(e.clientY-r.top)/r.height)*16+'deg'); });
+  d.addEventListener('pointermove', e=>{ if (tlCalm() || e.pointerType!=='mouse') return; const p = e.target.closest('.b-tile'); if (!p) return; const r = p.getBoundingClientRect(); p.style.setProperty('--ry', ((e.clientX-r.left)/r.width-.5)*16+'deg'); p.style.setProperty('--rx', (.5-(e.clientY-r.top)/r.height)*16+'deg'); });
   d.addEventListener('pointerout', e=>{ const p = e.target.closest('.b-tile'); if (p && !p.contains(e.relatedTarget)){ p.style.setProperty('--rx','0deg'); p.style.setProperty('--ry','0deg'); } });
   return d;
 }
 function tlTap(key, tile){
   const it = tlReg[key]; if (!it) return;
   const r = tile.getBoundingClientRect();
-  if (!tlOpen) tlOpen = { page: tlPage(), path:[], rects:[], anim:[] };
+  if (!tlOpen || tlOpen.page!==tlPage()) tlOpen = { page: tlPage(), path:[], rects:[], anim:[] };
+  const inLayer = tile.closest('.tl-layer'); const lvOf = inLayer ? (+inLayer.id.split('-').pop())+1 : 0;
+  if (tlOpen.path.length > lvOf){ tlOpen.path.length = lvOf; tlOpen.rects.length = lvOf; tlOpen.anim.length = lvOf; }
   if (tlOpen.path.includes(key)) return;
   tlOpen.path.push(key); tlOpen.rects.push({ left:r.left, top:r.top, width:r.width, height:r.height }); tlOpen.anim.push(true);
   if (!it.kids && it.el){ try{ bOpenCard(it.el); }catch(e){} }
@@ -7480,6 +7489,10 @@ function tlAfterRender(c){
 document.addEventListener('keydown', e=>{ if (e.key==='Escape' && tlOpen && !(typeof qzKey!=='undefined' && qzKey)) tlClose(); });
 (function(){ const s = document.createElement('style'); s.textContent = `
   .b-tdeck{margin:6px 0 18px}
+  .b-tdeck .b-podw,.b-tdeck .b-pod{transform-style:flat}
+  .b-tdeck .b-orb{transform:none}
+  .b-tdeck .b-pod::after{pointer-events:none}
+  .b-tdeck .b-pod *{pointer-events:none}
   .b-tile{min-height:150px}
   .b-tile .b-orb{background:radial-gradient(circle at 32% 28%,#fff8,transparent 42%),var(--c)}
   .b-tile .tl-em{font-size:26px;line-height:1;filter:drop-shadow(0 1px 1px #0005)}
