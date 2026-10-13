@@ -281,7 +281,7 @@
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.13-3</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.13-4</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -299,7 +299,7 @@
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.13-3 · อัปเดต 13 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.13-4 · อัปเดต 13 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -1329,31 +1329,6 @@ function renderInsightsSection(entries, selYearArg, pacing){
         <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;">
           <span style="font-size:18px;">ปีนี้ ${THB(thisMonthActual)} · ปีก่อน ${THB(lastYearActual)}</span>
           <span style="font-weight:700;font-size:20px;color:${diff>=0?'var(--good)':'var(--bad)'};">${diff>=0?'▲':'▼'} ${THB(Math.abs(diff))}${diffPct!==null?` (${diffPct>=0?'+':''}${Math.round(diffPct)}%)`:''}</span>
-        </div>
-      </div>`);
-    }
-  }
-
-  // 3) เดือนที่ดีที่สุด/แย่ที่สุดในปีนี้
-  if (pacing){
-    const capMonth = isCurrentYearView ? today.getMonth() : 11;
-    const withData = pacing.filter(m=>!m.excluded && m.actual>0 && m.month<=capMonth);
-    if (withData.length>=2){
-      const best = withData.reduce((a,b)=>a.actual>b.actual?a:b);
-      const worst = withData.reduce((a,b)=>a.actual<b.actual?a:b);
-      cards.push(`<div class="card" style="padding:14px 16px;margin-bottom:12px;">
-        <div style="font-size:16.5px;color:var(--muted);margin-bottom:8px;">🏅 เดือนที่ทำได้ดีที่สุด / ต้องปรับปรุง</div>
-        <div style="display:flex;gap:10px;">
-          <div style="flex:1;background:#F1F8F3;border-radius:8px;padding:10px;text-align:center;">
-            <div style="font-size:15px;color:var(--muted);">ดีที่สุด</div>
-            <div style="font-weight:700;color:var(--good);font-size:20px;">${THAI_MONTH_SHORT[best.month]}</div>
-            <div style="font-size:15px;color:var(--good);">${THB(best.actual)}</div>
-          </div>
-          <div style="flex:1;background:#FBF0EF;border-radius:8px;padding:10px;text-align:center;">
-            <div style="font-size:15px;color:var(--muted);">ต้องปรับปรุง</div>
-            <div style="font-weight:700;color:var(--bad);font-size:20px;">${THAI_MONTH_SHORT[worst.month]}</div>
-            <div style="font-size:15px;color:var(--bad);">${THB(worst.actual)}</div>
-          </div>
         </div>
       </div>`);
     }
@@ -3769,7 +3744,7 @@ function renderGoalsTab(){
     <div class="card dark">
       <div class="grid-bg"></div>
       <div style="position:relative;">
-        <h3>🎯 ตั้งเป้าหมายรายได้ประจำปี</h3>
+        <h3>🎯 เป้าหมายรายปี & รายเดือน</h3>
         <p class="sub">ตั้งได้ 2 ส่วนแยกกัน: เป้าหมายทั้งปี (ม.ค.-ธ.ค. เสมอ) และเป้าหมายเฉพาะช่วง (แคมเปญ/ไตรมาสพิเศษ) รายงานผลจะแยกให้เห็นทั้งสองแบบ ไม่ปนกัน</p>
 
         <label class="field dark" style="max-width:320px;margin-bottom:16px;"><span>1) เป้าหมาย FYC ทั้งปี</span>
@@ -3828,19 +3803,19 @@ function renderGoalsTab(){
             <div class="tech-row"><span class="lab">เฉลี่ยต่อเดือนที่ต้องทำ (นับจากนี้)</span><span class="val highlight">${planEnded ? 'สิ้นสุดแผนแล้ว' : THB(avgMonthlyTargetNow)+'/เดือน'}</span></div>
           </div>
         </div>
+      <div class="g-monthly" style="position:relative;margin-top:18px;background:#fff;border-radius:12px;padding:12px;color:#1B2430;">
+      <h4 style="margin:0 0 4px;color:var(--navy);font-size:20px;">📅 เป้าหมายรายเดือน</h4>
+      <p style="font-size:16px;color:#4B5563;margin:2px 0 10px;">"เป้าหมาย" คงที่เท่ากันทุกเดือนในช่วงที่ตั้งไว้ (เป้ารวม ÷ จำนวนเดือนในแผน) · "คงเหลือถึงเป้า" และ "เฉลี่ย/เดือนจากนี้" อ้างอิงเดือนปัจจุบันตามปฏิทินจริงเท่านั้น (โชว์เฉพาะเดือนปัจจุบันจนถึงเดือนสิ้นสุดแผน)</p>
+      ${pacing ? `<div style="overflow-x:auto"><table>
+        <thead><tr><th>เดือน</th><th style="text-align:right">เป้าหมาย</th><th style="text-align:right">ทำได้จริง</th><th style="text-align:right">คงเหลือถึงเป้า</th><th style="text-align:right">เฉลี่ย/เดือนจากนี้</th></tr></thead>
+        <tbody>${monthRows}${totalRow}</tbody>
+      </table></div>` : `<div class="empty">กรอกเป้าหมาย FYC ด้านบนก่อน เพื่อดูตารางเป้าหมายรายเดือน</div>`}
+      </div>
       </div>
     </div>
 
     ${renderInsightsSection(agent().entries, selYear, pacing)}
 
-    <div class="card">
-      <h3>เป้าหมายรายเดือน</h3>
-      <p class="sub">"เป้าหมาย" คงที่เท่ากันทุกเดือนในช่วงที่ตั้งไว้ (เป้ารวม ÷ จำนวนเดือนในแผน) · "คงเหลือถึงเป้า" และ "เฉลี่ย/เดือนจากนี้" อ้างอิงเดือนปัจจุบันตามปฏิทินจริงเท่านั้น (โชว์เฉพาะเดือนปัจจุบันจนถึงเดือนสิ้นสุดแผน)</p>
-      ${pacing ? `<div style="overflow-x:auto"><table>
-        <thead><tr><th>เดือน</th><th style="text-align:right">เป้าหมาย</th><th style="text-align:right">ทำได้จริง</th><th style="text-align:right">คงเหลือถึงเป้า</th><th style="text-align:right">เฉลี่ย/เดือนจากนี้</th></tr></thead>
-        <tbody>${monthRows}${totalRow}</tbody>
-      </table></div>` : `<div class="empty">กรอกเป้าหมาย FYC ด้านบนก่อน เพื่อดูตารางเป้าหมายรายเดือน</div>`}
-    </div>
     <div class="foot-note">* เป้าหมายคำนวณจากตารางเงินรางวัลตัวแทนรายปีเท่านั้น เป็นเพียงตัวช่วยวางแผน ไม่ใช่ยอดจ่ายจริงจากบริษัท</div>
   `;
 }
@@ -4247,6 +4222,7 @@ function renderCompetitionsTab(){
     <div class="card">
       <h3>📅 ผลงานรายเดือน ประจำปี ${toBE(selYear)}</h3>
       <p class="sub">เกณฑ์ต่อไตรมาส: ผลงาน ≥ 6 ราย · FYC ≥ 40,000 · มีผลงานรายใหม่อย่างน้อย 2 ใน 3 เดือน (ประกาศที่ 3/2569)</p>
+      ${(()=>{ const __en = agent().entries||[]; const __cap = (selYear===new Date().getFullYear()) ? new Date().getMonth() : 11; let __b=-1, __bv=0; for (let __m=0; __m<=__cap; __m++){ const __v = mEff(__en, selYear, __m); if (__v>__bv){ __bv=__v; __b=__m; } } return __b>=0 ? `<div style="display:flex;align-items:center;gap:10px;background:#F1F8F3;border:1.5px solid var(--good);border-radius:10px;padding:10px 12px;margin:0 0 12px;"><span style="font-size:26px;">🏅</span><div style="font-size:17px;line-height:1.4;">เดือนที่ทำได้ดีที่สุด: <b style="color:var(--good);font-size:20px;">${THAI_MONTH_NAMES[__b]}</b> · FYC <b style="color:var(--good);font-size:20px;">${THB(__bv)}</b></div></div>` : ''; })()}
       <div class="qgrid">${qCardsHtml}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div>
@@ -5890,6 +5866,17 @@ document.addEventListener('change', e=>{
   .mg-tab tbody>tr:has(>td[colspan]){border:0!important;background:transparent!important;margin-top:-6px}
   .mg-tab .mg-name{white-space:nowrap}
   .mg-urg{white-space:nowrap;display:inline-block;margin-top:4px;background:#D93025;color:#fff;font-size:14px;font-weight:800;padding:2px 9px;border-radius:999px}
+`; document.head.appendChild(s); })();
+
+
+// ===== กด Enter ในช่องกรอก = ซ่อนแป้นพิมพ์ (ทุกช่อง) =====
+document.addEventListener('keydown', e=>{ if (e.key==='Enter' && !e.isComposing && e.target && e.target.tagName==='INPUT'){ const t = e.target; setTimeout(()=>{ try{ if (document.activeElement===t) t.blur(); }catch(_){} }, 0); } });
+(function(){ const s=document.createElement('style'); s.textContent = `
+  .field{flex-direction:row!important;flex-wrap:wrap;align-items:center;column-gap:12px;row-gap:4px}
+  .field[style*="max-width"]{max-width:100%!important}
+  .field > span{flex:1 1 170px}
+  .field > input,.field > select,.field > textarea,.field > div{flex:1 1 200px;min-width:0}
+  input[type=text],input[type=search],input[type=number],input[type=tel],input:not([type]),input[inputmode]{text-align:left!important}
 `; document.head.appendChild(s); })();
 
 /* ================= Road to Beijing: Kick Off → Regional → ปักกิ่ง รวมเป็นแถบเดียว (ผลงาน 28 ส.ค.–30 พ.ย. 69) ================= */
