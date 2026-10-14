@@ -271,6 +271,36 @@
   /* ช่องกรอกตารางไตรมาส (ตัวแทน/UM) อยู่กลางช่อง */
   td:has(> input[data-qty-override]),td:has(> input[data-direct-override]),td:has(> input[data-fyc-override]){text-align:center!important}
   input[data-qty-override],input[data-direct-override],input[data-fyc-override]{text-align:center!important;display:block;margin:0 auto}
+:root{--e-line:#0F56B255;--e-panel:#fff;--e-ink:var(--navy-deep);--e-dim:#4B5563;--e-accent:var(--navy);--e-hot:var(--bad);--e-warn:#8A4B00;--e-chip:#FFF1D6;}
+/* ===== 📋 ตารางสอบตัวแทน ===== */
+.e-sec{margin-top:8px;}
+.e-box{display:flex!important;width:100%;box-sizing:border-box;justify-content:space-between;gap:8px;margin:4px 0 10px!important;padding:10px 10px 10px 14px!important;}
+.e-hd{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-width:0;}
+.e-badge{font-size:15px;font-weight:700;padding:2px 10px;border-radius:999px;background:var(--e-chip);color:var(--e-warn);white-space:nowrap;}
+.e-badge.hot{background:var(--e-hot);color:#fff;}
+.e-panel{border:1px solid var(--e-line);border-radius:14px;background:var(--e-panel);padding:12px;margin:0 2px 12px;color:var(--e-ink);}
+.e-sub{font-size:17px;font-weight:700;margin:2px 2px 8px;color:var(--e-ink);}
+.e-strip .p-card{width:118px;}
+.e-sec .t-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
+.e-sec .t-tab{font-size:17px;padding:8px 2px!important;white-space:normal;line-height:1.25;overflow:hidden;}
+.e-sec .t-tab small{display:block;font-size:14px;font-weight:600;opacity:.85;}
+.e-venue{font-size:16px;color:var(--e-dim);margin:0 2px 8px;}
+.e-row{border:1px solid var(--e-line);border-left:5px solid var(--e-accent);border-radius:12px;padding:10px 12px;margin:0 0 10px;}
+.e-row.hot{border-left-color:var(--e-hot);}
+.e-top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:2px 10px;}
+.e-date{font-size:22px;font-weight:800;color:var(--e-ink);}
+.e-time{font-size:16px;color:var(--e-dim);}
+.e-close{font-size:18px;margin-top:4px;color:var(--e-ink);}
+.e-left{display:inline-block;font-size:16px;font-weight:700;padding:1px 9px;border-radius:999px;background:var(--e-chip);color:var(--e-warn);margin-left:2px;}
+.e-left.hot{background:var(--e-hot);color:#fff;}
+.e-prov{font-size:16.5px;margin-top:6px;color:var(--e-ink);line-height:1.45;}
+.e-more{margin-top:4px;font-size:16px;color:var(--e-ink);line-height:1.5;}
+.e-more summary{cursor:pointer;font-weight:700;color:var(--e-accent);padding:4px 0;}
+.e-more div{margin-top:3px;}
+.e-star{font-size:14.5px;color:var(--e-dim);}
+.e-sat{font-size:15px;color:var(--e-dim);margin-top:4px;}
+.e-morebtn{width:100%;font:inherit;font-size:18px;font-weight:700;padding:10px 16px;border-radius:10px;border:1px solid var(--e-line);background:transparent;color:var(--e-ink);cursor:pointer;min-height:46px;margin-bottom:10px;}
+.e-foot{font-size:15.5px;color:var(--e-dim);margin-top:4px;line-height:1.5;}
 </style>
 </head>
 <body>
@@ -303,7 +333,7 @@
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.13-7 · อัปเดต 13 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.14-1 · อัปเดต 14 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -5541,17 +5571,18 @@ function posterLoad(force){
 function posterDaysLeft(p){ if (!p.end) return null; return tDays(p.end); }
 function pDateTxt(p){
   if (tIsTraining(p)) return tCaption(p);
+  if (pIsExam(p)) return eCaption(p);
   const L = [];
   if (p.start || p.end) L.push(`ผลงาน ${p.start?tFmt(p.start):''}${p.end?` – ${tFmt(p.end)}`:''}`);
   if (p.approve) L.push(`อนุมัติภายใน ${tFmt(p.approve)}`);
   return L.join(' · ');
 }
 function posterStripHtml(){
-  const act = posterList.filter(p=>posterActive(p) && !tIsTraining(p)).sort((a,b)=>(a.end||'9999').localeCompare(b.end||'9999'));
+  const act = posterList.filter(p=>posterActive(p) && !tIsTraining(p) && !pIsExam(p)).sort((a,b)=>(a.end||'9999').localeCompare(b.end||'9999'));
   if (!act.length) return '';
   const files = esc(act.map(p=>p.file).join('|'));
   return `<div class="t-head"><h2>🏆 โปรโมชั่นประจำเดือน</h2><span>ปัดดูต่อ · แตะดูเต็มจอ</span></div>
-    <div class="p-strip">${act.map((p,i)=>{ const d=posterDaysLeft(p); return `<button type="button" class="p-card" data-poster-open="${files}" data-poster-i="${i}">
+    <div class="p-strip${act.length>1?' p-loop':''}" data-n="${act.length}">${(act.length>1?[...act,...act,...act]:act).map((p,j)=>{ const i=j%act.length; const d=posterDaysLeft(p); return `<button type="button" class="p-card" data-poster-open="${files}" data-poster-i="${i}">
       <img src="${esc(pSrc(p))}" loading="lazy" alt="โปสเตอร์ ${esc(p.title||'')}">
       <span class="t">${esc(p.title||'')}</span>
       ${d!==null?`<span class="d">${d===0?'วันสุดท้าย!':`เหลือ ${d} วัน`}</span>`:''}${p.kind==='promo'?'<span class="k">โปรลูกค้า</span>':''}
@@ -5559,7 +5590,7 @@ function posterStripHtml(){
 }
 function posterHomeHtml(){
   const a = posterStripHtml(), b = trainingHtml();
-  return `<div class="p-home">${a}<div class="tn-row">${b}${notesHtml()}</div></div>`;
+  return `<div class="p-home">${a}${examHtml()}<div class="tn-row">${b}${notesHtml()}</div></div>`;
 }
 // ดูโปสเตอร์เต็มจอ (ปัดซ้าย-ขวา · แตะรูปเพื่อขยาย · ✕ หรือแตะพื้นดำเพื่อปิด)
 function posterView(files, startIdx){
@@ -5569,19 +5600,19 @@ function posterView(files, startIdx){
   if (!pv){ pv = document.createElement('div'); pv.id='pv'; document.body.appendChild(pv); }
   pv.innerHTML = `<div class="bar"><span id="pv-t"></span><small id="pv-c"></small></div>
     <button type="button" class="x" aria-label="ปิด">✕</button>
-    <div class="track">${list.map((p,i)=>`<div class="sl" data-i="${i}"><img src="${esc(pSrc(p))}" alt="โปสเตอร์ ${esc(p.title||'')}">
-      <div class="cap">${esc(pDateTxt(p))}${pIsArchived(p)?' · จบแล้ว':''}</div></div>`).join('')}</div>
-    <div class="hint">${list.length>1?'ปัดซ้าย-ขวาเพื่อดูใบอื่น · ':''}แตะรูปเพื่อขยาย</div>`;
+    <div class="track">${(list.length>1?[...list,...list,...list]:list).map((p,j)=>{ const i=j%list.length; return `<div class="sl" data-i="${i}"><img src="${esc(pSrc(p))}" alt="โปสเตอร์ ${esc(p.title||'')}">
+      <div class="cap">${esc(pDateTxt(p))}${pIsArchived(p)?' · จบแล้ว':''}</div></div>`; }).join('')}</div>
+    <div class="hint">${list.length>1?'ปัดซ้าย-ขวาเพื่อดูใบอื่น (วนได้ไม่สิ้นสุด) · ':''}แตะรูปเพื่อขยาย</div>`;
   pv.hidden = false; document.body.style.overflow = 'hidden';
   const track = pv.querySelector('.track');
-  const setHead = ()=>{ const i = Math.round(track.scrollLeft/Math.max(1,track.clientWidth)); const p=list[Math.min(list.length-1,Math.max(0,i))]; pv.querySelector('#pv-t').textContent = p.title||''; pv.querySelector('#pv-c').textContent = list.length>1?`ใบที่ ${i+1} จาก ${list.length}`:''; pv.querySelectorAll('.pv-nav').forEach(b=>{ b.disabled = b.classList.contains('prev') ? i<=0 : i>=list.length-1; }); };
-  requestAnimationFrame(()=>{ track.scrollLeft = (startIdx||0)*track.clientWidth; setHead(); });
+  const setHead = ()=>{ const n=list.length, i = ((Math.round(track.scrollLeft/Math.max(1,track.clientWidth))%n)+n)%n; const p=list[i]; pv.querySelector('#pv-t').textContent = p.title||''; pv.querySelector('#pv-c').textContent = n>1?`ใบที่ ${i+1} จาก ${n}`:''; };
+  requestAnimationFrame(()=>{ if (list.length>1) loopInit(track, list.length, startIdx||0); else track.scrollLeft = 0; setHead(); });
   track.onscroll = setHead;
   if (list.length>1) pv.insertAdjacentHTML('beforeend','<button type="button" class="pv-nav prev" aria-label="ใบก่อนหน้า">◀</button><button type="button" class="pv-nav next" aria-label="ใบถัดไป">▶</button>');
   const close = ()=>{ pv.hidden = true; pv.innerHTML=''; document.body.style.overflow = ''; };
   pv.onclick = e=>{
     if (e.target.closest('.x')) return close();
-    const nv = e.target.closest('.pv-nav'); if (nv){ const i = Math.round(track.scrollLeft/Math.max(1,track.clientWidth)) + (nv.classList.contains('prev')?-1:1); track.scrollTo({ left: Math.max(0,Math.min(list.length-1,i))*track.clientWidth, behavior:'smooth' }); return; }
+    const nv = e.target.closest('.pv-nav'); if (nv){ loopFix(track, list.length); const i = Math.round(track.scrollLeft/Math.max(1,track.clientWidth)) + (nv.classList.contains('prev')?-1:1); track.scrollTo({ left: i*track.clientWidth, behavior:'smooth' }); return; }
     const img = e.target.closest('.sl img'); if (img){ img.parentElement.classList.toggle('big'); return; }
     if (e.target.classList.contains('sl') || e.target.classList.contains('track') || e.target.classList.contains('hint')) close();
   };
@@ -5591,6 +5622,104 @@ document.addEventListener('click', e=>{
   if (t){ e.preventDefault(); e.stopPropagation(); posterView(t.dataset.posterOpen.split('|').filter(Boolean), +(t.dataset.posterI||0)); }
 }, true);
 document.addEventListener('keydown', e=>{ const pv=document.getElementById('pv'); if (e.key==='Escape' && pv && !pv.hidden){ pv.hidden=true; pv.innerHTML=''; document.body.style.overflow=''; } });
+
+/* ================= 📋 ตารางสอบตัวแทน (อ่านจาก posters.json · kind:'exam' · แต่ละโปสเตอร์มี rounds = รอบสอบ) ================= */
+let examTab = 'computer', examMore = {};
+const EXAM_VENUES = { computer:'💻 คอมฯ', hq:'🏢 สนญ.', inhouse:'🏬 In House' };
+const EXAM_VENUE_FULL = { computer:'ส่วนภูมิภาค · ระบบคอมพิวเตอร์ (สมาคมฯ จัดสอบ)', hq:'สำนักงานใหญ่ ชั้น 11 ห้อง C8', inhouse:'ส่วนภูมิภาค · รายบริษัท (In House)' };
+const EXAM_DOW = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+function pIsExam(p){ return !!p && p.kind==='exam'; }
+function eOpen(){ try{ return localStorage.getItem('ped-exam-open')==='1'; }catch(e){ return false; } }
+function eFmt(iso){ const d = new Date(iso+"T00:00:00"); return `${EXAM_DOW[d.getDay()]} ${fmtTH(d,{day:"numeric",month:"short",year:"2-digit"})}`; }
+function ePosters(){ return posterList.filter(p=>pIsExam(p) && !pIsArchived(p)).sort((a,b)=>String(a.file).split('_').pop().localeCompare(String(b.file).split('_').pop())); }
+// รอบที่ยังเปิดรับสมัคร (วันปิดรับ ≥ วันนี้) — รอบที่ปิดรับแล้วซ่อนอัตโนมัติ
+function eRounds(venue){
+  const t = todayIso(), out = [];
+  ePosters().forEach(p=>(p.rounds||[]).forEach(r=>{ if ((p.venue||'')===venue && r.date && r.close && r.close>=t) out.push({ ...r, p }); }));
+  return out.sort((a,b)=>a.date.localeCompare(b.date));
+}
+function eNext(){ const all = Object.keys(EXAM_VENUES).flatMap(v=>eRounds(v)); return all.sort((a,b)=>a.close.localeCompare(b.close))[0] || null; }
+function eLeftTxt(d){ return d===0 ? 'ปิดรับวันนี้!' : d===1 ? 'ปิดรับพรุ่งนี้!' : `อีก ${d} วัน`; }
+function eTime(r, venue){
+  if (r.time) return r.time;
+  if (venue==='computer') return '08.30–10.30 น.';
+  if (venue==='inhouse') return new Date(r.date+"T00:00:00").getDay()===6 ? '15.30–17.30 น.' : '10.30–12.30 / 13.30–15.30 น.';
+  return '';
+}
+function eSatNote(r, venue){ return venue!=='computer' && new Date(r.date+"T00:00:00").getDay()===6 ? '<div class="e-sat">เสาร์: สงวนสิทธิ์ผู้สมัครโครงการขอรับเพื่อสอบ</div>' : ''; }
+function eAreasHtml(r){
+  if (!r.areas) return '';
+  const ks = Object.keys(r.areas), n = ks.reduce((s,k)=>s+String(r.areas[k]).split(/\s+/).filter(Boolean).length,0);
+  if (ks.length===1) return `<div class="e-prov">📍 ${esc(r.areas[ks[0]])}</div>`;
+  const north = r.areas['เหนือ'] || '';
+  return `<div class="e-prov">📍 เหนือ: ${esc(north)}</div><details class="e-more"><summary>ดูจังหวัดทั้งหมด (${n} จังหวัด)</summary>${ks.map(k=>`<div><b>${esc(k)}:</b> ${esc(r.areas[k])}</div>`).join('')}<div class="e-star">* ร้อยเอ็ด / ปราจีนบุรี สอบวันเสาร์ตลอดปี 2569</div></details>`;
+}
+function eRowHtml(r, venue){
+  const d = tDays(r.close), hot = d<=3;
+  return `<div class="e-row ${hot?'hot':''}">
+    <div class="e-top"><span class="e-date">${esc(eFmt(r.date))}</span><span class="e-time">${esc(eTime(r, venue))}</span></div>
+    <div class="e-close">ปิดรับสมัคร <b>${esc(eFmt(r.close))}</b> <span class="e-left ${hot?'hot':''}">${hot?'⚠️ ใกล้ปิดรับ · ':''}${esc(eLeftTxt(d))}</span></div>
+    ${eAreasHtml(r)}${eSatNote(r, venue)}
+  </div>`;
+}
+function examHtml(){
+  const P = ePosters();
+  if (!P.some(p=>posterActive(p))) return '';
+  const open = eOpen(), nx = eNext(), nd = nx ? tDays(nx.close) : null;
+  const badge = nx ? `<span class="e-badge ${nd<=3?'hot':''}">${nd<=3?'⚠️ ':''}${nd<=1?esc(eLeftTxt(nd)):`ปิดรับใกล้สุดอีก ${nd} วัน`}</span>` : '';
+  let body = '';
+  if (open){
+    const act = P.filter(p=>posterActive(p)), files = esc(act.map(p=>p.file).join('|'));
+    const L = eRounds(examTab), LIM = 4, more = !!examMore[examTab], show = more ? L : L.slice(0,LIM);
+    body = `<div class="e-panel">
+      <div class="e-sub">โปสเตอร์ตารางสอบ · แตะดูเต็มจอ</div>
+      <div class="p-strip e-strip">${act.map((p,i)=>`<button type="button" class="p-card" data-poster-open="${files}" data-poster-i="${i}"><img src="${esc(pSrc(p))}" loading="lazy" alt="โปสเตอร์ ${esc(p.title||'')}"><span class="t">${esc(p.title||'')}</span></button>`).join('')}</div>
+      <div class="e-sub">รอบสอบที่ยังเปิดรับสมัคร</div>
+      <div class="t-tabs">${Object.entries(EXAM_VENUES).map(([k,lab])=>{ const c = eRounds(k).length; return `<button type="button" class="t-tab ${examTab===k?'on':''}" data-exam-tab="${k}">${lab}<small>${c} รอบ</small></button>`; }).join('')}</div>
+      <div class="e-venue">${esc(EXAM_VENUE_FULL[examTab])}</div>
+      ${L.length ? show.map(r=>eRowHtml(r, examTab)).join('') + (L.length>LIM ? `<button type="button" class="e-morebtn" data-exam-more>${more?'▲ ย่อ':`ดูรอบถัดไปทั้งหมด (${L.length} รอบ)`}</button>` : '') : `<div class="t-empty">ตอนนี้ไม่มีรอบที่ยังเปิดรับสมัครในสนามนี้</div>`}
+      <div class="e-foot">✅ สมัครผ่านระบบออนไลน์ <b>Bangkok Life Training</b> เท่านั้น · กำหนดการอาจเปลี่ยนแปลงได้</div>
+    </div>`;
+  }
+  return `<div id="e-sec" class="e-sec">
+    <div class="t-box e-box" role="button" tabindex="0" data-exam-toggle aria-expanded="${open}"><span class="e-hd"><span class="t-ttl">📋 ตารางสอบตัวแทน</span>${badge}</span><span class="t-arr">${open?'▲':'▼'}</span></div>
+    ${body}
+  </div>`;
+}
+function eRerender(){ const s = document.getElementById('e-sec'); if (s) s.outerHTML = examHtml(); }
+function eCaption(p){
+  const t = todayIso(), nx = (p.rounds||[]).filter(r=>r.close>=t).sort((a,b)=>a.date.localeCompare(b.date))[0];
+  return [p.note||'', nx ? `รอบถัดไป ${eFmt(nx.date)} · ปิดรับ ${eFmt(nx.close)} (${eLeftTxt(tDays(nx.close))})` : ((p.rounds||[]).length ? 'ปิดรับสมัครครบทุกรอบแล้ว' : '')].filter(Boolean).join(' · ');
+}
+document.addEventListener('click', e=>{
+  const g = s=>e.target.closest(s); let el;
+  if (g('[data-exam-toggle]')){ e.preventDefault(); e.stopPropagation(); try{ localStorage.setItem('ped-exam-open', eOpen()?'0':'1'); }catch(_){} eRerender(); return; }
+  if ((el = g('[data-exam-tab]'))){ e.preventDefault(); e.stopPropagation(); examTab = el.dataset.examTab; eRerender(); return; }
+  if (g('[data-exam-more]')){ e.preventDefault(); e.stopPropagation(); examMore[examTab] = !examMore[examTab]; eRerender(); return; }
+}, true);
+document.addEventListener('keydown', e=>{ if (e.target && e.target.closest && e.target.closest('[data-exam-toggle]') && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); e.target.click(); } }, true);
+
+/* ================= ♾️ เลื่อนวนไม่สิ้นสุด: แถบโปรโมชั่น + หน้าดูเต็มจอ (ใบสุดท้ายต่อกับใบแรก) ================= */
+// track มีของ 3 ชุดเรียงกัน (ชุดกลางคือของจริง) — เลื่อนเลยขอบชุดกลางเมื่อไร จะกระโดดกลับมาตำแหน่งเดียวกันในชุดกลางแบบมองไม่เห็น
+function loopSetW(track, n){ const k = track.children; return (k.length>=2*n && k[n]) ? (k[n].offsetLeft - k[0].offsetLeft) : 0; }
+function loopFix(track, n){
+  const w = loopSetW(track, n); if (!w) return;
+  if (track.scrollLeft < w*0.5) track.scrollLeft += w;
+  else if (track.scrollLeft >= w*1.5) track.scrollLeft -= w;
+}
+function loopInit(track, n, startIdx){
+  if (!track || n<2 || track.dataset.loop) return;
+  const w = loopSetW(track, n); if (!w) return;
+  track.dataset.loop = '1';
+  const k = track.children[n + (startIdx||0)];
+  track.scrollLeft = k ? (k.offsetLeft - track.children[0].offsetLeft) : w;
+  let tm = null;
+  const fix = ()=>{ clearTimeout(tm); tm = setTimeout(()=>loopFix(track, n), 140); };
+  track.addEventListener('scroll', fix, { passive:true });
+  if ('onscrollend' in window) track.addEventListener('scrollend', ()=>{ clearTimeout(tm); loopFix(track, n); });
+}
+function promoLoopInit(){ document.querySelectorAll('.p-strip.p-loop:not([data-loop])').forEach(t=>loopInit(t, +t.dataset.n||0, 0)); }
+new MutationObserver(()=>promoLoopInit()).observe(document.documentElement, { childList:true, subtree:true, attributes:true, attributeFilter:['hidden'] });
 
 /* ================= อบรม: โปสเตอร์อบรมขอรับ/ต่อบัตร และอบรมอื่นๆ (อ่านจาก posters.json · kind:'training') ================= */
 let trainTab = 'license';
