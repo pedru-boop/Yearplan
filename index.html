@@ -333,7 +333,7 @@
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.14-2 · อัปเดต 14 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน 2026.10.15-1 · อัปเดต 15 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -342,6 +342,10 @@
 // APP_MODE: "um" = แอป UM เต็มรูปแบบ · "agent" = แอปตัวแทน (ถอดส่วน UM ออก ใช้หน้าตา/วิธีคีย์เหมือนแท็บตัวแทน)
 const APP_MODE = "um";
 const IS_AGENT_APP = APP_MODE === "agent";
+// ชื่อเจ้าของผลงานในหัวกล่อง (ให้รู้ว่าของใครเวลาแคปส่งต่อ) — UM หลัก = ป้าเป็ด CFP®, UM ในทีม = ชื่อคนนั้น, แท็บตัวแทน = ชื่อตัวแทน
+const OWNER_MAIN_NAME = "ป้าเป็ด CFP®";
+function ownerTag(name){ return `<span class="owner-tag" style="font-weight:800;"> · ${esc(name)}</span>`; }
+function umOwnerTag(){ return ownerTag(activeTeamUmName || OWNER_MAIN_NAME); }
 const STORAGE_KEY = IS_AGENT_APP ? "ped-agent-v1" : "ped-dashboard-v1";
 const META_KEY = IS_AGENT_APP ? "ped-agent-meta" : "ped-dashboard-meta";
 
@@ -1806,7 +1810,7 @@ function renderTeamTab(){
   const __goalCard = `<div class="card dark">
       <div class="grid-bg"></div>
       <div style="position:relative;">
-        <h3 style="color:#fff;">🎯 เป้าหมายของ UM (แยกจากตัวแทน)</h3>
+        <h3 style="color:#fff;">🎯 เป้าหมายของ UM${umOwnerTag()} (แยกจากตัวแทน)</h3>
         <p class="sub" style="color:#B9C4D6;">เป้าหมายที่ผู้จัดการหน่วยรับผิดชอบเอง วัดจากผลงานรวมของทั้งทีมในช่วงที่กำหนด</p>
         <div style="max-width:400px;margin-bottom:14px;">
           <label class="field dark"><span>ตำแหน่ง (อ้างอิงผลประโยชน์ผู้บริหารตัวแทน)</span>
@@ -2084,7 +2088,7 @@ function renderTeamTab(){
       const directOverrides = state.umGoal.directOverrides || {};
 
       const boxABeforeExplain = `<div class="card">
-      <h3 style="margin:4px 0 4px;">🎯 ควบคุมผลงานเพื่อ DPO (${selectedPosition.label})</h3>
+      <h3 style="margin:4px 0 4px;">🎯 ควบคุมผลงานเพื่อ DPO${umOwnerTag()} (${selectedPosition.label})</h3>
         ${tierToggle('dpo-ctrl', dpoTiersHtml(salesCompThreshold, null))}
       <p class="sub" style="margin-top:0;">DPO คำนวณจากตัวแทนตรงเท่านั้น เทียบกับเกณฑ์ขั้นต่ำ ${THB(salesCompThreshold)}/ไตรมาส — คอลัมน์เป้าใช้โควตา/เดือนของตำแหน่ง คอลัมน์ CFYC และตัวแทนตรงแก้ไขเองได้ ค่าเริ่มต้นดึงจากผลงานที่คีย์ไว้จริง</p>
       <div class="qgrid">
@@ -2180,7 +2184,7 @@ function renderTeamTab(){
       explainAndCalcHtml = `
       <div class="card">
         <h3 data-toggle-box="explain" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-          <span>📖 อธิบายผลประโยชน์ UM ตามตำแหน่ง (${selectedPosition.label})</span>
+          <span>📖 อธิบายผลประโยชน์ UM ตามตำแหน่ง${umOwnerTag()} (${selectedPosition.label})</span>
           <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.explain?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
         </h3>
         ${collapsedBoxes.explain?'':`
@@ -2209,7 +2213,7 @@ function renderTeamTab(){
 
       <div class="card">
         <h3 data-toggle-box="monthlyCalc" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-          <span>🧮 คำนวณผลประโยชน์ UM รายเดือน (${selectedPosition.label})</span>
+          <span>🧮 คำนวณผลประโยชน์ UM รายเดือน${umOwnerTag()} (${selectedPosition.label})</span>
           <span style="color:var(--muted);font-size:18px;">${collapsedBoxes.monthlyCalc?'▶ แตะเพื่อดู':'▼ ย่อ'}</span>
         </h3>
         ${collapsedBoxes.monthlyCalc?'':`
@@ -3476,7 +3480,7 @@ function renderBackupReminder(){
 }
 
 // ===== ทำให้ทุกกล่องในแท็บ UM ย่อ/ขยายได้ด้วยการแตะหัวข้อ =====
-function gcKey(h){ return 'gc:'+(h.textContent||'').replace(/[\d,.\s()\-–:·%฿\/]/g,'').slice(0,40); }
+function gcKey(h){ const __o=h.querySelector&&h.querySelector('.owner-tag'); return 'gc:'+((h.textContent||'').replace(__o?__o.textContent:'\u0000','')).replace(/[\d,.\s()\-–:·%฿\/]/g,'').slice(0,40); }
 function enhanceCollapsibleCards(root){
   root.querySelectorAll('.card').forEach(card=>{
     if (card.classList.contains('ask-card')) return;
@@ -4253,7 +4257,7 @@ function renderCompetitionsTab(){
   const hideJoining = (!!startDate && joiningMonths.length && !joiningMonths.some(j=>j.y===selYear)) || (__jEnd && new Date()>__jEnd); // ไม่เข้าเกณฑ์: เลย 4 เดือนแรกนับจากเดือนที่มีผลงานขึ้นแรก (รวมตัวแทนเก่า)
   return `
     <div class="card">
-      <h3>📅 ผลงานรายเดือน ประจำปี ${toBE(selYear)}</h3>
+      <h3>📅 ผลงานรายเดือน${ownerTag(state.currentAgent)} ประจำปี ${toBE(selYear)}</h3>
       <p class="sub">เกณฑ์ต่อไตรมาส: ผลงาน ≥ 6 ราย · FYC ≥ 40,000 · มีผลงานรายใหม่อย่างน้อย 2 ใน 3 เดือน (ประกาศที่ 3/2569)</p>
       ${(()=>{ const __en = agent().entries||[]; const __cap = (selYear===new Date().getFullYear()) ? new Date().getMonth() : 11; let __b=-1, __bv=0; for (let __m=0; __m<=__cap; __m++){ const __v = mEff(__en, selYear, __m); if (__v>__bv){ __bv=__v; __b=__m; } } return __b>=0 ? `<div style="display:flex;align-items:center;gap:10px;background:#F1F8F3;border:1.5px solid var(--good);border-radius:10px;padding:10px 12px;margin:0 0 12px;"><span style="font-size:26px;">🏅</span><div style="font-size:17px;line-height:1.4;">เดือนที่ทำได้ดีที่สุด: <b style="color:var(--good);font-size:20px;">${THAI_MONTH_NAMES[__b]}</b> · FYC <b style="color:var(--good);font-size:20px;">${THB(__bv)}</b></div></div>` : ''; })()}
       <div class="qgrid">${qCardsHtml}</div>
