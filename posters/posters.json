@@ -425,7 +425,7 @@
     ]
   },
   {
-    "file": "2026-10_exam-2-computer.jpg",
+    "file": "archive/2026-10_exam-2-computer.jpg",
     "title": "สอบส่วนภูมิภาค ระบบคอมพิวเตอร์ · ต.ค. 69",
     "kind": "exam",
     "venue": "computer",
@@ -463,7 +463,8 @@
           "ใต้": "สงขลา ภูเก็ต นครศรีธรรมราช ยะลา ชุมพร"
         }
       }
-    ]
+    ],
+    "archived": true
   },
   {
     "file": "2026-11_exam-3-computer.jpg",
