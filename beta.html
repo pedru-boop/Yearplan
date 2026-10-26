@@ -718,7 +718,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta37 · อัปเดต 26 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta38 · อัปเดต 26 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -7266,10 +7266,12 @@ document.addEventListener('keydown', e=>{
 
 /* ================= 📢 คำสั่งน่าสนใจ — คำสั่ง/ประกาศบริษัท (เพิ่มใหม่: ใส่ไฟล์ในโฟลเดอร์ orders/ แล้วเพิ่มรายการใน ORDERS — ใหม่สุดไว้บนสุด) ================= */
 const ORDERS = [
+  { no:'ประกาศที่ 166/2566', t:'การคิดผลงานและคุณสมบัติของผู้มีสิทธิ์เข้าร่วมแข่งขันชิงรางวัลของฝ่ายขายสามัญ', d:'26 ก.ค. 2566 · มีผล 1 ส.ค. 2566',
+    pdf:'orders/pk-166-2566.pdf', pages:['orders/pk-166-2566-1.jpg','orders/pk-166-2566-2.jpg','orders/pk-166-2566-3.jpg','orders/pk-166-2566-4.jpg'] },
   { no:'รบข. 3/2564', t:'ผลประโยชน์เงินรางวัลตัวแทนประกันชีวิต (รายไตรมาส/รายปี)', d:'5 ม.ค. 2564 · มีผล 1 ม.ค. 2564',
     pdf:'orders/rbk-3-2564.pdf', pages:['orders/rbk-3-2564-1.jpg','orders/rbk-3-2564-2.jpg','orders/rbk-3-2564-3.jpg'] },
 ];
-const ORDERS_VER = '20261026';
+const ORDERS_VER = '20261026b';
 const oSrc = f => f + '?v=' + ORDERS_VER;
 function oOpen(){ try{ return localStorage.getItem('ped-orders-open')==='1'; }catch(e){ return false; } }
 function oSetOpen(v){ try{ localStorage.setItem('ped-orders-open', v?'1':'0'); }catch(e){} }
