@@ -685,7 +685,24 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
 .o-item .o-dt{display:block;font-size:15.5px;color:var(--n-dim,#4B5563);margin-top:3px;}
 .o-src{font-size:15px;color:var(--n-dim,#4B5563);text-align:center;line-height:1.4;}
 @media (max-width:480px){ .tn-row .o-box{gap:4px;padding:10px 8px;} .tn-row .o-box .t-ttl{font-size:16.5px;letter-spacing:-.2px;} }
-#cv .cv-pdf{display:inline-block;margin-left:8px;padding:4px 12px;border-radius:999px;background:#FFE08A;color:#03131F;font-weight:700;text-decoration:none;}
+#cv .cv-pdf{display:inline-block;margin-left:8px;padding:4px 12px;border-radius:999px;background:#FFE08A;color:#03131F;font-weight:700;text-decoration:none;border:0;font:inherit;font-size:16px;cursor:pointer;}
+#pv .pv-pdf{display:inline-block;margin-top:6px;padding:4px 12px;border-radius:999px;background:#FFE08A;color:#03131F;font:inherit;font-size:16px;font-weight:700;border:0;cursor:pointer;}
+/* ===== 📄 หน้าดู PDF ในแอป (ทับทุกหน้าจอ) ===== */
+#dv[hidden]{display:none!important;}
+#dv{position:fixed;inset:0;z-index:400;background:#2B2F36;display:flex;flex-direction:column;color:#fff;}
+#dv .dv-top{display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 10px 10px 14px;background:#03131F;}
+#dv .dv-t{flex:1;min-width:0;font-size:18px;font-weight:700;line-height:1.3;}
+#dv .dv-t small{display:block;font-size:15px;font-weight:600;color:#FFE08A;}
+#dv .dv-x{flex:none;width:56px;height:56px;border-radius:50%;border:0;background:#fff;color:#03131F;font-size:30px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.5);}
+#dv .dv-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:12px 10px 20px;}
+#dv .dv-pages{margin:0 auto;display:flex;flex-direction:column;gap:12px;align-items:center;}
+#dv .dv-pages img{display:block;width:100%;height:auto;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.5);}
+#dv .dv-pn{font-size:14px;color:#C9D3E0;margin-top:-6px;}
+#dv .dv-bot{display:flex;gap:8px;justify-content:center;align-items:center;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));background:#03131F;}
+#dv .dv-bot button{font:inherit;font-size:18px;font-weight:700;min-height:48px;padding:8px 16px;border-radius:12px;border:1px solid #ffffff44;background:#ffffff1a;color:#fff;cursor:pointer;}
+#dv .dv-bot .dv-sv{background:#FFE08A;color:#03131F;border:0;}
+#dv .dv-bot .dv-close{background:#fff;color:#03131F;border:0;}
+#dv .dv-z{min-width:52px;}
 </style>
 </head>
 <body>
@@ -718,7 +735,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta39 · อัปเดต 26 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta40 · อัปเดต 26 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -755,7 +772,7 @@ function cView(start){
   let v = document.getElementById('cv');
   if (!v){ v = document.createElement('div'); v.id = 'cv'; document.body.appendChild(v); }
   const n = COMM_IMGS.length;
-  v.innerHTML = `<div class="cv-bar"><span id="cv-t"></span><small id="cv-c"></small></div>
+  v.innerHTML = `<div class="cv-bar"><span id="cv-t"></span><small><span id="cv-c"></span> <button type="button" class="cv-pdf" data-c-pdf>📄 เปิด PDF</button></small></div>
     <button type="button" class="cv-x" aria-label="ปิด">✕</button>
     <div class="cv-track">${COMM_IMGS.map((p,i)=>`<div class="cv-sl" data-i="${i}"><img src="${cImgSrc(p)}" alt="${p.t}"></div>`).join('')}</div>
     <button type="button" class="cv-nav prev" aria-label="หน้าก่อน">◀</button><button type="button" class="cv-nav next" aria-label="หน้าถัดไป">▶</button>
@@ -768,6 +785,7 @@ function cView(start){
   tr.onscroll = head;
   const close = ()=>{ v.hidden = true; v.innerHTML = ''; document.body.style.overflow = ''; };
   v.onclick = e=>{
+    if (e.target.closest('[data-c-pdf]')) return docView({ title:'💰 ตารางค่าคอม', sub:'ประกาศค่าตอบแทนตัวแทน ณ '+COMM_ASOF, pages:COMM_IMGS.map(cImgSrc), name:'ตารางค่าคอม '+COMM_ASOF });
     if (e.target.closest('.cv-x')) return close();
     const nv = e.target.closest('.cv-nav'); if (nv){ const i = (idx() + (nv.classList.contains('prev')?-1:1) + n) % n; tr.scrollTo({ left:i*tr.clientWidth, behavior:'smooth' }); return; }
     const img = e.target.closest('.cv-sl img'); if (img){ const sl = img.parentElement; sl.classList.toggle('big'); if (!sl.classList.contains('big')) sl.scrollTo(0,0); return; }
@@ -6742,7 +6760,7 @@ function posterView(files, startIdx, onPick){
   if (!list.length) return;
   let pv = document.getElementById('pv');
   if (!pv){ pv = document.createElement('div'); pv.id='pv'; document.body.appendChild(pv); }
-  pv.innerHTML = `<div class="bar"><span id="pv-t"></span><small id="pv-c"></small></div>
+  pv.innerHTML = `<div class="bar"><span id="pv-t"></span><small id="pv-c"></small><div><button type="button" class="pv-pdf" data-pv-pdf>📄 เปิด PDF</button></div></div>
     <button type="button" class="x" aria-label="ปิด">✕</button>
     <div class="track">${(list.length>1?[...list,...list,...list]:list).map((p,j)=>{ const i=j%list.length; return `<div class="sl" data-i="${i}"><img src="${esc(pSrc(p))}" alt="โปสเตอร์ ${esc(p.title||'')}">
       <div class="cap">${esc(pDateTxt(p))}${pIsArchived(p)?' · จบแล้ว':''}</div>
@@ -6757,6 +6775,7 @@ function posterView(files, startIdx, onPick){
   if (list.length>1) pv.insertAdjacentHTML('beforeend','<button type="button" class="pv-nav prev" aria-label="ใบก่อนหน้า">◀</button><button type="button" class="pv-nav next" aria-label="ใบถัดไป">▶</button>');
   const close = ()=>{ pv.hidden = true; pv.innerHTML=''; document.body.style.overflow = ''; };
   pv.onclick = e=>{
+    if (e.target.closest('[data-pv-pdf]')){ const n=list.length, i=((Math.round(track.scrollLeft/Math.max(1,track.clientWidth))%n)+n)%n, p=list[i]; return docView({ title:'🏆 '+(p.title||'โปสเตอร์'), sub:pDateTxt(p)||'', pages:[pSrc(p)], name:p.title||'โปสเตอร์' }); }
     if (e.target.closest('.x')) return close();
     const nv = e.target.closest('.pv-nav'); if (nv){ loopFix(track, list.length); const i = Math.round(track.scrollLeft/Math.max(1,track.clientWidth)) + (nv.classList.contains('prev')?-1:1); track.scrollTo({ left: i*track.clientWidth, behavior:'smooth' }); return; }
     const pk = e.target.closest('[data-pick]'); if (pk){ close(); onPick(list[+pk.dataset.pick]); return; }
@@ -7264,6 +7283,92 @@ document.addEventListener('keydown', e=>{
   else if (e.target && e.target.closest && e.target.closest('[data-note-toggle]') && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); e.target.click(); }
 }, true);
 
+/* ================= 📄 หน้าดู PDF ในแอป — ปิดด้วย ✕ กลับหน้าเดิม · ซูม +/− · บันทึก/ส่งต่อเป็นไฟล์ PDF =================
+   doc = { title, sub, pages:[รูปแต่ละหน้า], pdf?:ไฟล์ PDF ต้นฉบับ (ถ้าไม่มี จะสร้าง PDF จากรูปให้ตอนกดบันทึก), name:ชื่อไฟล์ } */
+let dvDoc = null, dvZoom = 1, dvBlob = null, dvBusy = null;
+const DV_ZOOMS = [1, 1.5, 2, 3];
+function dvFileName(n){ return String(n||'เอกสาร').replace(/[\\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,80) + '.pdf'; }
+function dvImg(src){ return new Promise((ok,no)=>{ const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = ()=>ok(im); im.onerror = no; im.src = src; }); }
+// สร้าง PDF จากรูป (แต่ละรูป = 1 หน้า) — เขียนเอง ไม่ต้องโหลดไลบรารีเพิ่ม
+async function dvJpeg(src){
+  const im = await dvImg(src), c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+  const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0,0,c.width,c.height); cx.drawImage(im,0,0);
+  const b = await new Promise(ok=>c.toBlob(ok, 'image/jpeg', 0.9));
+  return { w:c.width, h:c.height, bytes:new Uint8Array(await b.arrayBuffer()) };
+}
+async function dvPdfFromImages(srcs){
+  const imgs = []; for (const s of srcs) imgs.push(await dvJpeg(s));
+  const enc = new TextEncoder(), parts = [], offs = []; let len = 0;
+  const put = x=>{ const u = typeof x==='string' ? enc.encode(x) : x; parts.push(u); len += u.length; };
+  const obj = (id, body)=>{ offs[id] = len; put(`${id} 0 obj\n`); body(); put(`\nendobj\n`); };
+  const n = imgs.length, kids = imgs.map((_,i)=>`${3+i*3} 0 R`).join(' ');
+  put('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+  obj(1, ()=>put('<< /Type /Catalog /Pages 2 0 R >>'));
+  obj(2, ()=>put(`<< /Type /Pages /Kids [${kids}] /Count ${n} >>`));
+  imgs.forEach((im,i)=>{
+    const pid = 3+i*3, iid = pid+1, cid = pid+2, W = 595, H = Math.round(595*im.h/Math.max(1,im.w));
+    const cs = `q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+    obj(pid, ()=>put(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${iid} 0 R >> >> /Contents ${cid} 0 R >>`));
+    obj(iid, ()=>{ put(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.bytes.length} >>\nstream\n`); put(im.bytes); put('\nendstream'); });
+    obj(cid, ()=>put(`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`));
+  });
+  const total = 3+n*3, xref = len;
+  put(`xref\n0 ${total}\n0000000000 65535 f \n` + Array.from({length:total-1},(_,i)=>String(offs[i+1]).padStart(10,'0')+' 00000 n \n').join(''));
+  put(`trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  return new Blob(parts, { type:'application/pdf' });
+}
+async function dvMakeBlob(doc){
+  if (doc.pdf){ const r = await fetch(doc.pdf); if (!r.ok) throw new Error('pdf'); return await r.blob(); }
+  return dvPdfFromImages(doc.pages);
+}
+function dvPrep(){ // เตรียมไฟล์ไว้ก่อน เพื่อให้กด "บันทึก/ส่งต่อ" แล้วขึ้นทันที
+  const doc = dvDoc; dvBlob = null;
+  dvBusy = dvMakeBlob(doc).then(b=>{ if (dvDoc===doc) dvBlob = b; return b; }).catch(()=>null);
+}
+function dvRender(){
+  const v = document.getElementById('dv'); if (!v || !dvDoc) return;
+  const d = dvDoc, n = d.pages.length;
+  v.innerHTML = `<div class="dv-top"><div class="dv-t">${esc(d.title)}${d.sub?`<small>${esc(d.sub)}</small>`:''}</div><button type="button" class="dv-x" data-dv-close aria-label="ปิด">✕</button></div>
+    <div class="dv-body"><div class="dv-pages" style="width:${dvZoom*100}%;max-width:${dvZoom===1?'900px':'none'};">${d.pages.map((src,i)=>`<img src="${esc(src)}" alt="หน้า ${i+1}">${n>1?`<div class="dv-pn">หน้า ${i+1}/${n}</div>`:''}`).join('')}</div></div>
+    <div class="dv-bot"><button type="button" class="dv-z" data-dv-z="-1" aria-label="ย่อ">−</button><button type="button" class="dv-z" data-dv-z="1" aria-label="ขยาย">+</button><button type="button" class="dv-sv" data-dv-save>⬇️ บันทึก/ส่งต่อ</button><button type="button" class="dv-close" data-dv-close>ปิด</button></div>`;
+}
+function docView(doc){
+  if (!doc || !doc.pages || !doc.pages.length) return;
+  let v = document.getElementById('dv');
+  if (!v){ v = document.createElement('div'); v.id = 'dv'; document.body.appendChild(v); }
+  dvDoc = doc; dvZoom = 1; dvRender(); v.hidden = false; document.body.style.overflow = 'hidden';
+  try{ history.pushState({ dv:1 }, ''); }catch(_){}
+  dvPrep();
+}
+function dvClose(fromBack){
+  const v = document.getElementById('dv'); if (!v || v.hidden) return;
+  v.hidden = true; v.innerHTML = ''; dvDoc = null; dvBlob = null;
+  const under = ['cv','pv'].some(id=>{ const e = document.getElementById(id); return e && !e.hidden; });
+  if (!under) document.body.style.overflow = '';
+  if (!fromBack){ try{ if (history.state && history.state.dv) history.back(); }catch(_){} }
+}
+async function dvSave(){
+  const d = dvDoc; if (!d) return;
+  let b = dvBlob;
+  if (!b){ showToast('กำลังเตรียมไฟล์ PDF…'); b = await dvBusy; if (!b) b = await dvMakeBlob(d).catch(()=>null); }
+  if (!b){ showToast('สร้างไฟล์ไม่สำเร็จ ลองใหม่อีกครั้งนะคะ'); return; }
+  const name = dvFileName(d.name || d.title), file = new File([b], name, { type:'application/pdf' });
+  try{
+    if (navigator.canShare && navigator.canShare({ files:[file] })){ await navigator.share({ files:[file], title:name }); return; }
+  }catch(e){ if (e && e.name==='AbortError') return; }
+  const u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u), 60000); showToast('บันทึกไฟล์ PDF แล้ว');
+}
+window.addEventListener('popstate', ()=>dvClose(true)); // ปุ่มย้อนกลับของเครื่อง = ปิดหน้า PDF
+document.addEventListener('click', e=>{
+  const v = document.getElementById('dv'); if (!v || v.hidden || !v.contains(e.target)) return;
+  const g = s=>e.target.closest(s); let el;
+  if (g('[data-dv-close]')){ e.preventDefault(); e.stopPropagation(); dvClose(); return; }
+  if (g('[data-dv-save]')){ e.preventDefault(); e.stopPropagation(); dvSave(); return; }
+  if ((el = g('[data-dv-z]'))){ e.preventDefault(); e.stopPropagation(); const i = DV_ZOOMS.indexOf(dvZoom) + (+el.dataset.dvZ); dvZoom = DV_ZOOMS[Math.max(0, Math.min(DV_ZOOMS.length-1, i))]; const body = v.querySelector('.dv-body'), y = body ? body.scrollTop/Math.max(1,body.scrollHeight) : 0; dvRender(); const nb = v.querySelector('.dv-body'); if (nb) nb.scrollTop = y*nb.scrollHeight; return; }
+}, true);
+document.addEventListener('keydown', e=>{ const v = document.getElementById('dv'); if (e.key==='Escape' && v && !v.hidden){ e.stopPropagation(); dvClose(); } }, true);
+
 /* ================= 📢 คำสั่งน่าสนใจ — คำสั่ง/ประกาศบริษัท (เพิ่มใหม่: ใส่ไฟล์ในโฟลเดอร์ orders/ แล้วเพิ่มรายการใน ORDERS — ใหม่สุดไว้บนสุด) ================= */
 const ORDERS = [
   { no:'คู่มือ ปปง. (ตัวแทนใหม่)', t:'เรียนหลักสูตร ปปง. — กฎหมายป้องกันและปราบปรามการฟอกเงินฯ ผ่านระบบ B-Learning', d:'วิธีเข้าเรียน + ขั้นตอนทีละข้อ',
@@ -7296,7 +7401,7 @@ function oView(k){
   let v = document.getElementById('cv');
   if (!v){ v = document.createElement('div'); v.id = 'cv'; document.body.appendChild(v); }
   const n = o.pages.length;
-  v.innerHTML = `<div class="cv-bar"><span>📢 ${esc(o.no)}</span><small><span id="cv-c"></span>${o.pdf?`<a class="cv-pdf" href="${oSrc(o.pdf)}" target="_blank" rel="noopener">📄 เปิด PDF</a>`:''}</small></div>
+  v.innerHTML = `<div class="cv-bar"><span>📢 ${esc(o.no)}</span><small><span id="cv-c"></span><button type="button" class="cv-pdf" data-o-pdf>📄 เปิด PDF</button></small></div>
     <button type="button" class="cv-x" aria-label="ปิด">✕</button>
     <div class="cv-track">${o.pages.map((f,i)=>`<div class="cv-sl" data-i="${i}"><img src="${oSrc(f)}" alt="${esc(o.no)} หน้า ${i+1}"></div>`).join('')}</div>
     ${n>1?`<button type="button" class="cv-nav prev" aria-label="หน้าก่อน">◀</button><button type="button" class="cv-nav next" aria-label="หน้าถัดไป">▶</button>`:''}
@@ -7309,7 +7414,7 @@ function oView(k){
   tr.onscroll = head;
   const close = ()=>{ v.hidden = true; v.innerHTML = ''; document.body.style.overflow = ''; };
   v.onclick = e=>{
-    if (e.target.closest('.cv-pdf')) return;
+    if (e.target.closest('[data-o-pdf]')) return docView({ title:o.no, sub:o.t, pdf:oSrc(o.pdf), pages:o.pages.map(oSrc), name:o.no });
     if (e.target.closest('.cv-x')) return close();
     const nv = e.target.closest('.cv-nav'); if (nv){ const i = (idx() + (nv.classList.contains('prev')?-1:1) + n) % n; tr.scrollTo({ left:i*tr.clientWidth, behavior:'smooth' }); return; }
     const img = e.target.closest('.cv-sl img'); if (img){ const sl = img.parentElement; sl.classList.toggle('big'); if (!sl.classList.contains('big')) sl.scrollTo(0,0); return; }
