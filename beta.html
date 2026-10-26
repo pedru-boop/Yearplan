@@ -703,6 +703,11 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
 #dv .dv-bot .dv-sv{background:#FFE08A;color:#03131F;border:0;}
 #dv .dv-bot .dv-close{background:#fff;color:#03131F;border:0;}
 #dv .dv-z{min-width:52px;}
+
+/* v.1 ตารางรายเดือนในการ์ดไตรมาส: จัดทุกคอลัมน์กึ่งกลาง */
+.qcard .qtable th,.qcard .qtable th.r,.qcard .qtable td,.qcard .qtable td.r{text-align:center!important;}
+.qcard .qtable input{text-align:center!important;display:block;margin-left:auto!important;margin-right:auto!important;}
+.qcard .qtable td > div{text-align:center!important;}
 </style>
 </head>
 <body>
@@ -735,7 +740,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta41.4 · อัปเดต 27 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta41.5 · อัปเดต 27 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -3523,10 +3528,6 @@ function __generatePrintReportRaw(){
   .footer{margin-top:30px;font-size:11px;color:#999;border-top:1px solid #ddd;padding-top:10px;}
   @media print { body{padding:10px;} }
 
-/* v.1 ตารางรายเดือนในการ์ดไตรมาส: จัดทุกคอลัมน์กึ่งกลาง */
-.qcard .qtable th,.qcard .qtable th.r,.qcard .qtable td,.qcard .qtable td.r{text-align:center!important;}
-.qcard .qtable input{text-align:center!important;display:block;margin-left:auto!important;margin-right:auto!important;}
-.qcard .qtable td > div{text-align:center!important;}
 </style></head><body>
   <h1>รายงานสรุปผลงานและผลตอบแทน</h1>
   <div class="meta">ตัวแทน: <b>${esc(name)}</b> · ปี พ.ศ. ${toBE(selYear)} · พิมพ์เมื่อ ${printDate}</div>
