@@ -674,6 +674,18 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
 #cv .cv-nav{position:fixed;top:50%;transform:translateY(-50%);z-index:221;width:46px;height:46px;border-radius:50%;border:0;background:#ffffffcc;color:#03131F;font-size:20px;cursor:pointer;}
 #cv .cv-nav.prev{left:6px;} #cv .cv-nav.next{right:6px;}
 #cv .cv-hint{text-align:center;font-size:16px;color:#C9D3E0;padding:4px 0 calc(10px + env(safe-area-inset-bottom,0px));}
+/* ===== 📢 คำสั่งน่าสนใจ (รบข./ประกาศบริษัท) ===== */
+.tn-row>.o-sec{display:contents;}
+.tn-row .o-box{grid-column:2;grid-row:1;display:flex;width:100%;box-sizing:border-box;justify-content:space-between;gap:8px;margin:4px 0 10px;padding:10px 10px 10px 14px;}
+.o-panel{border:1px solid var(--n-line,#0F56B255);border-radius:14px;background:var(--n-bg,#fff);color:var(--n-ink,#082238);padding:10px 12px;margin:0 2px 12px;display:flex;flex-direction:column;gap:8px;}
+.o-item{display:flex;gap:12px;align-items:center;width:100%;font:inherit;text-align:left;padding:10px 12px;border:1px solid var(--n-line,#0F56B255);border-radius:12px;background:var(--n-bg,#fff);color:var(--n-ink,#082238);cursor:pointer;}
+.o-item img{flex:none;width:58px;height:78px;object-fit:cover;object-position:top;border-radius:6px;border:1px solid #0001;background:#fff;}
+.o-item .o-no{display:block;font-size:16px;font-weight:800;color:var(--e-accent,#0F56B2);}
+.o-item .o-tt{display:block;font-size:18px;font-weight:700;line-height:1.35;margin-top:2px;}
+.o-item .o-dt{display:block;font-size:15.5px;color:var(--n-dim,#4B5563);margin-top:3px;}
+.o-src{font-size:15px;color:var(--n-dim,#4B5563);text-align:center;line-height:1.4;}
+@media (max-width:480px){ .tn-row .o-box{gap:4px;padding:10px 8px;} .tn-row .o-box .t-ttl{font-size:16.5px;letter-spacing:-.2px;} }
+#cv .cv-pdf{display:inline-block;margin-left:8px;padding:4px 12px;border-radius:999px;background:#FFE08A;color:#03131F;font-weight:700;text-decoration:none;}
 </style>
 </head>
 <body>
@@ -706,7 +718,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta36 · อัปเดต 16 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta37 · อัปเดต 26 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -6395,7 +6407,7 @@ function betaLayout(c){
     ${posterStripHtml()}
     ${examHtml()}
     <div class="tn-row">${trainingHtml()}${commHtml()}</div>
-    <div class="tn-row">${notesHtml()}</div>
+    <div class="tn-row">${notesHtml()}${ordersHtml()}</div>
     <div id="b-ask-slot"></div>
     ${bReportBoxes(S)}
     <div class="b-sec"><h2>หมวดทั้งหมด</h2></div>
@@ -7250,6 +7262,65 @@ document.addEventListener('change', nInput, true);
 document.addEventListener('keydown', e=>{
   if (e.target && e.target.id==='n-text' && e.key==='Enter' && !e.isComposing){ e.preventDefault(); noteDraft.text = e.target.value; nSave(); }
   else if (e.target && e.target.closest && e.target.closest('[data-note-toggle]') && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); e.target.click(); }
+}, true);
+
+/* ================= 📢 คำสั่งน่าสนใจ — คำสั่ง/ประกาศบริษัท (เพิ่มใหม่: ใส่ไฟล์ในโฟลเดอร์ orders/ แล้วเพิ่มรายการใน ORDERS — ใหม่สุดไว้บนสุด) ================= */
+const ORDERS = [
+  { no:'รบข. 3/2564', t:'ผลประโยชน์เงินรางวัลตัวแทนประกันชีวิต (รายไตรมาส/รายปี)', d:'5 ม.ค. 2564 · มีผล 1 ม.ค. 2564',
+    pdf:'orders/rbk-3-2564.pdf', pages:['orders/rbk-3-2564-1.jpg','orders/rbk-3-2564-2.jpg','orders/rbk-3-2564-3.jpg'] },
+];
+const ORDERS_VER = '20261026';
+const oSrc = f => f + '?v=' + ORDERS_VER;
+function oOpen(){ try{ return localStorage.getItem('ped-orders-open')==='1'; }catch(e){ return false; } }
+function oSetOpen(v){ try{ localStorage.setItem('ped-orders-open', v?'1':'0'); }catch(e){} }
+function ordersHtml(){
+  const open = oOpen();
+  return `<div id="o-sec" class="o-sec">
+    <div class="t-box o-box" role="button" tabindex="0" data-o-toggle aria-expanded="${open}"><span class="t-ttl"><i class="t-ic">📢 </i>คำสั่งน่าสนใจ</span><span class="t-arr">${open?'▲':'▼'}</span></div>
+    ${open?`<div class="o-panel">
+      ${ORDERS.map((o,i)=>`<button type="button" class="o-item" data-o-open="${i}"><img src="${oSrc(o.pages[0])}" loading="lazy" alt=""><span><span class="o-no">${esc(o.no)}</span><span class="o-tt">${esc(o.t)}</span><span class="o-dt">📅 ${esc(o.d)} · ${o.pages.length} หน้า</span></span></button>`).join('')}
+      <div class="o-src">แตะรายการเพื่อเปิดดูเต็มจอ · ซูมได้</div>
+    </div>`:''}
+  </div>`;
+}
+function oRerender(){ const s = document.getElementById('o-sec'); if (s) s.outerHTML = ordersHtml(); }
+// ดูคำสั่งเต็มจอ (ใช้หน้าจอเดียวกับตารางค่าคอม): ปัดซ้าย-ขวาเปลี่ยนหน้า · แตะรูปขยาย/ย่อ · ปุ่มเปิดไฟล์ PDF ต้นฉบับ
+function oView(k){
+  const o = ORDERS[k]; if (!o) return;
+  let v = document.getElementById('cv');
+  if (!v){ v = document.createElement('div'); v.id = 'cv'; document.body.appendChild(v); }
+  const n = o.pages.length;
+  v.innerHTML = `<div class="cv-bar"><span>📢 ${esc(o.no)}</span><small><span id="cv-c"></span>${o.pdf?`<a class="cv-pdf" href="${oSrc(o.pdf)}" target="_blank" rel="noopener">📄 เปิด PDF</a>`:''}</small></div>
+    <button type="button" class="cv-x" aria-label="ปิด">✕</button>
+    <div class="cv-track">${o.pages.map((f,i)=>`<div class="cv-sl" data-i="${i}"><img src="${oSrc(f)}" alt="${esc(o.no)} หน้า ${i+1}"></div>`).join('')}</div>
+    ${n>1?`<button type="button" class="cv-nav prev" aria-label="หน้าก่อน">◀</button><button type="button" class="cv-nav next" aria-label="หน้าถัดไป">▶</button>`:''}
+    <div class="cv-hint">${n>1?'ปัดซ้าย-ขวาเพื่อดูหน้าอื่น · ':''}แตะรูปเพื่อขยาย</div>`;
+  v.hidden = false; document.body.style.overflow = 'hidden';
+  const tr = v.querySelector('.cv-track');
+  const idx = ()=>Math.max(0, Math.min(n-1, Math.round(tr.scrollLeft/Math.max(1,tr.clientWidth))));
+  const head = ()=>{ v.querySelector('#cv-c').textContent = `หน้า ${idx()+1}/${n} · ${o.d}`; };
+  requestAnimationFrame(()=>{ tr.scrollLeft = 0; head(); });
+  tr.onscroll = head;
+  const close = ()=>{ v.hidden = true; v.innerHTML = ''; document.body.style.overflow = ''; };
+  v.onclick = e=>{
+    if (e.target.closest('.cv-pdf')) return;
+    if (e.target.closest('.cv-x')) return close();
+    const nv = e.target.closest('.cv-nav'); if (nv){ const i = (idx() + (nv.classList.contains('prev')?-1:1) + n) % n; tr.scrollTo({ left:i*tr.clientWidth, behavior:'smooth' }); return; }
+    const img = e.target.closest('.cv-sl img'); if (img){ const sl = img.parentElement; sl.classList.toggle('big'); if (!sl.classList.contains('big')) sl.scrollTo(0,0); return; }
+    if (e.target.classList.contains('cv-sl') || e.target.classList.contains('cv-track')) close();
+  };
+}
+document.addEventListener('click', e=>{
+  const g = s=>e.target.closest(s); let el;
+  if (g('[data-o-toggle]')){ e.preventDefault(); e.stopPropagation(); oSetOpen(!oOpen());
+    if (oOpen() && nOpen()){ try{ localStorage.setItem('ped-notes-open','0'); }catch(_){} nRerender(); }
+    oRerender(); return; }
+  if ((el = g('[data-o-open]'))){ e.preventDefault(); e.stopPropagation(); oView(+el.dataset.oOpen); return; }
+  // เปิดบันทึกย่อ → พับคำสั่งน่าสนใจ (แถวเดียวกัน)
+  if (g('[data-note-toggle]') && nOpen() && oOpen()){ oSetOpen(false); oRerender(); }
+}, true);
+document.addEventListener('keydown', e=>{
+  if (e.target && e.target.closest && e.target.closest('[data-o-toggle]') && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); e.target.click(); }
 }, true);
 
 // ปุ่มในกล่องเตือนบัตรตัวแทน → เปิดโปสเตอร์รอบอบรมที่เกี่ยวข้อง
