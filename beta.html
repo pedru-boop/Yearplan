@@ -735,7 +735,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta41.1 · อัปเดต 27 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta41.2 · อัปเดต 27 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -7376,6 +7376,10 @@ document.addEventListener('keydown', e=>{ const v = document.getElementById('dv'
 
 /* ================= 📢 คำสั่งน่าสนใจ — คำสั่ง/ประกาศบริษัท (เพิ่มใหม่: ใส่ไฟล์ในโฟลเดอร์ orders/ แล้วเพิ่มรายการใน ORDERS — ใหม่สุดไว้บนสุด) ================= */
 const ORDERS = [
+  { no:'Copayment (สมาคมประกันชีวิตไทย)', t:'ใครบ้างที่จะเข้าเงื่อนไข Copayment — 3 กรณี สำหรับกรมธรรม์สุขภาพที่เริ่มคุ้มครองตั้งแต่ 1 มี.ค. 2568', d:'สมาคมประกันชีวิตไทย · 2568',
+    pdf:'orders/copayment.pdf', pages:['orders/copayment-1.jpg','orders/copayment-2.jpg','orders/copayment-3.jpg'] },
+  { no:'Simple Diseases คืออะไร', t:'ลักษณะและตัวอย่างการเจ็บป่วยเล็กน้อย (Simple Diseases) ที่ใช้คิด Copayment', d:'สมาคมประกันชีวิตไทย · 2568',
+    pdf:'orders/simple-diseases.pdf', pages:['orders/simple-diseases-1.jpg','orders/simple-diseases-2.jpg','orders/simple-diseases-3.jpg'] },
   { no:'คู่มือ ปปง. (ตัวแทนใหม่)', t:'เรียนหลักสูตร ปปง. — กฎหมายป้องกันและปราบปรามการฟอกเงินฯ ผ่านระบบ B-Learning', d:'วิธีเข้าเรียน + ขั้นตอนทีละข้อ',
     pdf:'orders/amlo-blearning.pdf', pages:['orders/amlo-blearning-1.jpg','orders/amlo-blearning-2.jpg'] },
   { no:'คู่มือ OIC e-Licensing', t:'ขั้นตอนลงทะเบียน/ยืนยันตัวตน ระบบ e-Licensing ผ่าน LINE @oicconnect', d:'8 ขั้นตอน',
@@ -7387,14 +7391,14 @@ const ORDERS = [
   { no:'รบข. 4/2541', t:'การจ่ายผลประโยชน์จากอาชีพ (CAREER) — คุณสมบัติตามอายุงาน + อัตราจ่าย 60/70/80%', d:'7 ม.ค. 2541 · มีผล 1 ม.ค. 2541',
     pdf:'orders/rbk-4-2541.pdf', pages:['orders/rbk-4-2541-1.jpg','orders/rbk-4-2541-2.jpg'] },
 ];
-const ORDERS_VER = '20261026d';
+const ORDERS_VER = '20261027a';
 const oSrc = f => f + '?v=' + ORDERS_VER;
 function oOpen(){ try{ return localStorage.getItem('ped-orders-open')==='1'; }catch(e){ return false; } }
 function oSetOpen(v){ try{ localStorage.setItem('ped-orders-open', v?'1':'0'); }catch(e){} }
 function ordersHtml(){
   const open = oOpen();
   return `<div id="o-sec" class="o-sec">
-    <div class="t-box o-box" role="button" tabindex="0" data-o-toggle aria-expanded="${open}"><span class="t-ttl"><i class="t-ic">📢 </i>คำสั่งน่าสนใจ</span><span class="t-arr">${open?'▲':'▼'}</span></div>
+    <div class="t-box o-box" role="button" tabindex="0" data-o-toggle aria-expanded="${open}"><span class="t-ttl"><i class="t-ic">📢 </i>ข้อมูลข่าวสาร</span><span class="t-arr">${open?'▲':'▼'}</span></div>
     ${open?`<div class="o-panel">
       ${ORDERS.map((o,i)=>`<button type="button" class="o-item" data-o-open="${i}"><img src="${oSrc(o.pages[0])}" loading="lazy" alt=""><span><span class="o-no">${esc(o.no)}</span><span class="o-tt">${esc(o.t)}</span><span class="o-dt">📅 ${esc(o.d)} · ${o.pages.length} หน้า</span></span></button>`).join('')}
       <div class="o-src">แตะรายการเพื่อเปิดดูเต็มจอ · ซูมได้</div>
