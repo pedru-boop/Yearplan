@@ -740,7 +740,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta41.7 · อัปเดต 27 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta41.8 · อัปเดต 27 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -3147,20 +3147,14 @@ function renderTeamTab(){
           const cid = ag.license.cardIssueDate;
           const sdLabel = fmtTH(new Date(sd+"T00:00:00"),{day:"numeric",month:"short",year:"numeric"});
           const cidLabel = fmtTH(new Date(cid+"T00:00:00"),{day:"numeric",month:"short",year:"numeric"});
-          const premiums = getNormalizedPremiums(name);
-          const premiumSum = premiums.reduce((s,p)=>s+(Number(stripCommas(String(p.amount||0)))||0),0);
+          const np = naPrem(name, new Date(PROMO_YEAR_NEW_AGENT,4,1), new Date(PROMO_YEAR_NEW_AGENT,10,30,23,59,59)), premiumSum = np.ok;
           return `<div style="padding:10px 0;border-bottom:1px solid #123F6B0D;">
             <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
               <span style="font-weight:600;color:var(--navy);">${esc(name)}</span>
               <span style="color:var(--muted);font-size:15px;">เริ่มมีผลงาน ${sdLabel}</span>
             </div>
             <div style="text-align:right;color:var(--muted);font-size:14px;margin-bottom:6px;">ออกบัตร ${cidLabel}</div>
-            ${[0,1,2,3,4].map(i=>`<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;">
-              <span style="font-size:13px;color:var(--muted);width:38px;flex-shrink:0;">งวด${i+1}</span>
-              <div style="flex:1;min-width:0;">${renderDateInput(`premium|${encodeURIComponent(name)}|${i}`, premiums[i].date, true)}</div>
-              <input type="text" inputmode="decimal" data-premium-agent="${esc(name)}" data-premium-idx="${i}" value="${esc(premiums[i].amount||"")}" placeholder="จำนวนเงิน" style="flex:1;min-width:0;box-sizing:border-box;padding:5px 7px;font-size:18.75px;text-align:center;">
-            </div>`).join("")}
-            <div style="text-align:right;font-size:15px;color:var(--navy);font-weight:700;">เบี้ยประกันรวม: ${THB(premiumSum)}</div>
+            <div style="text-align:right;font-size:15px;color:var(--navy);font-weight:700;">เบี้ยรับจริง 1 พ.ค.–30 พ.ย.: ${THB(premiumSum)}<div style="font-weight:400;font-size:13px;color:var(--muted);">ดึงจากรายการผลงานที่คีย์ (เบี้ยต่องวดที่ถึงกำหนดแล้ว)</div>${naNote(np)}</div>
           </div>`;
         }).join("");
       })()}
@@ -3180,18 +3174,13 @@ function renderTeamTab(){
           const d = new Date(cd+"T00:00:00");
           return d>=rangeStart && d<=rangeEnd;
         }).map(name=>{
-          const premiums = getNormalizedPremiums(name);
-          const premiumSum = premiums.filter(p=>{
-            if (!p.date) return false;
-            const pd = new Date(p.date+"T00:00:00");
-            return pd>=rangeStart && pd<=rangeEnd;
-          }).reduce((s,p)=>s+(Number(stripCommas(String(p.amount||0)))||0),0);
-          return { name, premiumSum, qualifies: premiumSum>=50000 };
+          const np = naPrem(name, rangeStart, rangeEnd), premiumSum = np.ok;
+          return { name, premiumSum, np, qualifies: premiumSum>=50000 };
         });
         const qualified = candidates.filter(c=>c.qualifies);
         const rowsHtml = candidates.map(c=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #123F6B0D;">
           <span style="color:var(--navy-deep);">${c.qualifies?'✔':'✕'} ${esc(c.name)}</span>
-          <span style="color:${c.qualifies?'var(--good)':'var(--muted)'};font-weight:600;">${THB(c.premiumSum)}${c.qualifies?'':` (ขาดอีก ${THB(50000-c.premiumSum)})`}</span>
+          <span style="color:${c.qualifies?'var(--good)':'var(--muted)'};font-weight:600;">${THB(c.premiumSum)}${c.qualifies?'':` (ขาดอีก ${THB(50000-c.premiumSum)})`}${naNote(c.np)}</span>
         </div>`).join("");
         const baseReward = qualified.length>=2 ? qualified.length*10000 : 0;
         const bonusTiers = Math.floor(qualified.length/5);
@@ -3226,18 +3215,13 @@ function renderTeamTab(){
           const d = new Date(cd+"T00:00:00");
           return d>=codeStart && d<=codeEnd;
         }).map(name=>{
-          const premiums = getNormalizedPremiums(name);
-          const premiumSum = premiums.filter(p=>{
-            if (!p.date) return false;
-            const pd = new Date(p.date+"T00:00:00");
-            return pd>=workStart && pd<=workEnd;
-          }).reduce((s,p)=>s+(Number(stripCommas(String(p.amount||0)))||0),0);
-          return { name, premiumSum, qualifies: premiumSum>=100000 };
+          const np = naPrem(name, workStart, workEnd), premiumSum = np.ok;
+          return { name, premiumSum, np, qualifies: premiumSum>=100000 };
         });
         const qualified = candidates.filter(c=>c.qualifies);
         const rowsHtml = candidates.map(c=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #123F6B0D;">
           <span style="color:var(--navy-deep);">${c.qualifies?'✔':'✕'} ${esc(c.name)}</span>
-          <span style="color:${c.qualifies?'var(--good)':'var(--muted)'};font-weight:600;">${THB(c.premiumSum)}${c.qualifies?'':` (ขาดอีก ${THB(100000-c.premiumSum)})`}</span>
+          <span style="color:${c.qualifies?'var(--good)':'var(--muted)'};font-weight:600;">${THB(c.premiumSum)}${c.qualifies?'':` (ขาดอีก ${THB(100000-c.premiumSum)})`}${naNote(c.np)}</span>
         </div>`).join("");
         const totalReward = qualified.length*10000;
         return `
@@ -4287,6 +4271,16 @@ function getQuarterBuckets(){
 }
 
 /* ================= CALENDAR WIDGET ================= */
+// เบี้ยแข่งขันตัวแทนใหม่: ดึงจากรายการผลงานที่คีย์ (เบี้ยต่องวด) — นับงวดที่ลงวันที่ในช่วง และถึงกำหนดแล้วเท่านั้น
+function naPrem(name, s, e){
+  const ag = state.agents[name]; const all = (ag && ag.entries) || [], today = todayIso();
+  const inR = x=>{ const d = D(x.date); return d>=s && d<=e && String(x.date)<=today; };
+  const sum = L=>L.filter(inR).reduce((t,x)=>t+(Number(x.premium)||0),0);
+  const ok = sum(effectiveEntries(all)), tot = sum(all);
+  const miss = all.filter(x=>isOrigin(x) && D(x.date)>=s && D(x.date)<=e && !(Number(x.premium)>0)).length;
+  return { ok, pend: Math.max(0, tot-ok), miss };
+}
+function naNote(np){ return `${np.pend>0?`<div style="font-size:13px;color:var(--gold);">+${THB(np.pend)} รออนุมัติ</div>`:''}${np.miss?`<div style="font-size:13px;color:var(--bad);font-weight:700;">⚠ ยังไม่คีย์เบี้ย ${np.miss} เคส</div>`:''}`; }
 function getNormalizedPremiums(name){
   // เดิมเก็บเป็น array ของยอดเงินล้วน ("100000") ไม่มีวันที่ — ถ้าเจอข้อมูลเก่าแบบนี้ ให้แปลงเป็น {amount, date:""} เพื่อให้ใช้ร่วมกับของใหม่ได้ ไม่กระทบยอดเดิมที่เคยคีย์ไว้
   const raw = (state.umGoal.newAgentPremiums && state.umGoal.newAgentPremiums[name]) || ["","","","",""];
@@ -7649,6 +7643,19 @@ function tlUpAt(x, y, tgt, ev){
   return true;
 }
 window.addEventListener('pointerdown', e=>{ if (e.isPrimary!==false) tlDownAt(e.clientX, e.clientY, e.target); }, true);
+// กันเหนียว: แตะการ์ดแล้วไม่มีอะไรเปิดภายใน 0.6 วิ → เปิดการ์ดนั้นให้เอง
+let tlWatch = null;
+window.addEventListener('pointerdown', e=>{ if (e.isPrimary===false) return; const t = tlTileAt(e.clientX, e.clientY, e.target); tlWatch = t ? { key:t.dataset.tlKey, at:Date.now(), x:e.clientX, y:e.clientY } : null; }, true);
+window.addEventListener('pointerup', e=>{
+  const w = tlWatch; tlWatch = null; if (!w || e.isPrimary===false) return;
+  if (Date.now()-w.at > 1500 || Math.abs(e.clientX-w.x)+Math.abs(e.clientY-w.y) > 14) return;
+  setTimeout(()=>{
+    if ((tlOpen && tlOpen.path.includes(w.key)) || tlTapAt >= w.at) return;
+    const tile = tlFindTile(w.key); if (!tile) return;
+    if (tlDiag) tlDiag.err = (tlDiag.err?tlDiag.err+' · ':'')+'watchdog';
+    tlFired = Date.now(); tlTap(w.key, tile);
+  }, 600);
+}, true);
 window.addEventListener('pointerup', e=>{ if (e.isPrimary!==false) tlUpAt(e.clientX, e.clientY, e.target, e); }, true);
 window.addEventListener('touchstart', e=>{ const p = e.touches[0]; if (p && !tlDown) tlDownAt(p.clientX, p.clientY, e.target); }, { capture:true, passive:true });
 window.addEventListener('touchend', e=>{ const p = e.changedTouches[0]; if (p && tlDown) tlUpAt(p.clientX, p.clientY, e.target, e); }, { capture:true, passive:false });
@@ -7722,7 +7729,8 @@ function tlDeck(items, cls){
   return d;
 }
 function tlTap(key, tile){
-  const it = tlReg[key]; if (!it) return;
+  let it = tlReg[key];
+  if (!it){ if (tlDiag) tlDiag.err = 'noReg:'+key; try{ render(); }catch(_){} it = tlReg[key]; tile = tlFindTile(key) || tile; if (!it || !tile) return; }
   const r = tile.getBoundingClientRect();
   if (!tlOpen || tlOpen.page!==tlPage()) tlOpen = { page: tlPage(), path:[], rects:[], anim:[] };
   const inLayer = tile.closest('.tl-layer'); const lvOf = inLayer ? (+inLayer.id.split('-').pop())+1 : 0;
