@@ -740,7 +740,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta41.6 · อัปเดต 27 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta41.7 · อัปเดต 27 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -1889,7 +1889,7 @@ function agentCompStatus(ag){
   const now = new Date();
   const isCurYear = selYear===now.getFullYear();
   const curQ = isCurYear ? Math.floor(now.getMonth()/3)+1 : 4;
-  const qResults = quarterlyQualifyResults(entries, selYear);
+  const qResults = quarterlyQualifyResults(entries, selYear, agOv(ag));
   const r = qResults[curQ-1];
   const items = []; // { ok, near, title, text, has } — has=false = ยังไม่มีงานรายใหม่ในช่วงนั้น ไม่ต้องรายงาน
   const newIn = (s, e)=>(ag.entries||[]).filter(x=>isOrigin(x) && D(x.date)>=s && D(x.date)<=e).length; // นับทั้งอนุมัติแล้วและรอพิจารณา
@@ -2030,7 +2030,7 @@ function renderInsightsSection(entries, selYearArg, pacing){
     const currentQ = Math.floor(today.getMonth()/3)+1;
     const qEndDate = new Date(selYearArg, currentQ*3, 0, 23,59,59);
     const daysLeft = Math.ceil((qEndDate-today)/86400000);
-    const qData = quarterlyQualifyResults(entries, selYearArg).find(r=>r.q===currentQ);
+    const qData = quarterlyQualifyResults(entries, selYearArg, agOv(agent())).find(r=>r.q===currentQ);
     if (qData){
       const cShort = Math.max(0, 6-qData.count);
       const fShort = Math.max(0, 40000-qData.fyc);
@@ -2365,10 +2365,7 @@ function renderTeamTab(){
   const currentMonthOverrideKey = `${selYear}-${umEffectiveEndMonth}`;
   const currentMonthOverride = umMonthOverrides[currentMonthOverrideKey];
   const currentMonthHasOverride = currentMonthOverride!==undefined && currentMonthOverride!==null;
-  const currentMonthApproved = currentMonthHasOverride ? currentMonthOverride : names.reduce((sum,name)=>{
-    const ag = state.agents[name];
-    return sum + mEff(ag.entries, selYear, umEffectiveEndMonth);
-  },0);
+  const currentMonthApproved = currentMonthHasOverride ? currentMonthOverride : monthlyTeamCFYC[umEffectiveEndMonth]; // = ค่าในตารางผลงานรายไตรมาส
   // รอพิจารณา = คงค้างสะสมทุกเดือนที่ยังไม่อนุมัติ จนถึงเดือนที่ดูอยู่ (ไม่ใช่เฉพาะเดือนนี้)
   const pendAnnual = cumPending(names, selYear, 0, umEffectiveEndMonth);
   const pendPeriod = cumPending(names, selYear, umStartMonth, umEffectiveEndMonth);
@@ -3455,10 +3452,10 @@ function __generatePrintReportRaw(){
   const ag = agent();
   const entries = effectiveEntries(ag.entries);
   const yearEntries = entries.filter(e=>D(e.date).getFullYear()===selYear);
-  const qResults = quarterlyQualifyResults(entries, selYear);
+  const qResults = quarterlyQualifyResults(entries, selYear, agOv(agent()));
   const streak = longestConsecutiveStreak(qResults);
   const annualCases = yearEntries.filter(isOrigin).length;
-  const annualFYC = yearEntries.reduce((s,e)=>s+e.fyc,0);
+  const annualFYC = qResults.reduce((s,r)=>s+r.fyc,0);
   const annualGate = annualCases>=ANNUAL_GATE_CASES && annualFYC>=ANNUAL_GATE_FYC;
   const annualBonusGate = annualCases>=ANNUAL_BONUS_GATE_CASES && annualFYC>=ANNUAL_BONUS_GATE_FYC;
   const achievedLevel = annualGate ? Math.min(streak,4) : 0;
@@ -3823,17 +3820,21 @@ function annualPct(fyc, band){
   return idx===-1 ? 0 : ANNUAL_BANDS[band].pct[idx];
 }
 
-function quarterlyQualifyResults(entries, year){
+// ยอด FYC รายไตรมาสยึด "ตารางผลงานรายเดือน" เป็นหลัก: เดือนที่แก้ไขเอง (✏️) ใช้ตัวเลขที่พิมพ์ · เดือนอื่นรวมจากงานที่คีย์/อนุมัติแล้ว
+function agOv(ag){ return (ag && ag.competitions && ag.competitions.monthlyFycOverride) || {}; }
+function quarterlyQualifyResults(entries, year, ov){
+  ov = ov || {};
   return [1,2,3,4].map(q=>{
     const list = entries.filter(e=>{ const {year:y,quarter}=getQuarter(e.date); return y===year && quarter===q; });
     const count = list.filter(isOrigin).length;
-    const fyc = list.reduce((s,e)=>s+e.fyc,0);
     const monthKeys = monthsOfQuarter(year,q);
     const months = monthKeys.map(mk=>{
       const [my,mm] = mk.split("-").map(Number);
       const monthList = list.filter(e=>monthKey(e.date)===mk);
-      return { year:my, month:mm, count: monthList.filter(isOrigin).length, fyc: monthList.reduce((s,e)=>s+e.fyc,0) };
+      const auto = monthList.reduce((s,e)=>s+e.fyc,0), o = ov[`${my}-${mm}`];
+      return { year:my, month:mm, count: monthList.filter(isOrigin).length, fyc: (o!==undefined && o!==null) ? Number(o)||0 : auto, auto };
     });
+    const fyc = months.reduce((s,m)=>s+m.fyc,0);
     const activeMonths = months.filter(m=>m.count>0).length;
     const qualifies = count>=QUALIFY_MIN_CASES && fyc>=QUALIFY_MIN_FYC && activeMonths>=QUALIFY_MIN_ACTIVE_MONTHS;
     return { q, count, fyc, activeMonths, qualifies, months };
@@ -4710,10 +4711,10 @@ function renderEntryTab(){
 function renderCompetitionsTab(){
   const entries = effectiveEntries(agent().entries);
   const yearEntries = entries.filter(e=>D(e.date).getFullYear()===selYear);
-  const qResults = quarterlyQualifyResults(entries, selYear);
+  const qResults = quarterlyQualifyResults(entries, selYear, agOv(agent()));
   const streak = longestConsecutiveStreak(qResults);
   const annualCases = yearEntries.filter(isOrigin).length;
-  const annualFYC = yearEntries.reduce((s,e)=>s+e.fyc,0);
+  const annualFYC = qResults.reduce((s,r)=>s+r.fyc,0);
   const annualGate = annualCases>=ANNUAL_GATE_CASES && annualFYC>=ANNUAL_GATE_FYC;
   const annualBonusGate = annualCases>=ANNUAL_BONUS_GATE_CASES && annualFYC>=ANNUAL_BONUS_GATE_FYC;
   const achievedLevel = annualGate ? Math.min(streak,4) : 0;
@@ -4807,7 +4808,7 @@ function renderCompetitionsTab(){
       const ovKey = `${selYear}-${monthIdx}`;
       const ov = fycOverrides[ovKey];
       const isOv = ov!==undefined && ov!==null;
-      const displayFyc = Math.round(isOv ? ov : m.fyc);
+      const displayFyc = Math.round(isOv ? ov : (m.auto ?? m.fyc));
       qFycSum += displayFyc;
       const hit = pmActive ? displayFyc>=pm.target : null;
       if (pmActive){ qTargetSum += pm.target; qHasTarget = true; }
