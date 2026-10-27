@@ -740,7 +740,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta41.5 · อัปเดต 27 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta41.6 · อัปเดต 27 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -7377,6 +7377,8 @@ document.addEventListener('keydown', e=>{ const v = document.getElementById('dv'
 
 /* ================= 📢 คำสั่งน่าสนใจ — คำสั่ง/ประกาศบริษัท (เพิ่มใหม่: ใส่ไฟล์ในโฟลเดอร์ orders/ แล้วเพิ่มรายการใน ORDERS — ใหม่สุดไว้บนสุด) ================= */
 const ORDERS = [
+  { no:'Agent Guidebook', t:'คู่มือแนวทางการพิจารณารับประกันและการสื่อสาร · ตอบคำถามสุขภาพในใบคำขอ · โรคมะเร็ง · โรคอื่นๆ', d:'คู่มือพิจารณารับประกัน',
+    pdf:'orders/uw-guidebook.pdf', pages:['orders/uw-guidebook-01.jpg','orders/uw-guidebook-02.jpg','orders/uw-guidebook-03.jpg','orders/uw-guidebook-04.jpg','orders/uw-guidebook-05.jpg','orders/uw-guidebook-06.jpg','orders/uw-guidebook-07.jpg','orders/uw-guidebook-08.jpg','orders/uw-guidebook-09.jpg','orders/uw-guidebook-10.jpg'] },
   { no:'Copayment (ฉบับเต็ม)', t:'ใครเข้าเงื่อนไข Copayment 3 กรณี · Simple Diseases · โรคร้ายแรง/ผ่าตัดใหญ่ที่ไม่นับ · FAQ', d:'สมาคมประกันชีวิตไทย · กรมธรรม์สุขภาพเริ่มคุ้มครองตั้งแต่ 1 มี.ค. 2568',
     pdf:'orders/copayment.pdf', pages:['orders/copayment-1.jpg','orders/copayment-2.jpg','orders/copayment-3.jpg','orders/copayment-4.jpg','orders/copayment-5.jpg','orders/copayment-6.jpg','orders/copayment-7.jpg'] },
   { no:'คำถามที่พบบ่อย (การรับประกัน)', t:'ถาม-ตอบ โรคประจำตัวแบบนี้ทำประกันได้ไหม + แนวทางอธิบาย/ผลการพิจารณา', d:'กรุงเทพประกันชีวิต · ใช้ภายในองค์กรเท่านั้น',
@@ -7398,7 +7400,7 @@ const ORDERS = [
   { no:'รบข. 4/2541', t:'การจ่ายผลประโยชน์จากอาชีพ (CAREER) — คุณสมบัติตามอายุงาน + อัตราจ่าย 60/70/80%', d:'7 ม.ค. 2541 · มีผล 1 ม.ค. 2541',
     pdf:'orders/rbk-4-2541.pdf', pages:['orders/rbk-4-2541-1.jpg','orders/rbk-4-2541-2.jpg'] },
 ];
-const ORDERS_VER = '20261027c';
+const ORDERS_VER = '20261027d';
 const oSrc = f => f + '?v=' + ORDERS_VER;
 function oOpen(){ try{ return localStorage.getItem('ped-orders-open')==='1'; }catch(e){ return false; } }
 function oSetOpen(v){ try{ localStorage.setItem('ped-orders-open', v?'1':'0'); }catch(e){} }
