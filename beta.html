@@ -740,7 +740,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta41.8 · อัปเดต 27 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta41.9 · อัปเดต 27 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -811,7 +811,7 @@ document.addEventListener('keydown', e=>{
 }, true);
 
 // ชื่อเจ้าของผลงานในหัวกล่อง (ให้รู้ว่าของใครเวลาแคปส่งต่อ) — UM หลัก = ป้าเป็ด CFP®, UM ในทีม = ชื่อคนนั้น, แท็บตัวแทน = ชื่อตัวแทน
-const OWNER_MAIN_NAME = "ป้าเป็ด CFP®";
+const OWNER_MAIN_NAME = "ผลงานของฉัน"; // ทีมใช้แอปเดียวกัน จึงไม่ใส่ชื่อเจ้าของ
 function ownerTag(name){ return `<span class="owner-tag" style="font-weight:800;"> · ${esc(name)}</span>`; }
 function umOwnerTag(){ return ownerTag(activeTeamUmName || OWNER_MAIN_NAME); }
 const STORAGE_KEY = IS_AGENT_APP ? "ped-agent-v1" : "ped-dashboard-v1";
