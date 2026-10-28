@@ -722,7 +722,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">beta42.1</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">beta42.2</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -740,7 +740,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta42.1 · อัปเดต 28 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta42.2 · อัปเดต 28 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -2795,12 +2795,12 @@ function renderTeamTab(){
             <td class="r" style="color:${inPeriod?'var(--gold)':'var(--navy-deep)'};vertical-align:top;padding-top:8px;">${THB(monthTarget)}</td>
             <td class="r" style="vertical-align:top;padding-top:0;">
               <input type="text" inputmode="decimal" data-qty-override="${x.cfycKey}" value="${esc(formatThousands(String(x.cfycValue)))}" style="width:98px;padding:4px 5px;font-size:21px;font-weight:700;font-family:'Space Grotesk',sans-serif;text-align:center;">
-              <div style="font-size:12px;color:${x.cfycIsOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${x.cfycIsOv?`✏️ แก้ไขเอง<button type="button" data-ov-reset="qty|${x.cfycKey}" style="display:block;margin:4px auto 0;padding:5px 9px;min-height:34px;font-size:13.5px;font-weight:700;border-radius:9px;border:1.5px solid var(--gold);background:#fff;color:var(--navy-deep);cursor:pointer;">↺ กลับใช้ค่าอัตโนมัติ</button>`:'(อัตโนมัติ)'}</div>
+              <div style="font-size:12px;color:${x.cfycIsOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${x.cfycIsOv?`<button type="button" data-ov-reset="qty|${x.cfycKey}" aria-label="เดือนที่แก้ไขเอง แตะเพื่อกลับใช้ค่าอัตโนมัติ" style="background:none;border:0;padding:2px 8px;min-height:28px;font-size:14px;line-height:1;color:var(--gold);cursor:pointer;">✏️↺</button>`:''}</div>
               ${x.pending>0?`<div style="font-size:12px;color:var(--gold);margin-top:1px;">+${THB(x.pending)} รอพิจารณา</div>`:''}
             </td>
             <td class="r" style="vertical-align:top;padding-top:0;">
               <input type="text" inputmode="decimal" data-direct-override="${x.directKey}" value="${esc(formatThousands(String(x.directValue)))}" style="width:98px;padding:4px 5px;font-size:21px;font-weight:700;font-family:'Space Grotesk',sans-serif;text-align:center;">
-              <div style="font-size:12px;color:${x.directIsOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${x.directIsOv?`✏️ แก้ไขเอง<button type="button" data-ov-reset="direct|${x.directKey}" style="display:block;margin:4px auto 0;padding:5px 9px;min-height:34px;font-size:13.5px;font-weight:700;border-radius:9px;border:1.5px solid var(--gold);background:#fff;color:var(--navy-deep);cursor:pointer;">↺ กลับใช้ค่าอัตโนมัติ</button>`:'(อัตโนมัติ)'}</div>
+              <div style="font-size:12px;color:${x.directIsOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${x.directIsOv?`<button type="button" data-ov-reset="direct|${x.directKey}" aria-label="เดือนที่แก้ไขเอง แตะเพื่อกลับใช้ค่าอัตโนมัติ" style="background:none;border:0;padding:2px 8px;min-height:28px;font-size:14px;line-height:1;color:var(--gold);cursor:pointer;">✏️↺</button>`:''}</div>
               ${x.pending>0?`<div style="font-size:12px;color:var(--gold);margin-top:1px;">+${THB(x.pending)} รอพิจารณา</div>`:''}
             </td>
           </tr>`;}).join("");
@@ -2819,6 +2819,7 @@ function renderTeamTab(){
                 <thead><tr><th>เดือน</th><th class="r">เป้า</th><th class="r">CFYC</th><th class="r">ตัวแทนตรง</th></tr></thead>
                 <tbody>${monthRowsHtml}</tbody>
               </table>
+              ${monthRowsHtml.includes('data-ov-reset')?'<div style="font-size:13px;color:var(--muted);text-align:right;margin-top:4px;">✏️↺ = เดือนที่แก้ไขเอง · แตะเพื่อกลับใช้ค่าอัตโนมัติ</div>':''}
             </div>
             ${(()=>{
               const cumEndMonth = Math.min(q*3-1, umViewAsOfMonth);
@@ -4851,7 +4852,7 @@ function renderCompetitionsTab(){
         ${pacing?`<td class="r" style="color:var(--muted);vertical-align:top;padding-top:8px;">${pmActive?THB(pm.target):'—'}</td>`:''}
         <td class="r" style="vertical-align:top;padding-top:0;">
           <input type="text" inputmode="decimal" data-fyc-override="${ovKey}" value="${esc(formatThousands(String(displayFyc)))}" style="width:98px;padding:4px 5px;font-size:21px;font-weight:700;font-family:'Space Grotesk',sans-serif;text-align:center;color:var(--navy-deep);">
-          <div style="font-size:11px;color:${isOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${isOv?`✏️ แก้ไขเอง<button type="button" data-ov-reset="fyc|${ovKey}" style="display:block;margin:4px auto 0;padding:5px 9px;min-height:34px;font-size:13.5px;font-weight:700;border-radius:9px;border:1.5px solid var(--gold);background:#fff;color:var(--navy-deep);cursor:pointer;">↺ กลับใช้ค่าอัตโนมัติ</button>`:'(อัตโนมัติ)'}</div>
+          <div style="font-size:11px;color:${isOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${isOv?`<button type="button" data-ov-reset="fyc|${ovKey}" aria-label="เดือนที่แก้ไขเอง แตะเพื่อกลับใช้ค่าอัตโนมัติ" style="background:none;border:0;padding:2px 8px;min-height:28px;font-size:14px;line-height:1;color:var(--gold);cursor:pointer;">✏️↺</button>`:''}</div>
         </td>
       </tr>`;
     });
@@ -4881,6 +4882,7 @@ function renderCompetitionsTab(){
           <thead><tr><th>เดือน</th><th class="r">ราย</th>${pacing?'<th class="r">เป้า FYC</th>':''}<th class="r">FYC ที่ได้</th></tr></thead>
           <tbody>${monthRowsHtml}${qTotalRow}</tbody>
         </table>
+        ${monthRowsHtml.includes('data-ov-reset')?'<div style="font-size:13px;color:var(--muted);text-align:right;margin-top:4px;">✏️↺ = เดือนที่แก้ไขเอง · แตะเพื่อกลับใช้ค่าอัตโนมัติ</div>':''}
         ${qNetLine}
         ${!pacing?`<div style="font-size:16.5px;color:var(--muted);margin-top:6px;">* ตั้งเป้าหมาย FYC รายปีในแท็บ "เป้าหมาย" เพื่อดูคอลัมน์เป้าหมายรายเดือนที่นี่</div>`:''}
       </div>
@@ -5527,6 +5529,8 @@ function bindEvents(){
     btn.onclick = (ev)=>{
       ev.stopPropagation();
       const i = btn.dataset.ovReset.indexOf('|'), k = btn.dataset.ovReset.slice(0,i), key = btn.dataset.ovReset.slice(i+1);
+      const mIdx = Number(key.split('-')[1]);
+      if (!confirm(`กลับใช้ค่าอัตโนมัติเดือน${THAI_MONTH_NAMES[mIdx]||''}?`)) return;
       if (k==='qty' && state.umGoal && state.umGoal.monthOverrides) delete state.umGoal.monthOverrides[key];
       if (k==='direct' && state.umGoal && state.umGoal.directOverrides) delete state.umGoal.directOverrides[key];
       if (k==='fyc' && agent().competitions && agent().competitions.monthlyFycOverride) delete agent().competitions.monthlyFycOverride[key];
