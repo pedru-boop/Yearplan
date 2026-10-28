@@ -372,6 +372,42 @@ main{padding-bottom:170px!important;}
   font-family:var(--b-display);font-weight:700;font-size:17px;color:#03131F;background:linear-gradient(180deg,#8CF2FF,#28BEE6);box-shadow:0 10px 24px rgba(0,0,0,.45),0 0 24px rgba(69,227,255,.5);}
 #b-fab span{font-size:24px;line-height:1;}
 #b-fab[hidden]{display:none!important;}
+.lic-clr{padding:6px 10px!important;font-size:15px!important;white-space:nowrap;min-height:44px;}
+@media (max-width:640px){
+  .ent-tab thead{display:none}
+  .ent-tab,.ent-tab tbody{display:block;width:100%}
+  .ent-tab tbody>tr{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:10px 4px;border-bottom:1px solid #123F6B1A;align-items:center}
+  .ent-tab tbody>tr>td{padding:0!important;border:0!important;min-width:0}
+  .ent-tab td.ent-na{display:none}
+  .ent-tab tbody>tr>td:nth-child(1){grid-column:1;grid-row:1}
+  .ent-tab td.ent-amt{grid-column:2;grid-row:1;font-size:20px;font-weight:800}
+  .ent-tab tbody>tr>td:nth-child(2){grid-column:1/3;grid-row:2}
+  .ent-tab td.ent-ap{grid-column:1;grid-row:3;text-align:left!important}
+  .ent-tab td.ent-act{grid-column:2;grid-row:3}
+  .ent-tab tr.ent-total{display:none}
+  .ent-tab tr.ent-edit>td{grid-column:1/3!important;grid-row:auto!important;text-align:left!important}
+  .ent-tab .icon-btn{min-width:44px;min-height:44px}
+}
+#ap-modal{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;}
+#ap-modal[hidden]{display:none;}
+#ap-modal .ap-bd{position:absolute;inset:0;background:rgba(0,0,0,.55);}
+#ap-modal .ap-box{position:relative;background:#fff;color:#0B1630;border-radius:16px;padding:20px;width:100%;max-width:420px;box-shadow:0 10px 40px rgba(0,0,0,.4);font-size:calc(17px * var(--z,1.12));}
+#ap-modal .ap-t{font-size:1.35em;font-weight:800;margin-bottom:4px;}
+#ap-modal .ap-s{color:#334;margin-bottom:12px;}
+#ap-modal .ap-l{display:flex;flex-direction:column;gap:6px;font-weight:700;}
+#ap-modal .ap-l input{font-size:1.15em;padding:10px;border:1.5px solid #123F6B55;border-radius:10px;min-height:48px;}
+#ap-modal .ap-h{font-size:.85em;color:#445;margin:8px 0 14px;}
+#ap-modal .ap-b{display:flex;gap:10px;justify-content:flex-end;}
+#ap-modal .ap-b button{min-height:48px;padding:0 18px;font-size:1em;}
+.um-set{margin:10px 0 14px;border:1px solid #ffffff33;border-radius:12px;padding:0 12px;background:#ffffff0d;}
+.um-set>summary{cursor:pointer;padding:12px 0;font-weight:800;font-size:17px;color:#fff;list-style:none;min-height:44px;display:flex;align-items:center;}
+.um-set>summary::-webkit-details-marker{display:none}
+.um-set>summary::after{content:'▼';margin-left:auto;font-size:13px;opacity:.8}
+.um-set[open]>summary::after{content:'▲'}
+.um-set-in{padding:4px 0 12px;}
+.tl-layer .tl-body > .card:not(.dark), .tl-layer .tl-body > .tl-leaf:not(.dark), .tl-layer .tl-body > .b-gcard:not(.dark){background:#FFFFFF!important;color:#0B1630;border:1px solid #123F6B22!important;border-top:5px solid var(--gc,#29ABE2)!important;}
+.card.mg-tab{background:#FFFFFF!important;border-top:5px solid #29ABE2!important;}
+.gc-ind{font-size:16px!important;color:var(--navy)!important;}
 :is(#app,.tl-layer) select, :is(#app,.tl-layer) .btn-primary, :is(#app,.tl-layer) .btn-ghost, :is(#app,.tl-layer) .b-btn{min-height:44px;}
 :is(#app,.tl-layer) a[href^="tel"]{display:inline-block;padding:10px 0;}
 .mg-docs input{width:28px!important;height:28px!important;}
@@ -756,7 +792,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 3 ก.พ. 2569 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta43 · อัปเดต 28 ต.ค. 2569</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 3 ก.พ. 2569 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta44 · อัปเดต 28 ต.ค. 2569</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -2225,10 +2261,10 @@ function renderLicenseBlockHtml(){
   return `
       <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
         <label class="field" style="flex:1;min-width:150px;"><span>รหัสตัวแทน (Code)</span>
-          <input type="text" id="license-agent-code" value="${esc(agent().license.agentCode)}">
+          <span style="display:flex;gap:6px;align-items:center;"><input type="text" id="license-agent-code" value="${esc(agent().license.agentCode)}" style="flex:1;min-width:0;">${agent().license.agentCode?'<button type="button" class="btn-ghost lic-clr" data-clear-lic="agentCode" title="ล้างช่องนี้">🗑 ล้าง</button>':''}</span>
         </label>
         <label class="field" style="flex:1;min-width:150px;"><span>เลขที่บัตรตัวแทน</span>
-          <input type="text" id="license-card-number" value="${esc(agent().license.cardNumber)}">
+          <span style="display:flex;gap:6px;align-items:center;"><input type="text" id="license-card-number" value="${esc(agent().license.cardNumber)}" style="flex:1;min-width:0;">${agent().license.cardNumber?'<button type="button" class="btn-ghost lic-clr" data-clear-lic="cardNumber" title="ล้างช่องนี้">🗑 ล้าง</button>':''}</span>
         </label>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
@@ -2498,21 +2534,8 @@ function renderTeamTab(){
       <div style="position:relative;">
         <h3 style="color:#fff;">🎯 เป้าหมายของ UM${umOwnerTag()} (แยกจากตัวแทน)</h3>
         <p class="sub" style="color:#B9C4D6;">เป้าหมายที่ผู้จัดการหน่วยรับผิดชอบเอง วัดจากผลงานรวมของทั้งทีมในช่วงที่กำหนด</p>
-        <div style="max-width:400px;margin-bottom:14px;">
-          <label class="field dark"><span>ตำแหน่ง (อ้างอิงผลประโยชน์ผู้บริหารตัวแทน)</span>
-            <select id="um-position-select" style="background:#123F6B99;color:#fff;border-color:#ffffff33;">
-              <option value="">— ไม่ระบุตำแหน่ง (ตั้งเป้าเอง) —</option>
-              ${UM_POSITIONS.map(p=>`<option value="${p.value}" ${p.value===umPosition?"selected":""}>${p.label} (CFYC ${THB(p.cfycYear)}/ปี)</option>`).join("")}
-            </select>
-          </label>
-          ${!activeTeamUmName && selectedPosition?`<div style="font-size:16px;color:#B9C4D6;margin-top:6px;">เงินเดือน ${THB(selectedPosition.salary)}/เดือน · ค่าขยายงาน ${selectedPosition.tenurePct}% · CFYC ขั้นต่ำ ${THB(selectedPosition.cfycMonth)}/เดือน</div>`:''}
-        </div>
-
         <div style="border-top:1px dashed #ffffff33;padding-top:14px;margin-bottom:6px;">
-          <label class="field dark" style="max-width:320px;margin-bottom:16px;"><span>1) เป้าหมาย CFYC ทั้งปี (ม.ค.-ธ.ค. เสมอ)</span>
-            <input type="text" inputmode="decimal" id="um-annual-goal-fyc-input" value="${esc(umAnnualGoalsFycInput)}"
-              style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;">
-          </label>
+
           <div class="goal-flex" style="margin-bottom:14px;">
             <div class="ring-wrap">
               <svg width="108" height="108" style="transform:rotate(-90deg)">
@@ -2523,9 +2546,15 @@ function renderTeamTab(){
                   <stop offset="0%" stop-color="#9CE3B8"/><stop offset="100%" stop-color="#4FAE74"/>
                 </linearGradient></defs>
               </svg>
-              <div class="center"><span class="pct">${Math.round(umAnnualProgressPct)}%</span><span class="lbl">ของเป้าทั้งปี</span></div>
+              <div class="center">${umAnnualGoalFYC>0?`<span class="pct">${Math.round(umAnnualProgressPct)}%</span><span class="lbl">ของเป้าทั้งปี</span>`:`<span class="pct" style="font-size:18px;color:#B9C4D6;">ตั้งเป้า</span><span class="lbl">ยังไม่ตั้งเป้า</span>`}</div>
             </div>
             <div style="flex:1;min-width:220px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;">
+              <span style="font-size:15px;color:#B9C4D6;">ดูผลงานถึงเดือน</span>
+              <select id="um-view-as-of-month" style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-size:15px;padding:4px 8px;">
+                ${THAI_MONTH_NAMES.map((name,i)=>`<option value="${i}" ${i===umViewAsOfMonth?"selected":""}>${name}</option>`).join("")}
+              </select>
+            </div>
               <div class="tech-row"><span class="lab">เป้าหมายทั้งปี</span><span class="val">${THB(umAnnualGoalFYC)}</span></div>
               <div class="tech-row"><span class="lab">อนุมัติแล้ว (ทั้งปี)</span><span class="val good">${THB(umAnnualAchievedApproved)}</span></div>
               <div class="tech-row"><span class="lab" style="color:var(--gold);">รอพิจารณา (คงค้างสะสมถึง${THAI_MONTH_NAMES[umViewAsOfMonth]})</span><span class="val" style="color:var(--gold);">${pendLabel(pendAnnual)}</span></div>
@@ -2535,6 +2564,28 @@ function renderTeamTab(){
           </div>
         </div>
 
+        <details class="um-set" ${(!umAnnualGoalFYC && !umPosition)?'open':''}>
+          <summary>⚙️ ตั้งตำแหน่ง / เป้าหมายทั้งปี</summary>
+          <div class="um-set-in">
+        <div style="max-width:400px;margin-bottom:14px;">
+          <label class="field dark"><span>ตำแหน่ง (อ้างอิงผลประโยชน์ผู้บริหารตัวแทน)</span>
+            <select id="um-position-select" style="background:#123F6B99;color:#fff;border-color:#ffffff33;">
+              <option value="">— ไม่ระบุตำแหน่ง (ตั้งเป้าเอง) —</option>
+              ${UM_POSITIONS.map(p=>`<option value="${p.value}" ${p.value===umPosition?"selected":""}>${p.label} (CFYC ${THB(p.cfycYear)}/ปี)</option>`).join("")}
+            </select>
+          </label>
+          ${!activeTeamUmName && selectedPosition?`<div style="font-size:16px;color:#B9C4D6;margin-top:6px;">เงินเดือน ${THB(selectedPosition.salary)}/เดือน · ค่าขยายงาน ${selectedPosition.tenurePct}% · CFYC ขั้นต่ำ ${THB(selectedPosition.cfycMonth)}/เดือน</div>`:''}
+        </div>
+
+          <label class="field dark" style="max-width:320px;margin-bottom:16px;"><span>1) เป้าหมาย CFYC ทั้งปี (ม.ค.-ธ.ค. เสมอ)</span>
+            <input type="text" inputmode="decimal" id="um-annual-goal-fyc-input" value="${esc(umAnnualGoalsFycInput)}"
+              style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;">
+          </label>
+          </div>
+        </details>
+        <details class="um-set" ${(umStartMonth!==0 || umEndMonth!==11 || (umGoalFYC>0 && umGoalFYC!==umAnnualGoalFYC))?'open':''}>
+          <summary>📅 เป้าหมายเฉพาะช่วง (ตั้งช่วงพิเศษ)</summary>
+          <div class="um-set-in">
         <div class="g-row" style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;border-top:1px dashed #ffffff33;padding-top:14px;">
           <label class="field dark" style="max-width:320px;flex:1;min-width:200px;"><span>2) เป้าหมาย CFYC เฉพาะช่วง</span>
             <input type="text" inputmode="decimal" id="um-goal-fyc-input" value="${esc(umGoalsFycInput)}"
@@ -2557,16 +2608,11 @@ function renderTeamTab(){
                 <stop offset="0%" stop-color="#9CE3B8"/><stop offset="100%" stop-color="#4FAE74"/>
               </linearGradient></defs>
             </svg>
-            <div class="center"><span class="pct">${Math.round(umProgressPct)}%</span><span class="lbl">ของเป้า</span></div>
+            <div class="center">${umGoalFYC>0?`<span class="pct">${Math.round(umProgressPct)}%</span><span class="lbl">ของเป้า</span>`:`<span class="pct" style="font-size:18px;color:#B9C4D6;">ตั้งเป้า</span><span class="lbl">ยังไม่ตั้งเป้า</span>`}</div>
           </div>
           <div style="flex:1;min-width:220px;">
             <div class="tech-row"><span class="lab">เป้าหมาย UM (${THAI_MONTH_NAMES[umStartMonth]} – ${THAI_MONTH_NAMES[umEndMonth]})</span><span class="val">${THB(umGoalFYC)}</span></div>
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;">
-              <span style="font-size:15px;color:#B9C4D6;">ผลงานทีมที่ทำได้ ถึงเดือน</span>
-              <select id="um-view-as-of-month" style="background:#123F6B99;color:#fff;border-color:#ffffff33;font-size:15px;padding:4px 8px;">
-                ${THAI_MONTH_NAMES.map((name,i)=>`<option value="${i}" ${i===umViewAsOfMonth?"selected":""}>${name}</option>`).join("")}
-              </select>
-            </div>
+
             <div class="tech-row"><span class="lab">ทำได้แล้ว (เดือนก่อนหน้า + อนุมัติแล้วเดือน${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val good">${THB(teamAchievedApproved)}${umGoalFYC>0?` (${Math.round(Math.max(0,(teamAchievedApproved/umGoalFYC)*100))}%)`:''}</span></div>
             <div class="tech-row"><span class="lab" style="color:var(--gold);">รอพิจารณา (คงค้างสะสม ${THAI_MONTH_NAMES[umStartMonth]}–${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val" style="color:var(--gold);">${pendLabel(pendPeriod)}${umGoalFYC>0?` (${Math.round(Math.max(0,(teamAchievedPending/umGoalFYC)*100))}%)`:''}</span></div>
             <div class="tech-row"><span class="lab">ยังขาดอีก (นับเฉพาะอนุมัติแล้ว)</span><span class="val ${umRemaining>0?'warn':''}">${THB(umRemaining)}</span></div>
@@ -2577,6 +2623,9 @@ function renderTeamTab(){
           :umGoalFYC>0 && teamAchievedInUmPeriod>=umGoalFYC?`<div style="margin-top:14px;background:#C69A3B33;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;">⏳ ถ้างานรอพิจารณาผ่านทั้งหมด จะถึงเป้าหมาย UM — ยอดที่อนุมัติแล้วยังขาดอีก ${THB(umRemaining)}</div>`
           :umGoalFYC>0 && umProgressPct>=80?`<div style="margin-top:14px;background:#C69A3B33;border:1px solid var(--gold-soft);border-radius:8px;padding:10px 12px;color:#fff;">🔥 ใกล้ถึงเป้าหมาย UM แล้ว! เหลืออีกแค่ ${THB(umRemaining)} (ขาดอีก ${Math.round(100-umProgressPct)}%)</div>`:''}
       </div>
+
+          </div>
+        </details>
     </div>`;
   return `
     ${teamEarlyWarningHtml}
@@ -2604,7 +2653,7 @@ function renderTeamTab(){
       const inQ = allPend.filter(e=>D(e.date)>=qStartP);
       const pendWarn = [];
       if (selYear===t0p.getFullYear() && qDaysLeftP<=14 && inQ.length) pendWarn.push(`⏰ อีก ${qDaysLeftP} วันจบไตรมาส — งานไตรมาสนี้ยังไม่อนุมัติ ${inQ.length} ราย (${THB(inQ.reduce((s,e)=>s+e.fyc,0))}) ถ้าไม่ทันจะไม่นับ DPO/ค่าสร้างฯ/คุณวุฒิไตรมาสนี้`);
-      evList().forEach(ev=>{ const ee=new Date(ev.end+"T00:00:00"); const dl=Math.round((ee-t0p)/86400000); if (dl>=0 && dl<=14){ const n=allPend.filter(e=>D(e.date)>=new Date(ev.start+"T00:00:00") && D(e.date)<=ee).length; if (n) pendWarn.push(`🏁 ${esc(ev.name)} จบในอีก ${dl} วัน — มีงานในช่วงแข่งรอพิจารณา ${n} ราย`); } });
+      evList().forEach(ev=>{ const ee=new Date(ev.end+"T00:00:00"); const dl=Math.round((ee-t0p)/86400000); if (dl>=0 && dl<=14){ const n=allPend.filter(e=>D(e.date)>=new Date(ev.start+"T00:00:00") && D(e.date)<=new Date(ev.end+"T23:59:59")).length; if (n) pendWarn.push(`🏁 ${esc(ev.name)} จบในอีก ${dl} วัน — มีงานในช่วงแข่งรอพิจารณา ${n} ราย`); } });
       return `<div class="card">
         <h3 data-toggle-box="pendingReport" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
           <span>📋 รายงานผลงานที่รอพิจารณา</span>
@@ -4539,7 +4588,7 @@ function renderGoalsTab(){
                 <stop offset="0%" stop-color="#9CE3B8"/><stop offset="100%" stop-color="#4FAE74"/>
               </linearGradient></defs>
             </svg>
-            <div class="center"><span class="pct">${Math.round(annualProgressPct)}%</span><span class="lbl">ของเป้าทั้งปี</span></div>
+            <div class="center">${annualGoalFYC>0?`<span class="pct">${Math.round(annualProgressPct)}%</span><span class="lbl">ของเป้าทั้งปี</span>`:`<span class="pct" style="font-size:18px;color:var(--muted);">ตั้งเป้า</span><span class="lbl">ยังไม่ตั้งเป้า</span>`}</div>
           </div>
           <div style="flex:1;min-width:220px;">
             <div class="tech-row"><span class="lab">เป้าหมายทั้งปี (ม.ค. – ธ.ค.)</span><span class="val">${THB(annualGoalFYC)}</span></div>
@@ -4571,7 +4620,7 @@ function renderGoalsTab(){
                 <stop offset="0%" stop-color="#9CE3B8"/><stop offset="100%" stop-color="#4FAE74"/>
               </linearGradient></defs>
             </svg>
-            <div class="center"><span class="pct">${Math.round(progressPct)}%</span><span class="lbl">ของเป้าช่วงนี้</span></div>
+            <div class="center">${goalFYC>0?`<span class="pct">${Math.round(progressPct)}%</span><span class="lbl">ของเป้าช่วงนี้</span>`:`<span class="pct" style="font-size:18px;color:var(--muted);">ตั้งเป้า</span><span class="lbl">ยังไม่ตั้งเป้า</span>`}</div>
           </div>
           <div style="flex:1;min-width:220px;">
             <div class="tech-row"><span class="lab">เป้าหมายช่วงพิเศษ (${THAI_MONTH_NAMES[startMonth]} – ${THAI_MONTH_NAMES[endMonth]})</span><span class="val">${THB(goalFYC)}</span></div>
@@ -4664,7 +4713,7 @@ function renderEntryTab(){
   } else if (filtered.length===0){
     rows = `<div class="empty">ไม่พบรายการที่ตรงกับ "${esc(entrySearchQuery)}"</div>`;
   } else {
-    const totalRow = `<tr style="border-top:2px solid #123F6B22;font-weight:700;">
+    const totalRow = `<tr class="ent-total" style="border-top:2px solid #123F6B22;font-weight:700;">
       <td style="color:var(--navy);" colspan="2">รวม</td>
       <td class="num" style="color:var(--navy);">${THB(colTotals.annual)}</td>
       <td class="num" style="color:var(--navy);">${THB(colTotals.semiannual)}</td>
@@ -4677,11 +4726,11 @@ function renderEntryTab(){
     const originPendingLookup = {};
     allAg.forEach(en=>{ if (isOrigin(en)) originPendingLookup[en.policyId] = !!en.pending; });
     const effectivePendingOf = (en)=> (en.policyId in originPendingLookup) ? originPendingLookup[en.policyId] : !!en.pending;
-    rows = `<div style="overflow-x:auto"><table>
+    rows = `<div style="overflow-x:auto"><table class="ent-tab">
       <thead><tr><th>วันที่</th><th>หมายเหตุ</th><th style="text-align:right">รายปี</th><th style="text-align:right">ราย 6 เดือน</th><th style="text-align:right">ราย 3 เดือน</th><th style="text-align:right">รายเดือน</th><th style="text-align:center">อนุมัติ</th><th></th></tr></thead>
       <tbody>${filtered.map(e=>{
         if (editingId===e.id){
-          return `<tr style="background:#4FAE7414;">
+          return `<tr class="ent-edit" style="background:#4FAE7414;">
             <td>${renderDateInput('edit', editDraft.date, true)}</td>
             <td><input type="text" data-edit-field="note" value="${esc(editDraft.note)}" placeholder="หมายเหตุ" style="padding:5px 7px;font-size:18.75px;width:100%;">${isOrigin(e)?`<label style="display:block;margin-top:6px;font-size:14px;color:#7A4A00;font-weight:700;">💰 เบี้ย/งวด<input type="text" inputmode="decimal" data-edit-field="premium" value="${esc(editDraft.premium||'')}" placeholder="เช่น 60,000" style="display:block;padding:5px 7px;font-size:18.75px;width:100%;margin-top:2px;"></label>`:''}</td>
             <td colspan="4" style="text-align:right"><input type="text" inputmode="decimal" data-edit-field="fyc" value="${esc(editDraft.fyc)}" style="padding:5px 7px;font-size:18.75px;text-align:right;width:110px;"></td>
@@ -4693,7 +4742,7 @@ function renderEntryTab(){
           </tr>`;
         }
         const bMode = billingModeOf(e);
-        const cell = (match) => match===bMode ? `<td class="num">${THB(e.fyc)}</td>` : `<td class="num" style="color:var(--muted);">—</td>`;
+        const cell = (match) => match===bMode ? `<td class="num ent-amt">${THB(e.fyc)}</td>` : `<td class="num ent-na" style="color:var(--muted);">—</td>`;
         const origin = isOrigin(e);
         const effPending = effectivePendingOf(e);
         if (!origin && effPending) return ''; // งวดต่อเนื่อง ยังไม่โผล่ในตารางเลยจนกว่าต้นฉบับจะอนุมัติ
@@ -4702,14 +4751,14 @@ function renderEntryTab(){
           <td style="${origin?'color:var(--navy);font-weight:600;':''}${effPending?'opacity:0.7;':''}">${fmtTH(D(e.date),{day:"numeric",month:"long",year:"numeric"})}${fut?'<div style="font-size:13px;color:var(--muted);font-weight:400;">⏳ ยังไม่ถึงงวด (ยังไม่นับ)</div>':''}</td>
           <td style="color:var(--muted)">${esc(e.note)||"—"}${origin && !(Number(e.premium)>0) && fypEventAt(e.date)?`<div data-start-edit="${e.id}" style="font-size:13px;color:var(--bad);font-weight:700;cursor:pointer;">⚠ ยังไม่คีย์เบี้ย — แตะเพื่อเติม</div>`:''}${(e.premium||e.plan)?`<div style="font-size:13px;">${e.plan?esc(e.plan):''}${e.plan&&e.premium?' · ':''}${e.premium?'เบี้ย/งวด '+THB(e.premium):''}</div>`:''}</td>
           ${cell("annual")}${cell("semiannual")}${cell("quarterly")}${cell("monthly")}
-          <td style="text-align:center;">
+          <td class="ent-ap" style="text-align:center;">
             ${!origin
               ? `<span style="color:var(--muted);font-size:16px;" title="งวดต่อเนื่อง">—</span>`
               : e.pending
-                ? `<button class="icon-btn" data-approve-entry="${e.id}" title="แตะเพื่ออนุมัติ (จะตั้งวันที่เป็นวันนี้ = วันที่อนุมัติ)" style="color:var(--muted);font-size:20px;">⭕</button>`
+                ? `<button class="icon-btn" data-approve-entry="${e.id}" title="แตะเพื่ออนุมัติ (เลือกวันที่อนุมัติได้)" style="color:var(--muted);font-size:20px;">⭕</button>`
                 : `<button class="icon-btn" data-cancel-approve="${e.id}" title="อนุมัติแล้ว — แตะเพื่อยกเลิก (กลับเป็นรอพิจารณา คืนวันที่เดิม)" style="color:var(--good);font-size:20px;">✅</button>`}
           </td>
-          <td style="text-align:right;white-space:nowrap;">
+          <td class="ent-act" style="text-align:right;white-space:nowrap;">
             <button class="icon-btn" data-start-edit="${e.id}" title="แก้ไข">✏️</button>
             <button class="icon-btn" data-remove="${e.id}" title="ลบ">🗑</button>
           </td>
@@ -5448,6 +5497,7 @@ function bindEvents(){
     el.onblur = (e)=>{ const ag=state.agents[decodeURIComponent(el.dataset.agent)]; if(!ag) return; if(!ag.license) ag.license={cardIssueDate:"",cardExpiryDate:"",cardNumber:"",agentCode:"",trainings:[]}; if (ag.license[el.dataset.mlic]!==e.target.value){ ag.license[el.dataset.mlic]=e.target.value.trim(); saveState(); } };
     el.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); e.target.blur(); } };
   });
+  document.querySelectorAll("[data-clear-lic]").forEach(b=>{ b.onclick = (ev)=>{ ev.preventDefault(); ev.stopPropagation(); const k = b.dataset.clearLic; if (!confirm(k==='agentCode'?'ล้างรหัสตัวแทนให้ว่าง?':'ล้างเลขที่บัตรให้ว่าง?')) return; agent().license[k] = ""; saveState(); render(); showToast('ล้างแล้ว'); }; });
   const licenseTextFieldMap = { "license-agent-code":"agentCode", "license-card-number":"cardNumber" };
   Object.keys(licenseTextFieldMap).forEach(id=>{
     const el = document.getElementById(id);
@@ -5709,12 +5759,13 @@ function bindEvents(){
   if (submitBtn) submitBtn.onclick = submitEntry;
 
   document.querySelectorAll("[data-approve-entry]").forEach(btn=>{
-    btn.onclick = ()=>{
-      const id = Number(btn.dataset.approveEntry);
+    btn.onclick = (ev)=>{ if (ev) ev.stopPropagation(); approveAsk(Number(btn.dataset.approveEntry)); };
+  });
+  approveEntryAt = (id, approvalDate)=>{
+    {
       const idx = agent().entries.findIndex(x=>x.id===id);
       if (idx<0) return;
       const original = agent().entries[idx];
-      const approvalDate = todayIso();
       // เก็บวันที่เดิมไว้ก่อนเปลี่ยน เผื่อกดผิดจะได้ "ยกเลิกอนุมัติ" คืนค่าวันที่เดิมได้ตรงๆ
       agent().entries[idx] = { ...original, pending: false, date: approvalDate, dateBeforeApproval: original.date };
       const approvedThisRound = [{ fyc: original.fyc, date: approvalDate }];
@@ -5749,9 +5800,9 @@ function bindEvents(){
           }
         });
       }
-      saveState(); render();
-    };
-  });
+      saveState(); render(); showToast(`✅ อนุมัติแล้ว · ลงวันที่ ${fmtTH(new Date(approvalDate+"T00:00:00"),{day:"numeric",month:"short",year:"numeric"})}`);
+    }
+  };
   document.querySelectorAll("[data-cancel-approve]").forEach(btn=>{
     btn.onclick = ()=>{
       const id = Number(btn.dataset.cancelApprove);
@@ -5808,7 +5859,7 @@ function bindEvents(){
     btn.onclick = ()=>{
       const id = Number(btn.dataset.saveEdit);
       const rawFyc = stripCommas(editDraft.fyc);
-      if (!editDraft.date || !rawFyc || isNaN(Number(rawFyc)) || Number(rawFyc)<=0) return;
+      if (!editDraft.date || !rawFyc || isNaN(Number(rawFyc)) || Number(rawFyc)<=0){ showToast(!editDraft.date ? '⚠ ยังไม่ได้เลือกวันที่' : '⚠ กรุณากรอกยอด FYC ให้ถูกต้อง (มากกว่า 0)'); return; }
       const idx = agent().entries.findIndex(x=>x.id===id);
       if (idx>=0){
         const original = agent().entries[idx];
@@ -5853,6 +5904,16 @@ function bindEvents(){
       saveState(); render();
     }
   }
+  // ลบงวดที่อนุมัติแล้ว: เดือนที่มีตัวเลข ✏️ แก้เองไว้ ต้องหักยอดที่เคยนับออกด้วย (เหมือนตอนยกเลิกอนุมัติ) · กดเลิกทำ = บวกคืน
+  const ovAdjustForRemoved = (list, sign)=>{
+    if (!state.umGoal) return;
+    const eff = new Set(effectiveEntries(agent().entries).map(e=>e.id));
+    list.forEach(e=>{
+      if (!eff.has(e.id) || !(Number(e.fyc)>0)) return;
+      const d = new Date(e.date), key = `${d.getFullYear()}-${d.getMonth()}`;
+      ['monthOverrides','directOverrides'].forEach(k=>{ const o = state.umGoal[k]; if (o && o[key]!==undefined && o[key]!==null) o[key] = Math.max(0, Number(o[key]) + sign*Number(e.fyc)); });
+    });
+  };
   document.querySelectorAll("[data-remove]").forEach(btn=>{
     btn.onclick = ()=>{
       const id = Number(btn.dataset.remove);
@@ -5860,6 +5921,11 @@ function bindEvents(){
       const entriesArr = state.agents[targetAgentName].entries;
       const target = entriesArr.find(e=>e.id===id);
       if (!target) return;
+      { const __gone = (target.installmentIndex ?? 0)===0 && (target.installmentTotal ?? 1)>1 ? entriesArr.filter(e=>e.policyId===target.policyId)
+          : (target.installmentTotal ?? 1)>1 ? entriesArr.filter(e=>e.policyId===target.policyId && (e.installmentIndex ?? 0)>=(target.installmentIndex ?? 0)) : [target];
+        ovAdjustForRemoved(__gone, -1);
+        const __st = state; const __undoOv = ()=>{ if (state===__st) ovAdjustForRemoved(__gone, +1); };
+        const __origUndo = showUndoToast; showUndoToast = (msg, commit, restore)=>{ showUndoToast = __origUndo; return __origUndo(msg, commit, ()=>{ restore(); __undoOv(); }); }; }
       const isOriginInstallment = (target.installmentIndex ?? 0) === 0;
       const hasSiblings = (target.installmentTotal ?? 1) > 1;
       if (isOriginInstallment && hasSiblings){
@@ -6396,6 +6462,7 @@ const B_RULES = [
 ];
 let betaGroup = null, betaArr = false, betaJustOpened = false, betaFocus = null, betaSum = null, betaOrigin = null, betaGaugeDone = false, betaSnapAt = null, __dlItems = [];
 let bPrefs = {}; try{ bPrefs = JSON.parse(localStorage.getItem('ped-beta')||'{}'); }catch(e){}
+if (bPrefs.calm===undefined) bPrefs.calm = true; // เริ่มต้น = ลดเอฟเฟกต์ (เร็ว ประหยัดแบต)
 function bSavePrefs(){ try{ localStorage.setItem('ped-beta', JSON.stringify(bPrefs)); }catch(e){} }
 function bCalm(){ return !!bPrefs.calm || matchMedia('(prefers-reduced-motion: reduce)').matches; }
 function bApplyPrefs(){ const h=document.documentElement; h.dataset.mode = bPrefs.light?'light':''; h.classList.toggle('b-calm', !!bPrefs.calm); bSkyStart(); }
@@ -6590,7 +6657,7 @@ function betaLayout(c){
     const list = G.id==='set' ? [] : buckets[G.id];
     const isAgentComp = n=>/การแข่งขันของตัวแทน/.test(bCardTitle(n));
     sec.innerHTML = `<div class="b-ghead"><button class="b-btn" data-b-back>← กลับ</button><div class="b-orb" style="--c:${G.c}"><svg viewBox="0 0 24 24">${B_ICON[G.ic]}</svg></div><h2>${G.name}</h2>${G.id!=='set'&&list.length>1?`<button class="b-btn ${betaArr?'on':''}" data-b-arr aria-label="จัดเรียงกล่องในหมวด">${betaArr?'✓':'↕'}</button>`:''}</div>
-      <p class="b-hint">${betaArr?'แตะค้างที่ชื่อแล้วลาก หรือกด ▲ ▼ เพื่อเรียงกล่อง':'ปัดจากขอบซ้ายไปขวา หรือกดปุ่มย้อนกลับของมือถือ เพื่อกลับหน้าหลัก'}</p>
+      ${betaArr?`<p class="b-hint">แตะค้างที่ชื่อแล้วลาก หรือกด ▲ ▼ เพื่อเรียงกล่อง</p>`:''}
       ${G.id==='comp'?`<div class="b-ctabs"><button type="button" class="b-ctab ${bCompTab==='agent'?'on':''}" data-b-ctab="agent">🏆 การแข่งขันของตัวแทน</button><button type="button" class="b-ctab ${bCompTab==='um'?'on':''}" data-b-ctab="um">👔 การแข่งขันของ UM</button></div>`:''}`;
     const wrap = document.createElement('div'); wrap.className = betaArr?'b-arr':''; wrap.dataset.bList = G.id;
     if (G.id==='set') wrap.innerHTML = bSettingsHtml();
@@ -6740,7 +6807,6 @@ function bSettingsHtml(){
     <div class="b-row"><div>แบ็กอัพข้อมูล<small>ล่าสุด: ${last}</small></div><button type="button" class="b-btn" data-b-act="export">📤 บันทึก</button></div>
     <div class="b-row"><div>โหลดข้อมูลจากไฟล์<small>ไฟล์แบ็กอัพจากหน้าเดิมหรือหน้าใหม่ใช้ได้ทั้งคู่</small></div><button type="button" class="b-btn" data-b-act="import">📥 โหลด</button></div>
     <div class="b-row"><div>กู้คืนจากจุดสำรองอัตโนมัติ<small>${betaSnapAt?'สำรองไว้อัตโนมัติเมื่อ '+fmtTH(new Date(betaSnapAt),{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):'ยังไม่มีข้อมูลสำรอง'}</small></div><button type="button" class="b-btn" data-b-act="restore" ${betaSnapAt?'':'disabled'}>↩︎ กู้คืน</button></div>
-    <div class="b-row"><div>กลับไปใช้หน้าเดิม<small>ข้อมูลชุดเดียวกัน สลับไปมาได้ตลอด</small></div><a class="b-btn" href="./" style="text-decoration:none;">เปิดหน้าเดิม</a></div>
   </div>`;
 }
 function bBindSettings(box){
@@ -6829,7 +6895,7 @@ function bRestoreSnapshot(){
 }
 
 /* ---------- เมนูล่าง + ปุ่มบันทึกผลงาน ---------- */
-const B_NAV = [['home','หน้าหลัก','home'],['manage','ข้อมูลตัวแทน','card'],['agent','ตัวแทน','person'],['teamUm','ทีม UM','ums'],['set','ตั้งค่า','gear']];
+const B_NAV = [['home','หน้าหลัก','home'],['manage','บัตรตัวแทน','card'],['agent','ผลงานตัวแทน','person'],['teamUm','ทีม UM','ums'],['set','ตั้งค่า','gear']];
 function bNavInit(){
   if (document.getElementById('b-nav')) return;
   const nav = document.createElement('nav'); nav.id='b-nav'; nav.setAttribute('aria-label','เมนูหลัก');
@@ -6902,6 +6968,8 @@ let posterList = [];
 function pNorm(s){ return String(s||'').toLowerCase().replace(/[\s\-_.·,:;()\/'"!?&+—–]/g,''); }
 function pBase(f){ return String(f||'').split('/').pop(); }
 function pSrc(p){ return POSTER_BASE + String(p.file).split('/').map(encodeURIComponent).join('/'); }
+function pThumb(p){ return POSTER_BASE + 'thumbs/' + String(p.file).split('/').map(encodeURIComponent).join('/'); }
+function pThumbImg(p, alt){ return `<img src="${esc(pThumb(p))}" onerror="this.onerror=null;this.src='${esc(pSrc(p))}'" loading="lazy" alt="${esc(alt||'')}">`; }
 function pIsArchived(p){ return !!p.archived || /^archive\//.test(p.file||''); }
 function pTodayIso(){ return todayIso(); }
 function posterActive(p){ const t=pTodayIso(); return !pIsArchived(p) && (!p.start || t>=p.start) && (!p.end || t<=p.end); }
@@ -6945,7 +7013,7 @@ function posterMatches(name, key, ev){
 }
 function posterThumbs(list){
   if (!list || !list.length) return '';
-  return `<span class="p-thumbs" role="button" aria-label="ดูโปสเตอร์เต็มจอ" data-poster-open="${esc(list.map(p=>p.file).join('|'))}">${list.slice(0,3).map(p=>`<img src="${esc(pSrc(p))}" loading="lazy" alt="โปสเตอร์ ${esc(p.title||'')}">`).join('')}</span>`;
+  return `<span class="p-thumbs" role="button" aria-label="ดูโปสเตอร์เต็มจอ" data-poster-open="${esc(list.map(p=>p.file).join('|'))}">${list.slice(0,3).map(p=>`${pThumbImg(p, 'โปสเตอร์ '+(p.title||''))}`).join('')}</span>`;
 }
 function posterDaysLeft(p){ if (!p.end) return null; const t0=new Date(); t0.setHours(0,0,0,0); return Math.round((new Date(p.end+"T00:00:00")-t0)/86400000); }
 function posterStripHtml(){
@@ -6954,7 +7022,7 @@ function posterStripHtml(){
   const files = esc(act.map(p=>p.file).join('|'));
   return `<div class="b-sec"><h2>โปรโมชั่นประจำเดือน</h2><span>ปัดดูต่อ · แตะดูเต็มจอ</span></div>
     <div class="p-strip${act.length>1?' p-loop':''}" data-n="${act.length}">${(act.length>1?[...act,...act,...act]:act).map((p,j)=>{ const i=j%act.length; const d=posterDaysLeft(p); return `<button type="button" class="p-card" data-poster-open="${files}" data-poster-i="${i}">
-      <img src="${esc(pSrc(p))}" loading="lazy" alt="โปสเตอร์ ${esc(p.title||'')}">
+      ${pThumbImg(p, 'โปสเตอร์ '+(p.title||''))}
       <span class="t">${esc(p.title||'')}</span>
       ${d!==null?`<span class="d">${d===0?'วันสุดท้าย!':`เหลือ ${d} วัน`}</span>`:''}${p.kind==='promo'?'<span class="k">โปรลูกค้า</span>':''}
     </button>`; }).join('')}</div>`;
@@ -7415,7 +7483,7 @@ function trainingHtml(){
     <div class="t-box" role="button" tabindex="0" data-train-toggle aria-expanded="${tOpen()}"><span class="t-ttl"><i class="t-ic">📚 </i>ตารางอบรม</span><span class="t-arr">${tOpen()?'▲':'▼'}</span></div>
     ${tOpen()?`<div class="t-tabs">${Object.entries(TRAIN_TABS).map(([k,lab])=>`<button type="button" class="t-tab ${trainTab===k?'on':''}" data-train-tab="${k}">${lab}</button>`).join('')}</div>
     ${L.length ? `<div class="p-strip t-strip">${L.map((p,i)=>{ const c=tNextClose(p); const d=c?tDays(c):null; return `<button type="button" class="p-card t-card" data-poster-open="${files}" data-poster-i="${i}">
-      <img src="${esc(pSrc(p))}" loading="lazy" alt="โปสเตอร์ ${esc(p.title||'')}">
+      ${pThumbImg(p, 'โปสเตอร์ '+(p.title||''))}
       <span class="t">${esc(p.title||'')}</span>
       <span class="d ${d!==null&&d<=3?'hot':''}">${esc(tBadge(p))}</span>
     </button>`; }).join('')}</div>` : `<div class="t-empty">ตอนนี้ยังไม่มีรอบอบรมที่เปิดรับในหมวดนี้</div>`}`:''}
@@ -7551,7 +7619,7 @@ function docView(doc){
   let v = document.getElementById('dv');
   if (!v){ v = document.createElement('div'); v.id = 'dv'; document.body.appendChild(v); }
   dvDoc = doc; dvZoom = 1; dvRender(); v.hidden = false; document.body.style.overflow = 'hidden';
-  dvPrep();
+  dvBusy = null; dvBlob = null; // เตรียมไฟล์ PDF ตอนกด "บันทึก/ส่งต่อ" เท่านั้น (ประหยัดเน็ต)
 }
 function dvClose(fromBack){
   const v = document.getElementById('dv'); if (!v || v.hidden) return;
@@ -7808,6 +7876,26 @@ function subUmEntryHtml(){
 
 // ===== ต่อบัตร: ติ๊ก "ส่งเอกสารต่อบัตรแล้ว" (ผูกกับวันหมดอายุบัตรปัจจุบัน — ใส่วันหมดอายุใหม่ = รีเซ็ตเอง) =====
 function licDocsSent(lic){ return !!(lic && lic.cardExpiryDate && lic.renewDocsSent===lic.cardExpiryDate); }
+// กล่องเลือกวันที่อนุมัติ
+let approveEntryAt = ()=>{};
+function approveAsk(id){
+  const e = agent().entries.find(x=>x.id===id); if (!e) return;
+  let m = document.getElementById('ap-modal'); if (!m){ m = document.createElement('div'); m.id = 'ap-modal'; document.body.appendChild(m); }
+  m.innerHTML = `<div class="ap-bd" data-ap-x></div><div class="ap-box" role="dialog" aria-label="อนุมัติผลงาน">
+    <div class="ap-t">✅ อนุมัติผลงาน</div>
+    <div class="ap-s">${esc(state.currentAgent)} · FYC ${THB(e.fyc)}${e.note?` · ${esc(e.note)}`:''}</div>
+    <label class="ap-l">วันที่อนุมัติ<input type="date" id="ap-date" value="${esc(e.date)}"></label>
+    <div id="ap-th" style="font-weight:800;color:#0B6B3A;margin-top:6px;"></div>
+    <div class="ap-h">ใส่วันที่ที่บันทึกไว้ให้แล้ว — ถ้าอนุมัติวันอื่น เปลี่ยนได้เลย (งวดถัดไปจะเลื่อนตาม)</div>
+    <div class="ap-b"><button type="button" class="btn-ghost" data-ap-x>ยกเลิก</button><button type="button" class="btn-primary" data-ap-ok>อนุมัติ</button></div></div>`;
+  m.hidden = false;
+  { const di = m.querySelector('#ap-date'), th = m.querySelector('#ap-th'); const upd = ()=>{ th.textContent = di.value ? '= ' + fmtTH(new Date(di.value+'T00:00:00'),{day:'numeric',month:'long',year:'numeric'}) : ''; }; di.oninput = upd; di.onchange = upd; upd(); }
+  m.onclick = ev=>{
+    ev.stopPropagation();
+    if (ev.target.closest('[data-ap-ok]')){ const d = m.querySelector('#ap-date').value; if (!/^\d{4}-\d{2}-\d{2}$/.test(d)){ showToast('กรุณาเลือกวันที่'); return; } m.hidden = true; m.innerHTML = ''; approveEntryAt(id, d); return; }
+    if (ev.target.closest('[data-ap-x]')){ m.hidden = true; m.innerHTML = ''; }
+  };
+}
 function licDaysLeft(exp){ if (!exp) return 9999; const t=new Date(); t.setHours(0,0,0,0); return Math.round((new Date(exp+"T00:00:00")-t)/86400000); }
 function licNeedsRenew(exp){ if (!exp) return false; const e=new Date(exp+"T00:00:00"), w=new Date(e); w.setMonth(w.getMonth()-4); const t=new Date(); t.setHours(0,0,0,0); return t>=w; }
 document.addEventListener('change', e=>{
@@ -8182,7 +8270,7 @@ function tlAfterRender(c){
     } else if (activeSection!=='manage'){
       const kids = Array.from(c.children).filter(el=>el.nodeType===1 && !el.classList.contains('ask-card') && !(el.querySelector && el.querySelector('#btn-backup-now')));
       const cards = kids.filter(el=>el.classList.contains('card'));
-      if (cards.length){
+      if (cards.length>1){
         host = document.createElement('div'); host.className = 'tl-host'; cards[0].before(host);
         kids.filter(el=>!cards.includes(el) && (/^(H2|H3|P)$/.test(el.tagName) || el.classList.contains('comp-upcoming'))).forEach(el=>el.remove());
         roots = cards.map((el,i)=>{ const raw = el.querySelector('h3') ? bH3Text(el.querySelector('h3')) : tlStrip((el.querySelector('.title')||el).textContent).slice(0,40); return tlItem(bCardKey(el), raw, el, tlSum(el, raw), i); });
@@ -8379,7 +8467,7 @@ function rbCardHtml(opt){
   const all = (ev.posters||[]).join('|');
   const f = iso=>fmtTH(new Date(iso+"T00:00:00"),{day:"numeric",month:"short",year:"numeric"});
   const dl = rbDaysLeft(ev);
-  const thumbs = (ev.posters||[]).map((p,i)=>`<button type="button" class="rb-th" data-poster-open="${esc(all)}" data-poster-i="${i}" aria-label="ดูโปสเตอร์"><img src="${esc(POSTER_BASE+encodeURIComponent(p))}" loading="lazy" alt=""></button>`).join('');
+  const thumbs = (ev.posters||[]).map((p,i)=>`<button type="button" class="rb-th" data-poster-open="${esc(all)}" data-poster-i="${i}" aria-label="ดูโปสเตอร์">${pThumbImg({file:p}, "")}</button>`).join('');
   const rows = t.map((x,i)=>{ const hit=v>=x, soon=!hit&&vp>=x, pi=Math.max(0,(ev.posters||[]).indexOf(tp[i]));
     return `<div class="rb-ms ${hit?'hit':''}"><span class="rb-ck">${hit?'✔':soon?'⏳':'○'}</span><span class="rb-ic">${ic[i]||''}</span><span class="rb-ml"><b>${THB(x)}</b> ${esc(labs[i]||'')}</span>${tp[i]?`<button type="button" class="rb-pb" data-poster-open="${esc(all)}" data-poster-i="${pi}" aria-label="ดูโปสเตอร์">🖼</button>`:''}</div>`; }).join('');
   return `<div class="${opt.inner?'rb-box rb-card':'card rb-card'}">
@@ -8404,7 +8492,7 @@ function rbTeamUmCardHtml(){
   return `<div class="card rb-card">
     <h3 style="margin:0 0 4px;">🐼 Road to Beijing · ทีม UM</h3>
     <div class="rb-sub">เกณฑ์ผู้บริหารตัวแทน · ใช้ยอดที่กรอกของแต่ละคน (ตัวใครตัวมัน) · เหลือ <b>${Math.max(0,rbDaysLeft(ev))}</b> วัน · แตะชื่อเพื่อเข้าไปดูทีม</div>
-    <div class="rb-thumbs">${(ev.posters||[]).map((p,i)=>`<button type="button" class="rb-th" data-poster-open="${esc((ev.posters||[]).join('|'))}" data-poster-i="${i}"><img src="${esc(POSTER_BASE+encodeURIComponent(p))}" loading="lazy" alt=""></button>`).join('')}</div>
+    <div class="rb-thumbs">${(ev.posters||[]).map((p,i)=>`<button type="button" class="rb-th" data-poster-open="${esc((ev.posters||[]).join('|'))}" data-poster-i="${i}">${pThumbImg({file:p}, "")}</button>`).join('')}</div>
     ${bars}
   </div>`;
 }
