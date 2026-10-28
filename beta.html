@@ -722,7 +722,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">beta42</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">beta42.1</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -740,7 +740,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta42 · อัปเดต 28 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta42.1 · อัปเดต 28 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -1940,10 +1940,11 @@ function agentCompStatus(ag){
   const aCases = yearEntries.filter(isOrigin).length, aFyc = agYearFyc(ag, selYear);
   const aHas = newIn(new Date(selYear,0,1), new Date(selYear,11,31,23,59,59))>0;
   {
-    const persist = (ag.persistQuarterly||{})[`annual-${selYear}`] ?? 80;
-    const band = persist>=90?'high':persist>=85?'mid':'low';
+    const __bi = annualBandInfo(ag, selYear), band = __bi.band;
     const cs=Math.max(0,ANNUAL_BONUS_GATE_CASES-aCases), fs=Math.max(0,ANNUAL_BONUS_GATE_FYC-aFyc);
-    if (cs===0 && fs===0){
+    if (__bi.blocked){
+      items.push({ has:aHas, ok:false, near:false, title:`โบนัสปี ${toBE(selYear)}`, text:`ความยั่งยืนต่ำกว่า 75% — ยังไม่ได้โบนัสปี${(cs||fs)?` · ขาดอีก <b>${shortTxt(cs,fs)}</b>`:''} (ต้องคงอยู่ ≥75%)` });
+    } else if (cs===0 && fs===0){
       const idx = tierIdxByMin(ANNUAL_TIER_RANGES, aFyc);
       const next = ANNUAL_TIER_RANGES[idx+1];
       items.push({ has:aHas, ok:true, near: next && next.min-aFyc<=NEAR, title:`โบนัสปี ${toBE(selYear)}`,
@@ -3475,9 +3476,10 @@ function __generatePrintReportRaw(){
     return { q: r.q, count: r.count, fyc: r.fyc, qualifies: r.qualifies, bReward };
   });
   const annualPersistKey = `annual-${selYear}`;
+  const __abi = annualBandInfo(ag, selYear);
   const annualPersist = ag.persistQuarterly[annualPersistKey] ?? 80;
-  const annualBand = annualPersist>=90?'high':annualPersist>=85?'mid':'low';
-  const annualBonusPct = annualBonusGate ? annualPct(annualFYC, annualBand) : 0;
+  const annualBand = __abi.band;
+  const annualBonusPct = (annualBonusGate && !__abi.blocked) ? annualPct(annualFYC, annualBand) : 0;
   const annualBonusGross = annualBonusGate ? (annualFYC*annualBonusPct)/100 : 0;
   const annualBonusNet = Math.max(0, annualBonusGross - totalQuarterlyBonus);
   // Joining Bonus
@@ -3825,6 +3827,14 @@ function annualPct(fyc, band){
 }
 
 // ยอด FYC รายไตรมาสยึด "ตารางผลงานรายเดือน" เป็นหลัก: เดือนที่แก้ไขเอง (✏️) ใช้ตัวเลขที่พิมพ์ · เดือนอื่นรวมจากงานที่คีย์/อนุมัติแล้ว
+// โบนัสปี: ตัวแทนใหม่ = วันมีงานชิ้นแรกอยู่ในปีนั้น → ไม่ดูความยั่งยืน ใช้เรต 75–84% · ตัวแทนเก่า ความยั่งยืนต่ำกว่า 75% = ไม่ได้โบนัสปี แม้เงื่อนไขอื่นครบ
+function agFirstWorkDate(ag){ let f = ag && ag.competitions && ag.competitions.firstSaleDate; if (!f){ const eff = effectiveEntries((ag&&ag.entries)||[]); if (eff.length) f = eff.map(e=>e.date).sort()[0]; } return f || ''; }
+function annualBandInfo(ag, y){
+  const f = agFirstWorkDate(ag), isNew = !!f && Number(String(f).slice(0,4))===y;
+  if (isNew) return { band:'low', isNew:true, blocked:false, persist:null };
+  const p = ((ag&&ag.persistQuarterly)||{})[`annual-${y}`] ?? 80;
+  return { band: p>=90?'high':p>=85?'mid':'low', isNew:false, blocked: p<75, persist:p };
+}
 function agOv(ag){ return (ag && ag.competitions && ag.competitions.monthlyFycOverride) || {}; }
 // FYC รายเดือนของตัวแทน ยึดตารางผลงานรายไตรมาส: เดือนที่แก้ไขเอง (✏️) ใช้ตัวเลขที่พิมพ์ · เดือนอื่นรวมจากรายการที่อนุมัติแล้ว
 function agMonthFyc(ag,y,m){ const o = agOv(ag)[`${y}-${m}`]; return (o!==undefined && o!==null) ? (Number(o)||0) : mEff((ag&&ag.entries)||[], y, m); }
@@ -4791,9 +4801,10 @@ function renderCompetitionsTab(){
   });
   // โบนัสปี (เงินรางวัลตัวแทน ตาราง 4) สุทธิหลังหักส่วนที่จ่ายรายไตรมาสแล้ว
   const annualPersistKey = `annual-${selYear}`;
+  const __abi = annualBandInfo(agent(), selYear);
   const annualPersist = agent().persistQuarterly[annualPersistKey] ?? 80;
-  const annualBand = annualPersist>=90?'high':annualPersist>=85?'mid':'low';
-  const annualBonusPct = annualBonusGate ? annualPct(annualFYC, annualBand) : 0;
+  const annualBand = __abi.band;
+  const annualBonusPct = (annualBonusGate && !__abi.blocked) ? annualPct(annualFYC, annualBand) : 0;
   const annualBonusGross = annualBonusGate ? (annualFYC*annualBonusPct)/100 : 0;
   const annualBonusNet = Math.max(0, annualBonusGross - totalQuarterlyBonus);
 
@@ -4932,7 +4943,7 @@ function renderCompetitionsTab(){
     annualNextPct = ANNUAL_BANDS[annualBand].pct[idx];
     const previewGross = (annualNextTierRange.min * annualNextPct)/100;
     const previewNet = Math.max(0, previewGross - totalQuarterlyBonus);
-    annualIncrease = previewNet - annualBonusNet;
+    annualIncrease = __abi.blocked ? 0 : previewNet - annualBonusNet;
   }
   const qualShortfalls = qResults.filter(r=>!r.qualifies && isCurrentYear && r.q===currentActual.quarter).map(r=>({
     q: r.q, casesShort: Math.max(0,QUALIFY_MIN_CASES-r.count), fycShort: Math.max(0,QUALIFY_MIN_FYC-r.fyc), monthsShort: Math.max(0,QUALIFY_MIN_ACTIVE_MONTHS-r.activeMonths),
@@ -5022,12 +5033,13 @@ function renderCompetitionsTab(){
           <div class="lbl">โบนัสปี (สุทธิ)</div>
           <div class="val">${THB(annualBonusNet)}</div>
           <div style="margin-top:6px;">
+            ${__abi.isNew ? `<div style="font-size:14px;color:#fff;line-height:1.4;">ตัวแทนใหม่ปี ${toBE(selYear)} · ไม่ดูความยั่งยืน (ใช้เรต 75%)</div>` : `${__abi.blocked ? '<div style="font-size:14px;color:#FFB4B4;font-weight:700;margin-bottom:4px;">ความยั่งยืนต่ำกว่า 75% ไม่ได้โบนัสปี</div>' : ''}
             <select data-annual-persist-band style="width:100%;padding:3px 5px;font-size:15px;background:#0E2F5299;color:#fff;border-color:#ffffff33;">
               <option value="60" ${annualPersist<75?"selected":""}>คงอยู่ต่ำกว่า 75%</option>
               <option value="80" ${annualPersist>=75&&annualPersist<85?"selected":""}>คงอยู่ 75–84%</option>
               <option value="87" ${annualPersist>=85&&annualPersist<90?"selected":""}>คงอยู่ 85–89%</option>
               <option value="95" ${annualPersist>=90?"selected":""}>คงอยู่ 90% ขึ้นไป</option>
-            </select>
+            </select>`}
           </div>
         </div>
         <div class="income-chip"><div class="lbl">Joining Bonus</div><div class="val">${THB(joiningGrandTotal)}</div></div>
@@ -8126,7 +8138,7 @@ function rbSumAgents(agents, ev){
   Object.values(agents||{}).forEach(ag=>{ if (!ag) return; const r = rbValOf(ag.entries, ev); v+=r.v; vp+=Math.max(r.v, r.vp); });
   return { v, vp };
 }
-// UM ในทีม: ใช้ CFYC รายเดือนที่กรอกไว้ (ตารางผลงานรายไตรมาส) ของเดือนที่อยู่ในช่วงการแข่งขัน นับถึงเดือนปัจจุบันเท่านั้น (ไม่นับล่วงหน้า)
+// UM ในทีม: ใช้ CFYC รายเดือนที่กรอกไว้ (ตารางผลงานรายไตรมาส) เฉพาะเดือนที่อยู่ในช่วงแข่งขันเต็มเดือน (เดือนที่เริ่ม/จบกลางเดือนไม่นับ) นับถึงเดือนปัจจุบันเท่านั้น
 function rbSubUmVal(u, ev){
   const s = new Date(ev.start+"T00:00:00"), e = new Date(ev.end+"T00:00:00"), now = new Date();
   let v = 0;
@@ -8134,7 +8146,7 @@ function rbSubUmVal(u, ev){
     const arr = subUmMonthlyCFYC(u||{}, y);
     for (let m=0;m<12;m++){
       const first = new Date(y,m,1), last = new Date(y,m+1,0);
-      if (last < s || first > e || first > now) continue;
+      if (first < s || last > e || first > now) continue;
       v += Number(arr[m])||0;
     }
   }
