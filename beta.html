@@ -361,6 +361,7 @@ main{padding-bottom:170px!important;}
 #b-fab{position:fixed;z-index:21;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:8px;padding:13px 18px;border-radius:999px;border:0;cursor:pointer;
   font-family:var(--b-display);font-weight:700;font-size:17px;color:#03131F;background:linear-gradient(180deg,#8CF2FF,#28BEE6);box-shadow:0 10px 24px rgba(0,0,0,.45),0 0 24px rgba(69,227,255,.5);}
 #b-fab span{font-size:24px;line-height:1;}
+body:has([id^="tl-layer-"]:not([hidden])) #b-fab, body:has(#cv:not([hidden])) #b-fab, body:has(#pv:not([hidden])) #b-fab, body:has(#dv:not([hidden])) #b-fab{display:none!important;}
 
 /* ตั้งค่า */
 .b-set{display:grid;gap:10px;}
@@ -722,7 +723,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">beta42.2</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">beta42.3</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -740,7 +741,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta42.2 · อัปเดต 28 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta42.3 · อัปเดต 28 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -1505,7 +1506,7 @@ function umNewAgents20k(st, y){
 }
 function progRoot(){ return (activeTeamUmName && mainAppState) ? mainAppState : state; }
 function progStOf(key){ const root = progRoot(); if (key==='__me__') return root; return activeTeamUmName===key ? state : (root.teamUMs||{})[key]; }
-function progList(){ const root = progRoot(); return [{ key:'__me__', label:'ฉัน (UM หลัก)' }, ...Object.keys(root.teamUMs||{}).map(n=>({ key:n, label:n }))]; }
+function progList(){ const root = progRoot(); return [{ key:'__me__', label:'ผลงานของฉัน' }, ...Object.keys(root.teamUMs||{}).map(n=>({ key:n, label:n }))]; }
 function progOf(st){ if (!st.umGoal) st.umGoal = {}; if (!st.umGoal.program) st.umGoal.program = { type:'none', locked:false, fast:{ positions:{}, passed:{} }, growth:{ basePos:'', basePerf:'', newIn2567:false } }; const p = st.umGoal.program; if (!p.fast) p.fast = { positions:{}, passed:{} }; if (!p.fast.positions) p.fast.positions = {}; if (!p.fast.passed) p.fast.passed = {}; if (!p.growth) p.growth = { basePos:'', basePerf:'', newIn2567:false }; return p; }
 
 function programStatus(st, y){
@@ -1830,7 +1831,7 @@ function __answerQuestionRaw(raw){
   // 11) ผลประโยชน์ UM
   const umWords = ['เป้า','um','ยูเอ็ม','cfyc','เงินเดือน','ค่าขยายงาน','dpo','ส่วนเกินโควตา','โบนัสส่วนเกิน','ค่าสร้าง','ค่ารักษาทีม','ผลประโยชน์','รายได้'];
   if (has(...umWords) || (umMentioned.length && !out.length)){
-    const targets = umMentioned.length ? umMentioned.map(n=>({ label:n, st:progStOf(n) })) : [{ label:'ฉัน (UM หลัก)', st: activeTeamUmName ? state : progRoot() }];
+    const targets = umMentioned.length ? umMentioned.map(n=>({ label:n, st:progStOf(n) })) : [{ label:'ผลงานของฉัน', st: activeTeamUmName ? state : progRoot() }];
     if (!umMentioned.length && has('ทีมum','ทีมยูเอ็ม','umในทีม','ทุกum')) umNames.forEach(n=>targets.push({ label:n, st:progStOf(n) }));
     targets.forEach(({label, st})=>{
       if (!st) return;
@@ -2070,7 +2071,7 @@ function computeUmSummary(st){
   return out;
 }
 function renderAllUmDashboard(){
-  const list = [{ name:"ของฉันเอง", own:true, st: state }]
+  const list = [{ name:"ผลงานของฉัน", own:true, st: state }]
     .concat(Object.keys(state.teamUMs).filter(n=>state.teamUMs[n] && state.teamUMs[n].agents).map(n=>({ name:n, st: state.teamUMs[n] })));
   // ย่ออยู่ = ไม่ต้องคำนวณทุก UM (ช่วยให้แอปเร็วขึ้นบนมือถือ)
   if (collapsedBoxes.allUmDash) return `<div class="card"><h3 data-toggle-box="allUmDash" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;"><span>📊 ภาพรวมทุก UM (${list.length})</span><span style="color:var(--muted);font-size:18px;">▶ แตะเพื่อดู</span></h3></div>`;
@@ -2104,6 +2105,7 @@ function renderAllUmDashboard(){
   };
   const card = (x)=>{
     const s = x.s, pos = s.position;
+    const hasAgentData = x.own || Object.values((x.st && x.st.agents)||{}).some(a=>a && (a.entries||[]).length);
     const pct = Math.round(s.annualPct);
     const barColor = pct>=100?'var(--good)':pct>=80?'var(--gold)':'var(--navy)';
     let status = '';
@@ -2119,13 +2121,13 @@ function renderAllUmDashboard(){
         : `💎 โบนัสส่วนเกินโควตา: ขาดอีก <b>${THB(s.nextBand3.shortfall)}</b> ขยับเป็น ${s.nextBand3.nextRate}% (+${THB(s.nextBand3.increase)})`;
     } else if (pos) bonus3 = `💎 โบนัสส่วนเกินโควตา: อยู่ขั้นสูงสุดแล้ว`;
     const warn = [];
-    if (s.quietCount>0) warn.push(`${s.quietCount} ตัวแทนไม่มีงาน${mName}`);
+    if (hasAgentData && s.quietCount>0) warn.push(`${s.quietCount} ตัวแทนไม่มีงาน${mName}`);
     if (s.yearPending>0) warn.push(`รอพิจารณา ${s.yearPendingCount?s.yearPendingCount+' ราย · ':''}${THB(s.yearPending)}`);
     const attr = x.own ? `data-section="um"` : `data-open-team-um="${esc(x.name)}"`;
     return `<div ${attr} style="border:1px solid #123F6B1F;border-radius:10px;padding:10px 12px;margin-bottom:10px;cursor:pointer;${x.own?'background:#FBF6E8;':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
         <div style="min-width:0;"><div style="font-weight:700;color:var(--navy);font-size:17px;">${x.own?'⭐ ':`<span style="display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:50%;background:#0F56B2;color:#fff;font-size:14px;margin-right:6px;">${x.rank}</span>`}${esc(x.name)}</div>
-          <div style="font-size:13px;color:#4B5563;">${pos?pos.label:''}${pos?' · ':''}${s.agentCount} ตัวแทน</div></div>
+          <div style="font-size:13px;color:#4B5563;">${pos?pos.label:''}${(pos && hasAgentData)?' · ':''}${hasAgentData?`${s.agentCount} ตัวแทน`:''}</div></div>
         ${status}
       </div>
       <div style="display:flex;justify-content:space-between;font-size:14px;margin-top:8px;"><span>ทำได้ทั้งปี ${THB(s.annualAchieved)}${s.annualGoal>0?` / เป้า ${THB(s.annualGoal)}`:' · <span style="color:var(--muted);">ยังไม่ตั้งเป้า</span>'}</span><b style="color:${barColor};">${s.annualGoal>0?pct+'%':'—'}</b></div>
@@ -2146,7 +2148,7 @@ function renderAllUmDashboard(){
 function renderTeamUmTab(){
   umSeedParents();
   const names = Object.keys(state.teamUMs);
-  return renderAllUmDashboard() + `
+  return renderAllUmDashboard() + subUmEntryHtml() + `
     <div class="card">
       <h3>🧑‍💼 ทีม UM</h3>
       <p class="sub">แตะชื่อเพื่อเข้าไปดู/จัดการทีมของ UM คนนั้นแบบเต็มรูปแบบ (ทีมตัวแทน, เป้าหมาย, ผลประโยชน์ทุกตัว) แยกขาดจากทีมของพี่เองโดยสิ้นเชิง</p>
@@ -2816,7 +2818,7 @@ function renderTeamTab(){
             <div class="mini-row" style="margin-top:6px;padding-top:6px;border-top:1px dashed #123F6B1A;"><span>CFYC ไตรมาสนี้ (อ้างอิง)</span><span class="v">${THB(qCFYC)}</span></div>
             <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #123F6B1A;">
               <table class="qtable">
-                <thead><tr><th>เดือน</th><th class="r">เป้า</th><th class="r">CFYC</th><th class="r">ตัวแทนตรง</th></tr></thead>
+                <thead><tr><th>เดือน</th><th class="r">เป้าปี÷12</th><th class="r">CFYC</th><th class="r">ตัวแทนตรง</th></tr></thead>
                 <tbody>${monthRowsHtml}</tbody>
               </table>
               ${monthRowsHtml.includes('data-ov-reset')?'<div style="font-size:13px;color:var(--muted);text-align:right;margin-top:4px;">✏️↺ = เดือนที่แก้ไขเอง · แตะเพื่อกลับใช้ค่าอัตโนมัติ</div>':''}
@@ -2961,7 +2963,7 @@ function renderTeamTab(){
         })()}
         <div style="margin-top:14px;padding-top:10px;border-top:2px solid #123F6B22;display:flex;justify-content:space-between;align-items:center;">
           <span style="font-weight:700;color:var(--navy);">สรุปรวมสะสม (ไม่รวมค่าเสริมมือ) ถึงเดือน${THAI_MONTH_NAMES[umViewAsOfMonth]}</span>
-          <span style="font-weight:800;font-size:23px;color:var(--good);">${THB(Math.min(umViewAsOfMonth+1, Math.floor(cumulativeTeamCFYC/selectedPosition.cfycMonth))*selectedPosition.salary + monthlyTeamCFYC.slice(0,umViewAsOfMonth+1).reduce((s,v)=>s+v*selectedPosition.tenurePct/100,0) + profitBonus + salesCompReward + teamBuildingReward + maint.total)}</span>
+          <span style="font-weight:800;font-size:23px;color:var(--good);">${THB(Math.min(umViewAsOfMonth+1, Math.floor(cumulativeTeamCFYC/selectedPosition.cfycMonth))*selectedPosition.salary + monthlyTeamCFYC.slice(0,umViewAsOfMonth+1).reduce((s,v)=>s+v*selectedPosition.tenurePct/100,0) + profitBonus + (umViewAsOfMonth>=5 ? interimBonus6mo : 0) + salesCompReward + teamBuildingReward + maint.total)}</span>
         </div>
         `}
       </div>
@@ -3403,8 +3405,8 @@ function renderTeamTab(){
             }
           }
         });
-        const totalA = resA.item1+resA.item2+resA.item3+resA.item6+item7cmp;
-        const totalB = resB.item1+resB.item2+resB.item3+resB.item6+item7cmp;
+        const totalA = resA.item1+resA.item2+resA.item3+(resA.interimItem3||0)+resA.item6+item7cmp;
+        const totalB = resB.item1+resB.item2+resB.item3+(resB.interimItem3||0)+resB.item6+item7cmp;
         const diffRow = (label, a, b)=>`<tr>
           <td style="text-align:left;">${label}</td>
           <td class="r">${THB(a)}</td>
@@ -4140,7 +4142,9 @@ function __renderInner(){
   else if (activeTab==="competitions") body = renderCompetitionsTab();
   c.innerHTML = IS_AGENT_APP ? (renderBackupReminder() + body) : ((activeSection==="um" && !activeTeamUmName ? renderAskBox() : '') + body);
   if (activeTeamUmName && activeSection==="um"){ // หน้า UM ในทีม: เหลือแค่กล่องเป้าหมาย + ตารางผลงานรายไตรมาส
-    Array.from(c.children).forEach(el=>{ if (el.querySelector && el.querySelector('#btn-backup-now')) return; const h = el.querySelector && el.querySelector('h3'); if (!h || !/เป้าหมายของ UM|ผลงานรายไตรมาส|คำนวณผลประโยชน์ UM รายเดือน/.test(h.textContent)) el.remove(); });
+    Array.from(c.children).forEach(el=>{ if (el.querySelector && el.querySelector('#btn-backup-now')) return; const h = el.querySelector && el.querySelector('h3'); if (!h || !/เป้าหมายของ UM/.test(h.textContent)) el.remove(); });
+    { const pos = UM_POSITIONS.find(p=>p.value===(state.umGoal&&state.umGoal.position)) || null, now = new Date();
+      c.insertAdjacentHTML('beforeend', subUmMonthlyHtml(subUmMonthlyCFYC(state, selYear), getUmAnnualTargetFYC(), pos, selYear===now.getFullYear()?now.getMonth():11)); }
   }
   bindEvents();
   if (activeSection==="um" && !activeTeamUmName) enhanceCollapsibleCards(c);
@@ -5475,12 +5479,31 @@ function bindEvents(){
   }
 
   // Team tab — เป้าหมายของ UM
+  const subUmMonthSel = document.getElementById("subum-entry-month");
+  if (subUmMonthSel) subUmMonthSel.onchange = (e)=>{ subUmEntryMonth = Number(e.target.value); render(); };
+  document.querySelectorAll("[data-subum-cfyc]").forEach(inp=>{
+    inp.oninput = (e)=>{ e.target.value = formatThousands(stripCommas(e.target.value)); };
+    inp.onkeydown = (e)=>{ if (e.key==="Enter"){ e.preventDefault(); const all = Array.from(document.querySelectorAll("[data-subum-cfyc]")), i = all.indexOf(inp); if (all[i+1]) all[i+1].focus(); else inp.blur(); } };
+    inp.onblur = (e)=>{
+      const raw = stripCommas(e.target.value.trim()), num = Number(raw), n = inp.dataset.subumCfyc;
+      const u = state.teamUMs && state.teamUMs[n];
+      if (u && raw!=="" && !isNaN(num) && num>=0){
+        if (!u.umGoal) u.umGoal = { targetFYC:0, startMonth:0, endMonth:11, position:"" };
+        if (!u.umGoal.monthOverrides) u.umGoal.monthOverrides = {};
+        u.umGoal.monthOverrides[inp.dataset.subumKey] = num;
+        saveState(); showToast(`บันทึก ${n} ${formatThousands(String(num))} แล้ว`);
+      }
+      setTimeout(()=>{ const a = document.activeElement; if (!(a && a.dataset && a.dataset.subumCfyc!==undefined)) render(); }, 0);
+    };
+  });
   const umPositionSelect = document.getElementById("um-position-select");
   if (umPositionSelect){
     umPositionSelect.onchange = (e)=>{
       const posValue = e.target.value;
       state.umGoal.position = posValue;
       const pos = UM_POSITIONS.find(p=>p.value===posValue);
+      const curGoal = getUmAnnualTargetFYC();
+      if (pos && curGoal>0 && curGoal!==pos.cfycYear && !confirm(`เปลี่ยนเป้าทั้งปีเป็นโควตาตำแหน่ง ${formatThousands(String(pos.cfycYear))} บาท แทนเป้าเดิม ${formatThousands(String(curGoal))} บาท ไหม?\n(กดยกเลิก = เก็บเป้าเดิมไว้)`)){ saveState(); render(); return; }
       if (pos){
         // cfycYear คือโควตาทั้งปีของตำแหน่งนั้น ต้องเติมลงเป้าหมายทั้งปี ไม่ใช่เป้าหมายเฉพาะช่วง (ซึ่งพี่อาจตั้งเป็นช่วงสั้นกว่าเอง แยกกันคนละความหมาย)
         setUmAnnualTargetFYC(pos.cfycYear);
@@ -6413,7 +6436,7 @@ function bPodSum(g, buckets, todos){
   const T = n => THB(n||0);
   if (g==='perf'){
     const pct = S.annualGoal>0 ? `เป้าปี <b class="${S.annualPct>=100?'ok':''}">${Math.round(S.annualPct)}%</b>` : 'ยังไม่ตั้งเป้าทั้งปี';
-    return `${pct}<br>CFYC เดือนนี้ <b>${T(S.monthCFYC)}</b>`;
+    return `${pct}<br>CFYC ทีมเดือนนี้ <b>${T(S.monthCFYC)}</b>`;
   }
   if (g==='comp'){
     const now = new Date();
@@ -6485,7 +6508,7 @@ function betaLayout(c){
       </div>
       <div class="b-stats">
         <div class="b-stat"><small>CFYC ทีมปี ${toBE(selYear)}</small><b>${THB(S.annualAchieved)}</b></div>
-        <div class="b-stat"><small>CFYC ${THAI_MONTH_NAMES[S.viewMonth ?? new Date().getMonth()]}${S.position?` / โควตา ${THB(S.position.cfycMonth)}`:''}</small><b>${THB(S.monthCFYC)}</b></div>
+        <div class="b-stat"><small>CFYC ${THAI_MONTH_NAMES[S.viewMonth ?? new Date().getMonth()]}${S.position?` / โควตาตำแหน่ง ${THB(S.position.cfycMonth)}`:''}</small><b>${THB(S.monthCFYC)}</b></div>
       </div>
     </section>
     <p class="b-fresh">ข้อมูล ณ ${fmtTH(new Date(),{day:"numeric",month:"short",year:"numeric"})}${S.yearPending>0?` · รออนุมัติ <b>${S.yearPendingCount?S.yearPendingCount+' ราย ':''}(${THB(S.yearPending)})</b>`:' · ไม่มีงานรออนุมัติ'}${activeTeamUmName?` · ทีมของ ${esc(activeTeamUmName)}`:''}</p>
@@ -6548,7 +6571,7 @@ function bOpenGroup(g, el, focus){
   if (betaArr) return;
   const r = el ? el.getBoundingClientRect() : null;
   betaOrigin = r ? { x: r.left+r.width/2, y: r.top } : null;
-  const go = ()=>{ bCollapseAll(); betaGroup=g; betaFocus=focus||null; betaJustOpened=true; try{ history.pushState({bg:g},''); }catch(e){} window.scrollTo(0,0); render(); };
+  const go = ()=>{ bCollapseAll(); betaGroup=g; betaFocus=focus||null; betaJustOpened=true; window.scrollTo(0,0); render(); };
   if (!bCalm() && el){
     const pod = el.classList.contains('b-pod') ? el : null;
     if (pod){ pod.classList.remove('boom'); void pod.offsetWidth; pod.classList.add('boom'); }
@@ -6556,8 +6579,24 @@ function bOpenGroup(g, el, focus){
     bBoost = .6; setTimeout(go, 130);
   } else go();
 }
-function bCloseGroup(){ if (!betaGroup) return; bCollapseAll(); if (history.state && history.state.bg) history.back(); else { betaGroup=null; render(); } }
-window.addEventListener('popstate', ()=>{ if (betaGroup){ bCollapseAll(); betaGroup=null; betaArr=false; render(); } });
+function bCloseGroup(){ if (!betaGroup) return; bCollapseAll(); betaGroup=null; render(); }
+// ปุ่มย้อนกลับของเครื่อง: ปิดสิ่งที่อยู่บนสุดทีละชั้น (PDF → โปสเตอร์/รูปเต็มจอ → การ์ด → หมวด → หน้าหลัก) ถึงหน้าหลักแล้วกดอีกครั้งจึงออกจากแอป
+function backCloseTop(){
+  const vis = id=>{ const e = document.getElementById(id); return e && !e.hidden ? e : null; };
+  let e;
+  if (vis('dv')){ dvClose(true); return true; }
+  if ((e = vis('pv'))){ const x = e.querySelector('.x'); if (x) x.click(); else { e.hidden = true; document.body.style.overflow=''; } return true; }
+  if ((e = vis('cv'))){ const x = e.querySelector('.cv-x'); if (x) x.click(); else { e.hidden = true; document.body.style.overflow=''; } return true; }
+  if (typeof qzKey!=='undefined' && qzKey){ qzClose(); return true; }
+  if (typeof tlOpen!=='undefined' && tlOpen && tlOpen.path && tlOpen.path.length){ tlClose(); return true; }
+  if (betaGroup){ bCollapseAll(); betaGroup=null; betaArr=false; render(); return true; }
+  if (activeTeamUmName){ const b = document.getElementById('btn-exit-team-um-context'); if (b){ b.click(); return true; } }
+  if (activeSection!=='um'){ activeSection='um'; betaGroup=null; render(); window.scrollTo(0,0); return true; }
+  return false;
+}
+function backGuardArm(){ try{ if (!(history.state && history.state.pg)) history.pushState({ pg:1 }, ''); }catch(e){} }
+window.addEventListener('popstate', ()=>{ if (backCloseTop()) { try{ history.pushState({ pg:1 }, ''); }catch(e){} } });
+window.addEventListener('pointerdown', backGuardArm, true); window.addEventListener('click', backGuardArm, true); // ทุกครั้งที่แตะ เตรียมจุดกันออกจากแอปไว้ 1 ชั้น
 
 function bMove(arr, i, d){ const j=i+d; if (j<0||j>=arr.length) return false; [arr[i],arr[j]]=[arr[j],arr[i]]; return true; }
 function bBindLayout(c, todos){
@@ -6711,7 +6750,7 @@ function bNavInit(){
 function bNavSync(){
   const cur = activeSection==='um' ? (betaGroup==='set'?'set':'home') : activeSection;
   document.querySelectorAll('[data-b-nav]').forEach(b=>b.classList.toggle('on', b.dataset.bNav===cur));
-  const fab = document.getElementById('b-fab'); if (fab) fab.hidden = (activeSection==='agent' && activeTab==='entry');
+  const fab = document.getElementById('b-fab'); if (fab) fab.hidden = (activeSection==='agent' && activeTab==='entry') || activeSection==='manage' || activeSection==='teamUm' || !!activeTeamUmName;
 }
 
 /* ---------- ฉากหลังดาว ---------- */
@@ -7404,7 +7443,6 @@ function docView(doc){
   let v = document.getElementById('dv');
   if (!v){ v = document.createElement('div'); v.id = 'dv'; document.body.appendChild(v); }
   dvDoc = doc; dvZoom = 1; dvRender(); v.hidden = false; document.body.style.overflow = 'hidden';
-  try{ history.pushState({ dv:1 }, ''); }catch(_){}
   dvPrep();
 }
 function dvClose(fromBack){
@@ -7412,7 +7450,6 @@ function dvClose(fromBack){
   v.hidden = true; v.innerHTML = ''; dvDoc = null; dvBlob = null;
   const under = ['cv','pv'].some(id=>{ const e = document.getElementById(id); return e && !e.hidden; });
   if (!under) document.body.style.overflow = '';
-  if (!fromBack){ try{ if (history.state && history.state.dv) history.back(); }catch(_){} }
 }
 async function dvSave(){
   const d = dvDoc; if (!d) return;
@@ -7426,7 +7463,7 @@ async function dvSave(){
   const u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(u), 60000); showToast('บันทึกไฟล์ PDF แล้ว');
 }
-window.addEventListener('popstate', ()=>dvClose(true)); // ปุ่มย้อนกลับของเครื่อง = ปิดหน้า PDF
+// ปุ่มย้อนกลับของเครื่อง = ปิดหน้า PDF (จัดการรวมใน backCloseTop)
 document.addEventListener('click', e=>{
   const v = document.getElementById('dv'); if (!v || v.hidden || !v.contains(e.target)) return;
   const g = s=>e.target.closest(s); let el;
@@ -7605,26 +7642,55 @@ function subUmMonthlyHtml(monthlyTeamCFYC, annualGoal, selectedPosition, yearCap
   if (!state.umGoal) state.umGoal = { targetFYC:0, startMonth:0, endMonth:11, position:"" };
   if (!state.umGoal.monthOverrides) state.umGoal.monthOverrides = {};
   const per = annualGoal>0 ? annualGoal/12 : (selectedPosition ? selectedPosition.cfycMonth : 0);
-  let cum = 0, cumT = 0;
-  const rows = monthlyTeamCFYC.map((v,m)=>{
-    const key = `${selYear}-${m}`, ov = state.umGoal.monthOverrides[key];
-    const past = m<=yearCapMonth;
-    cum += past ? (Number(v)||0) : 0; cumT += per;
-    const ok = per>0 && cum>=cumT;
-    const st = !past ? '<span style="color:var(--muted);">—</span>' : per<=0 ? '' : ok ? '<b style="color:var(--good);">✔ ทันเป้า</b>' : `<b style="color:var(--bad);">ขาด ${THB(cumT-cum)}</b>`;
-    return `<tr style="${m===yearCapMonth&&selYear===new Date().getFullYear()?'background:#FFF6DC;':''}">
-      <td style="font-weight:700;font-size:18px;color:var(--navy-deep);">${THAI_MONTH_SHORT[m]}</td>
-      <td class="r" style="font-size:16px;color:var(--muted);">${per>0?THB(per):'—'}</td>
-      <td class="r"><input type="text" inputmode="decimal" data-qty-override="${key}" value="${esc(formatThousands(String(Math.round(Number(v)||0))))}" style="width:110px;padding:5px 6px;font-size:21px;font-weight:700;text-align:right;">
-        ${ov!==undefined && ov!==null ? '' : '<div style="font-size:12px;color:var(--muted);">(อัตโนมัติ)</div>'}</td>
-      <td class="r" style="font-size:16px;line-height:1.35;">${past?`${THB(cum)}${per>0?`<br><span style="color:var(--muted);font-size:14px;">เป้า ${THB(cumT)}</span>`:''}`:''}<br>${st}</td>
-    </tr>`;
-  }).join('');
+  const isCur = selYear===new Date().getFullYear();
+  let cum = 0, cumT = 0, html = '';
+  for (let q=0; q<4; q++){
+    let qSum = 0;
+    for (let m=q*3; m<q*3+3; m++){
+      const v = Number(monthlyTeamCFYC[m])||0, key = `${selYear}-${m}`;
+      const past = m<=yearCapMonth;
+      if (past){ cum += v; qSum += v; } cumT += per;
+      const ok = per>0 && cum>=cumT;
+      const st = !past ? '<span style="color:var(--muted);">—</span>' : per<=0 ? '' : ok ? '<b style="color:var(--good);">✔ ทันเป้า</b>' : `<b style="color:var(--bad);">ขาด ${THB(cumT-cum)}</b>`;
+      html += `<tr style="${m===yearCapMonth&&isCur?'background:#FFF6DC;':''}">
+        <td style="font-weight:700;font-size:18px;color:var(--navy-deep);">${THAI_MONTH_SHORT[m]}</td>
+        <td class="r" style="font-size:16px;color:var(--muted);">${per>0?THB(per):'—'}</td>
+        <td class="r"><input type="text" inputmode="decimal" data-qty-override="${key}" value="${esc(formatThousands(String(Math.round(v))))}" style="width:110px;padding:5px 6px;font-size:21px;font-weight:700;text-align:right;"></td>
+        <td class="r" style="font-size:16px;line-height:1.35;">${past?`${THB(cum)}${per>0?`<br><span style="color:var(--muted);font-size:14px;">เป้า ${THB(cumT)}</span>`:''}`:''}<br>${st}</td>
+      </tr>`;
+    }
+    html += `<tr style="border-top:1.5px solid #123F6B22;font-weight:700;background:#123F6B0A;"><td style="color:var(--navy-deep);">รวม Q${q+1}</td><td class="r" style="color:var(--muted);font-size:15px;">${per>0?THB(per*3):''}</td><td class="r" style="color:var(--navy-deep);font-size:18px;">${THB(qSum)}</td><td></td></tr>`;
+  }
   return `<div class="card">
-    <h3>📅 ผลงานรายเดือน ปี ${toBE(selYear)}</h3>
+    <h3>📊 ผลงานรายไตรมาส${umOwnerTag()} ปี ${toBE(selYear)}</h3>
     <p class="sub">พิมพ์ CFYC ของแต่ละเดือนได้เลย · เป้ารายเดือน = ${annualGoal>0?'เป้าทั้งปี ÷ 12':selectedPosition?'โควตาตำแหน่งต่อเดือน':'ยังไม่ตั้งเป้า (ตั้งได้ในกล่องเป้าหมายด้านบน)'}</p>
     <div style="overflow-x:auto;"><table class="qtable" style="width:100%;">
       <thead><tr><th>เดือน</th><th class="r">เป้า</th><th class="r">CFYC</th><th class="r">สะสม</th></tr></thead>
+      <tbody>${html}</tbody></table></div>
+  </div>`;
+}
+// กรอกยอด CFYC ของทีม UM ทุกคนในหน้าเดียว (ไม่ต้องเข้าไปทีละคน)
+let subUmEntryMonth = null;
+function subUmEntryHtml(){
+  const ums = state.teamUMs || {}, names = Object.keys(ums).filter(n=>ums[n]);
+  if (!names.length) return '';
+  const now = new Date(), capM = selYear===now.getFullYear() ? now.getMonth() : 11;
+  const m = (subUmEntryMonth===null || subUmEntryMonth>capM) ? capM : subUmEntryMonth;
+  const opts = THAI_MONTH_NAMES.map((n,i)=>i<=capM?`<option value="${i}" ${i===m?'selected':''}>${n}</option>`:'').join('');
+  const rows = names.map(n=>{
+    const arr = subUmMonthlyCFYC(ums[n], selYear), par = umParentOf(n);
+    return `<tr>
+      <td style="font-weight:700;font-size:18px;color:var(--navy-deep);">${esc(n)}${par?`<div style="font-size:13px;color:var(--muted);font-weight:400;">ใต้${esc(par)}</div>`:''}</td>
+      <td class="r" style="font-size:16px;color:var(--muted);">${m>0?THB(arr[m-1]||0):'—'}</td>
+      <td class="r"><input type="text" inputmode="decimal" data-subum-cfyc="${esc(n)}" data-subum-key="${selYear}-${m}" value="${esc(formatThousands(String(Math.round(Number(arr[m])||0))))}" style="width:120px;padding:5px 6px;font-size:21px;font-weight:700;text-align:right;"></td>
+    </tr>`;
+  }).join('');
+  return `<div class="card">
+    <h3>✏️ กรอกยอด CFYC ทีม UM รายเดือน</h3>
+    <p class="sub">กรอกของทุกคนได้ในหน้านี้ ไม่ต้องเข้าไปทีละคน · เป็นตัวเลขเดียวกับตารางผลงานรายไตรมาสของแต่ละคน · กด Enter ไปคนถัดไป</p>
+    <label class="field" style="margin-bottom:8px;max-width:220px;"><span>เดือน</span><select id="subum-entry-month" style="font-size:18px;padding:6px;">${opts}</select></label>
+    <div style="overflow-x:auto;"><table class="qtable" style="width:100%;">
+      <thead><tr><th>UM</th><th class="r">เดือนก่อน</th><th class="r">CFYC ${THAI_MONTH_SHORT[m]}</th></tr></thead>
       <tbody>${rows}</tbody></table></div>
   </div>`;
 }
