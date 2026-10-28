@@ -756,7 +756,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 3 ก.พ. 2569 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta42.5 · อัปเดต 28 ต.ค. 2569</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 3 ก.พ. 2569 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta43 · อัปเดต 28 ต.ค. 2569</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -1679,7 +1679,7 @@ function renderProgramsCard(){
 
 // ===== ถาม-ตอบในแอป (ค้นหาด้วยคำสำคัญ ตอบจากตัวเลขที่แอปคำนวณ) =====
 let askQuery = "", askResult = "";
-const ASK_CHIPS = ["ใครใกล้ได้โบนัสไตรมาส","Kick Off ใครติดบ้าง","ใครติดอะไรบ้าง","งานรอพิจารณา","บัตรใกล้หมดอายุ","ผลงานเดือนนี้","ผลประโยชน์ UM","Fast / Growth","เส้นตาย"];
+const ASK_CHIPS = ["ใครไม่มีงาน 2 เดือน","ใครใกล้ได้โบนัสไตรมาส","Kick Off ใครติดบ้าง","ใครติดอะไรบ้าง","งานรอพิจารณา","บัตรใกล้หมดอายุ","ผลงานเดือนนี้","ผลประโยชน์ UM","Fast / Growth","เส้นตาย"];
 const EVENT_ALIASES = { kickoff:["คิกออฟ","คิ๊กออฟ","คิ้กออฟ","คิกอ็อฟ"], regional:["รีเจียน","รีจินอล","รีจินัล"], beijing:["beijing","ปักกิ่ง","ตั๋วปักกิ่ง"], roadbj:["Road to Beijing","beijing","ปักกิ่ง","ตั๋วปักกิ่ง","Kick Off","kickoff","คิกออฟ","คิ๊กออฟ","Regional","รีเจียน","รีจินอล"], iphone:["ไอโฟน","iphone"], pocketmoney:["พ็อกเก็ตมันนี่","pocket"] };
 const MONTH_KEYS = ["มกรา","กุมภา","มีนา","เมษา","พฤษภา","มิถุนา","กรกฎา","สิงหา","กันยา","ตุลา","พฤศจิ","ธันวา"];
 function askNorm(s){ return String(s||'').toLowerCase().replace(/\s+/g,''); }
@@ -1781,6 +1781,12 @@ function __answerQuestionRaw(raw){
     });
     rows.sort((a,b)=>a.d-b.d);
     out.push(sec(`🪪 บัตรตัวแทน / อบรมต่อบัตร${scopeNote}`, li(rows.map(r=>r.h))));
+  }
+  // ตัวแทนที่ไม่มีงานติดกันหลายเดือน
+  if (has('ไม่มีงาน','เงียบ')){
+    const nw = new Date(), cap = selYear===nw.getFullYear() ? nw.getMonth() : 11, rows = [];
+    scope.forEach(n=>{ const en = state.agents[n].entries||[]; let k = 0; for (let mm=cap; mm>=0 && !mAny(en, selYear, mm); mm--) k++; if (k>=2) rows.push(`<b>${esc(n)}</b> — ไม่มีงาน ${k} เดือนติด${k>cap?' (ทั้งปีนี้)':''}`); });
+    out.push(sec('🚩 ตัวแทนที่ไม่มีงาน 2 เดือนติดขึ้นไป', li(rows, 'ไม่มี — ทุกคนมีงานภายใน 2 เดือนล่าสุด')));
   }
   // 5) ค่าเสริมมือ
   if (has('ค่าเสริมมือ','เสริมมือ')){
@@ -2149,6 +2155,7 @@ function renderAllUmDashboard(){
       </div>
       <div style="display:flex;justify-content:space-between;font-size:14px;margin-top:8px;"><span>ทำได้ทั้งปี ${THB(s.annualAchieved)}${s.annualGoal>0?` / เป้า ${THB(s.annualGoal)}`:' · <span style="color:var(--muted);">ยังไม่ตั้งเป้า</span>'}</span><b style="color:${barColor};">${s.annualGoal>0?pct+'%':'—'}</b></div>
       ${monthBar(s)}
+      ${(()=>{ const yy = yoyInfo(x.st, selYear, s.viewMonth); return yy ? `<div style="font-size:14px;margin-top:4px;">เทียบช่วงเดียวกันปีก่อน ${THB(yy.prev)} · <b style="color:${yy.pct>=0?'var(--good)':'#B42318'};">${yy.pct>=0?'▲':'▼'} ${Math.abs(yy.pct)}%</b></div>` : ''; })()}
       <div style="font-size:14px;margin-top:6px;">CFYC ${mName}: <b>${THB(s.monthCFYC)}</b>${pos?` / โควตา ${THB(s.monthQuota)}`:''}</div>
       ${bonus3?`<div style="font-size:14px;margin-top:3px;color:var(--navy);">${bonus3}</div>`:''}
       ${warn.length?`<div style="font-size:13px;margin-top:4px;color:#B45309;">⚠ ${warn.join(' · ')}</div>`:''}
@@ -3287,7 +3294,8 @@ function renderTeamTab(){
         const ag = state.agents[name];
         const alerts = [];
         const r = rows.find(rr=>rr.name===name);
-        if (r && r.isQuiet) alerts.push(`😴 ไม่มีงานมาแล้วตั้งแต่เดือน${THAI_MONTH_NAMES[r.quietSinceMonth]}`);
+        if (r && r.isQuiet && umViewAsOfMonth - r.quietSinceMonth >= 1) alerts.push(`🚩 ไม่มีงาน ${umViewAsOfMonth - r.quietSinceMonth + 1} เดือนติดแล้ว (ตั้งแต่${THAI_MONTH_NAMES[r.quietSinceMonth]}) — ควรนัดคุย/ช่วยปิดเคส`);
+        else if (r && r.isQuiet) alerts.push(`😴 ไม่มีงานมาแล้วตั้งแต่เดือน${THAI_MONTH_NAMES[r.quietSinceMonth]}`);
         const pendingEntries = ag.entries.filter(e=>e.pending && isOrigin(e));
         if (pendingEntries.length){
           const pendingFyc = pendingEntries.reduce((s,e)=>s+e.fyc,0);
@@ -6554,6 +6562,8 @@ function betaLayout(c){
       </div>
     </section>
     <p class="b-fresh">ข้อมูล ณ ${fmtTH(new Date(),{day:"numeric",month:"short",year:"numeric"})}${S.yearPending>0?` · รอพิจารณา <b>${S.yearPendingCount?S.yearPendingCount+' ราย ':''}(${THB(S.yearPending)})</b>`:' · ไม่มีงานรอพิจารณา'}${activeTeamUmName?` · ทีมของ ${esc(activeTeamUmName)}`:''}</p>
+    ${(()=>{ const y = yoyInfo(state, selYear, S.viewMonth ?? new Date().getMonth()); return y ? `<p class="b-fresh" style="margin-top:-4px;">เทียบช่วงเดียวกันปีก่อน (ม.ค.–${THAI_MONTH_SHORT[y.m]} ${toBE(selYear-1)}) ${THB(y.prev)} · <b style="color:${y.pct>=0?'#5BE49B':'#FF8A80'};">${y.pct>=0?'▲':'▼'} ${Math.abs(y.pct)}%</b></p>` : ''; })()}
+    ${activeTeamUmName ? '' : '<div style="margin:2px 0 12px;"><button type="button" class="b-btn" data-b-share style="font-size:17px;padding:10px 16px;">📤 แชร์สรุปผลงานเดือนนี้ (รูป)</button></div>'}
     <div id="b-ask-slot"></div>
     ${posterStripHtml()}
     ${examHtml()}
@@ -6757,6 +6767,56 @@ function bSnapshotTake(force){
   return Promise.resolve();
 }
 function bSnapshotOnce(){ return bSnapshotTake(false); }
+// เทียบปีก่อน: CFYC ทีม ม.ค.–เดือนที่ดู ของปีนี้ เทียบกับช่วงเดียวกันปีก่อน (จากตารางผลงานรายไตรมาส)
+function yoyInfo(st, y, m){
+  try{
+    const now = new Date(); if (y===now.getFullYear()) m = Math.min(m, now.getMonth());
+    const cur = subUmMonthlyCFYC(st, y).slice(0, m+1).reduce((a,b)=>a+(Number(b)||0),0);
+    const prev = subUmMonthlyCFYC(st, y-1).slice(0, m+1).reduce((a,b)=>a+(Number(b)||0),0);
+    if (!(prev>0)) return null;
+    return { m, cur, prev, pct: Math.round((cur-prev)/prev*100) };
+  }catch(e){ return null; }
+}
+// รูปสรุปผลงานเดือนนี้ (ส่ง LINE ได้ทันที)
+async function bShareSummary(){
+  try{
+    const S = betaSum || {}, y = selYear, now = new Date();
+    const m = (S.viewMonth!==undefined && S.viewMonth!==null) ? S.viewMonth : (y===now.getFullYear() ? now.getMonth() : 11);
+    const names = Object.keys(state.agents||{});
+    const rows = names.map(n=>({ n, v: agMonthFyc(state.agents[n], y, m), yv: agYearFyc(state.agents[n], y) }))
+      .filter(r=>r.v>0 || r.yv>0).sort((a,b)=>(b.v-a.v)||(b.yv-a.yv)).slice(0, 15);
+    const yoy = yoyInfo(state, y, m);
+    try{ await document.fonts.ready; }catch(e){}
+    const ff = getComputedStyle(document.body).fontFamily || 'sans-serif';
+    const W = 1080, top = 600, rowH = 66, H = top + Math.max(1, rows.length)*rowH + 150;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
+    const bg = g.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#0B1E46'); bg.addColorStop(1,'#123F6B'); g.fillStyle = bg; g.fillRect(0,0,W,H);
+    const T = (t,x,yy,size,color,weight,align)=>{ g.font = `${weight||700} ${size}px ${ff}`; g.fillStyle = color||'#fff'; g.textAlign = align||'left'; g.fillText(t,x,yy); };
+    T('📊 สรุปผลงานทีม', 60, 100, 60, '#FFFFFF', 800);
+    T(`เดือน${THAI_MONTH_NAMES[m]} พ.ศ. ${toBE(y)}`, 60, 168, 42, '#9CE3FF', 700);
+    const box = (x, label, val, sub)=>{ g.fillStyle = 'rgba(255,255,255,.10)'; g.fillRect(x, 210, 300, 190); T(label, x+24, 262, 30, '#D3DEF2', 600); T(val, x+24, 335, 52, '#FFFFFF', 800); if (sub) T(sub, x+24, 382, 28, '#9CE3B8', 600); };
+    box(60, 'CFYC ทีมเดือนนี้', THB(S.monthCFYC||0), S.position ? `โควตา ${THB(S.position.cfycMonth)}` : '');
+    box(390, `CFYC ทีมปี ${toBE(y)}`, THB(S.annualAchieved||0), S.annualGoal>0 ? `${Math.round(S.annualPct||0)}% ของเป้าปี` : '');
+    box(720, 'รอพิจารณา', `${S.yearPendingCount||0} ราย`, S.yearPending ? `FYC ${THB(S.yearPending)}` : '');
+    if (yoy) T(`เทียบช่วงเดียวกันปีก่อน ${yoy.pct>=0?'▲':'▼'} ${Math.abs(yoy.pct)}%  (${THB(yoy.prev)} → ${THB(yoy.cur)})`, 60, 455, 32, yoy.pct>=0?'#5BE49B':'#FF8A80', 700);
+    T('ตัวแทน', 60, 540, 32, '#D3DEF2', 700); T(`FYC ${THAI_MONTH_SHORT[m]}`, 760, 540, 32, '#D3DEF2', 700, 'right'); T('ทั้งปี', 1020, 540, 32, '#D3DEF2', 700, 'right');
+    g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(60, 560, 960, 3);
+    if (!rows.length) T('ยังไม่มีผลงานที่อนุมัติในปีนี้', 60, top+40, 34, '#FFFFFF', 600);
+    rows.forEach((r,i)=>{ const yy = top + i*rowH + 40; if (i%2===0){ g.fillStyle='rgba(255,255,255,.05)'; g.fillRect(50, yy-46, 980, rowH); }
+      const nm = r.n.length>18 ? r.n.slice(0,17)+'…' : r.n;
+      T(`${i+1}. ${nm}`, 60, yy, 34, '#FFFFFF', 600); T(THB(r.v), 760, yy, 36, r.v>0?'#FFE08A':'#8899AA', 800, 'right'); T(THB(r.yv), 1020, yy, 34, '#FFFFFF', 600, 'right'); });
+    T(`ข้อมูล ณ ${fmtTH(now,{day:"numeric",month:"short",year:"numeric"})} · ตัวเลขเงินเป็นบาท · UM Year Plan`, 60, H-60, 28, '#B9C4D6', 500);
+    const blob = await new Promise(r=>cv.toBlob(r, 'image/png'));
+    if (!blob){ showToast('สร้างรูปไม่สำเร็จ'); return; }
+    const name = `สรุปผลงาน-${THAI_MONTH_SHORT[m]}-${toBE(y)}.png`, file = new File([blob], name, { type:'image/png' });
+    if (navigator.canShare && navigator.canShare({ files:[file] })){
+      try{ await navigator.share({ files:[file], title:'สรุปผลงานทีม' }); return; }catch(e){ if (e && e.name==='AbortError') return; }
+    }
+    const u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(u), 60000); showToast('บันทึกรูปสรุปแล้ว — ส่งต่อใน LINE ได้เลย');
+  }catch(e){ showToast('สร้างรูปไม่สำเร็จ: '+(e && e.message || e)); }
+}
+document.addEventListener('click', e=>{ if (e.target.closest && e.target.closest('[data-b-share]')){ e.preventDefault(); bShareSummary(); } });
 function bRestoreSnapshot(){
   const apply = s=>{
     if (!s || !s.data){ showToast('ไม่พบข้อมูลสำรอง'); return; }
@@ -7631,6 +7691,8 @@ document.addEventListener('click', e=>{
 posterLoad();
 document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) posterLoad(); }); // กลับมาเปิดแอปจากพื้นหลัง ก็ดึงโปสเตอร์ใหม่
 boot();
+// เปิดแอปได้แม้ไม่มีสัญญาณ: เก็บหน้าแอป/รูปไว้ในเครื่อง (มีเน็ตเมื่อไรดึงเวอร์ชันใหม่เสมอ)
+if ('serviceWorker' in navigator && location.protocol==='https:'){ window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
 
 // ทุกช่องกรอก: แตะแล้วล้างค่าเดิมทันที ถ้าไม่พิมพ์อะไรแล้วออก ให้คืนค่าเดิม (ไม่ต้องคอยลบเอง)
 (function(){
