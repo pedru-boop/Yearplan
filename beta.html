@@ -22,13 +22,21 @@
   const h=document.documentElement; h.style.setProperty("--z",z); h.style.setProperty("--fw",w); if ((u.font||"mali")==="sarabun") h.classList.add("ff-sarabun"); })();
 </script>
 <style>
-  #app > nav.tabs, #app > main{zoom:var(--z,1.12);}
+  #app > nav.tabs, #app > main, .tl-layer .tl-body{zoom:var(--z,1.12);}
+  #b-nav button{font-size:calc(13.5px * var(--z,1.12))!important;line-height:1.2;}
+  #b-nav svg{width:calc(25px * var(--z,1.12))!important;height:calc(25px * var(--z,1.12))!important;}
+  #b-fab{font-size:calc(17px * var(--z,1.12))!important;}
+  .tl-layer .tl-head, .tl-layer .tl-t{font-size:calc(19px * var(--z,1.12));}
   header.top .inner{padding-top:58px !important;}
   body{font-weight:var(--fw,500);}
   html.ff-sarabun body *:not(.mono){font-family:'Sarabun','Noto Sans Thai',sans-serif !important;}
   /* ตัวหนังสือเล็ก (ตั้งไว้ในแต่ละจุด) ให้ใหญ่ขึ้นขั้นต่ำ อ่านง่ายสำหรับทุกวัย */
-  #app [style*="font-size:11px"],#app [style*="font-size:12px"],#app [style*="font-size:13px"]{font-size:14px !important;}
-  #app [style*="font-size:14px"]{font-size:15px !important;}
+  :is(#app,.tl-layer) [style*="font-size:11px"],:is(#app,.tl-layer) [style*="font-size:12px"],:is(#app,.tl-layer) [style*="font-size:13px"]{font-size:14px !important;}
+  :is(#app,.tl-layer) [style*="font-size:14px"]{font-size:15px !important;}
+  /* ตัวใหญ่มาก/พิเศษ: จอเล็กไม่ล้น */
+  .b-stats,.b-stat{min-width:0;} .b-stat b{overflow-wrap:anywhere;}
+  main, .tl-layer .tl-body{overflow-wrap:break-word;}
+  @media (max-width:420px){ html[style*="--z: 1.4"] .b-hero, html[style*="--z: 1.25"] .b-hero{flex-direction:column;align-items:stretch;} }
   #ui-panel{position:fixed;left:0;right:0;bottom:0;z-index:100;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.25);padding:18px 18px 26px;font-family:'Sarabun','Noto Sans Thai',sans-serif;max-width:560px;margin:0 auto;}
   #ui-panel .row{margin-bottom:14px;} #ui-panel .lab{font-size:18px;font-weight:700;color:#082238;margin-bottom:6px;}
   #ui-panel .seg{display:flex;gap:6px;} #ui-panel .seg button{flex:1;padding:10px 4px;border-radius:10px;border:1.5px solid #123F6B33;background:#fff;font-size:17px;color:#082238;cursor:pointer;font-family:inherit;}
@@ -62,7 +70,8 @@
   nav.tabs .sub-tabs button{font-size:18px; padding:10px 16px; color:#B9C4D6;}
   nav.tabs .sub-tabs button.active{background:var(--cream); color:var(--navy-deep); border-radius:8px 8px 0 0;}
   main{max-width:1080px; margin:0 auto; padding:20px 20px 64px;}
-  .year-picker{display:flex; align-items:center; gap:10px; margin:22px 0 8px;}
+  .year-picker{display:flex; align-items:center; gap:10px; margin:22px 0 8px; flex-wrap:wrap; row-gap:8px;}
+  .year-picker span{white-space:nowrap;} .year-picker > div{flex-wrap:wrap;}
   .agent-picker{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:16px;}
   .agent-picker span.lbl{font-size:19.5px; color:#4B5563; font-weight:600;}
   .agent-picker select{padding:6px 12px; color:var(--navy-deep); background:var(--card); font-weight:600;}
@@ -361,6 +370,7 @@ main{padding-bottom:170px!important;}
 #b-fab{position:fixed;z-index:21;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:8px;padding:13px 18px;border-radius:999px;border:0;cursor:pointer;
   font-family:var(--b-display);font-weight:700;font-size:17px;color:#03131F;background:linear-gradient(180deg,#8CF2FF,#28BEE6);box-shadow:0 10px 24px rgba(0,0,0,.45),0 0 24px rgba(69,227,255,.5);}
 #b-fab span{font-size:24px;line-height:1;}
+#b-fab[hidden]{display:none!important;}
 body:has([id^="tl-layer-"]:not([hidden])) #b-fab, body:has(#cv:not([hidden])) #b-fab, body:has(#pv:not([hidden])) #b-fab, body:has(#dv:not([hidden])) #b-fab{display:none!important;}
 
 /* ตั้งค่า */
@@ -489,7 +499,7 @@ form.entry-form{min-width:0;} form.entry-form > *{min-width:0;}
 .e-board .e-prem input{background:#FFF8E6;border-color:#E8B64A!important;}
 
 /* ===== beta7 ===== */
-.card:has(> .mg-mark), .b-gcard:has(> .mg-mark){zoom:1.3;}
+.card:has(> .mg-mark), .b-gcard:has(> .mg-mark){zoom:1;}
 .lk{text-decoration:none!important;font-weight:700;}
 /* กล่องไตรมาส: ไม่ล้นช่อง/กรอบ */
 @media (max-width:699px){ .qgrid{grid-template-columns:minmax(0,1fr)!important;} }
@@ -719,11 +729,10 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div class="glow2"></div>
     <div style="position:absolute;top:14px;right:14px;z-index:5;display:flex;gap:6px;">
       <button id="btn-ui-settings" title="ขนาดตัวอักษร" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 10px;color:#fff;font-size:17px;font-weight:700;cursor:pointer;">Aa</button>
-      <button id="btn-export-header" title="แบ็กอัพข้อมูลทั้งหมด (ทุกตัวแทน + UM)" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📤 บันทึก</button>
-      <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
+      <button id="btn-export-header" title="แบ็กอัพข้อมูลทั้งหมด (ทุกตัวแทน + UM)" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">💾 สำรองข้อมูล</button>
+      <button id="btn-import-header" hidden title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:none;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">beta42.3</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -741,7 +750,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta42.3 · อัปเดต 28 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta42.4 · อัปเดต 28 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -896,7 +905,7 @@ const NEW_AGENT_PROFIT_TABLE = {
 };
 const NEW_AGENT_PROFIT_BAND_MIN_PCT = [1, 21, 41, 61, 81, 101, 151, 201];
 function newAgentProfitBandIndex(achievedPct){
-  let idx = 0;
+  let idx = -1; // เกินโควตาไม่ถึง 1% = ยังไม่ได้โบนัสส่วนเกินโควตา
   for (let i=0;i<NEW_AGENT_PROFIT_BAND_MIN_PCT.length;i++){
     if (achievedPct>=NEW_AGENT_PROFIT_BAND_MIN_PCT[i]) idx = i;
   }
@@ -932,7 +941,7 @@ function computeUmItemsForPosition(pos, monthlyTeamCFYC, monthsElapsed, monthlyD
   let item2=0;
   for (let m=0;m<monthsElapsed;m++) item2 += monthlyTeamCFYC[m]*pos.tenurePct/100;
   const quota3 = pos.cfycYear;
-  const annualCFYC = monthlyTeamCFYC.reduce((a,b)=>a+b,0);
+  const annualCFYC = monthlyTeamCFYC.slice(0, monthsElapsed).reduce((a,b)=>a+(Number(b)||0),0); // นับถึงเดือนที่ดูอยู่เท่านั้น (ไม่นับเดือนที่พิมพ์ล่วงหน้า)
   const excessAmount = Math.max(0, annualCFYC-quota3);
   const excessPct = quota3>0 ? (excessAmount/quota3)*100 : 0;
   const profitTable = NEW_AGENT_PROFIT_TABLE[pos.value];
@@ -948,9 +957,11 @@ function computeUmItemsForPosition(pos, monthlyTeamCFYC, monthsElapsed, monthlyD
     if (excess6mo>0){
       const pct6mo = quota3>0 ? (excess6mo/quota3)*100 : 0;
       const bandIdx6mo = newAgentProfitBandIndex(pct6mo);
-      const rate6mo = profitTable.rates[bandIdx6mo];
-      const flat6mo = profitTable.amounts ? profitTable.amounts[bandIdx6mo] : 0;
-      interimItem3 = (excess6mo*rate6mo/100) + flat6mo;
+      if (bandIdx6mo>=0){
+        const rate6mo = profitTable.rates[bandIdx6mo];
+        const flat6mo = profitTable.amounts ? profitTable.amounts[bandIdx6mo] : 0;
+        interimItem3 = (excess6mo*rate6mo/100) + flat6mo;
+      }
     }
   }
   const item3 = monthsElapsed>=6 ? Math.max(0, previewItem3 - interimItem3) : 0;
@@ -1491,7 +1502,7 @@ const GROWTH_YEAR = 2026;
 const GROWTH_TIERS = [ { min:100, rate:50 }, { min:52, rate:20 }, { min:33, rate:10 } ];
 const FAST_FIRST = 2025, FAST_LAST = 2028;
 function posRank(v){ return UM_POSITIONS.findIndex(p=>p.value===v); }
-function umYearCFYC(st, y){ return subUmMonthlyCFYC(st, y).reduce((a,b)=>a+b,0); }
+function umYearCFYC(st, y){ const n = new Date(), cap = y===n.getFullYear() ? n.getMonth() : (y>n.getFullYear() ? -1 : 11); return subUmMonthlyCFYC(st, y).slice(0, cap+1).reduce((a,b)=>a+(Number(b)||0),0); } // ไม่นับเดือนในอนาคต
 function umYearPending(st, y){ let t=0; Object.values(st.agents||{}).forEach(ag=>{ for (let m=0;m<12;m++) t += mPend(ag.entries||[], y, m); }); return t; }
 function umNewAgents20k(st, y){
   const res = [];
@@ -2665,7 +2676,7 @@ function renderTeamTab(){
 
       // ข้อ 3: โบนัสส่วนเกินโควต้า — ถ้าถึงเดือนมิถุนาแล้ว CFYC สะสม 6 เดือนแรกเกินโควตาเต็มปี มีสิทธิ์รับโบนัสงวดแรกได้ 1 ครั้ง
       // แล้วพอครบปี (หรือเดือนถัดจากนั้น) คำนวณใหม่จากผลงานสะสมทั้งปีจริง หักงวดแรกที่ได้รับไปแล้วออก
-      const teamCFYCForItem3 = annualTeamCFYC;
+      const teamCFYCForItem3 = monthlyTeamCFYC.slice(0, Math.min(yearCapMonth, umViewAsOfMonth)+1).reduce((a,b)=>a+(Number(b)||0),0); // ตามช่อง "ดูถึงเดือน" 
       const quota3 = selectedPosition.cfycYear;
       const excessAmount = Math.max(0, teamCFYCForItem3 - quota3);
       const excessPct = quota3>0 ? (excessAmount/quota3)*100 : 0;
@@ -2681,10 +2692,12 @@ function renderTeamTab(){
         if (excess6mo>0){
           const excessPct6mo = quota3>0 ? (excess6mo/quota3)*100 : 0;
           const bandIdx6mo = newAgentProfitBandIndex(excessPct6mo);
-          interimRate6mo = profitTable.rates[bandIdx6mo];
-          const flat6mo = profitTable.amounts ? profitTable.amounts[bandIdx6mo] : 0;
-          interimBonus6mo = (excess6mo*interimRate6mo/100) + flat6mo;
-          hasInterim6mo = true;
+          if (bandIdx6mo>=0){
+            interimRate6mo = profitTable.rates[bandIdx6mo];
+            const flat6mo = profitTable.amounts ? profitTable.amounts[bandIdx6mo] : 0;
+            interimBonus6mo = (excess6mo*interimRate6mo/100) + flat6mo;
+            hasInterim6mo = true;
+          }
         }
       }
       // หลังมิถุนาเป็นต้นไป: โชว์ยอดเต็มปีถ้าคิด ณ วันนี้ หักงวดแรกที่ได้รับไปแล้ว (ถ้ามี)
@@ -2692,7 +2705,7 @@ function renderTeamTab(){
       // ขั้นถัดไปของข้อ 3: อีกเท่าไหร่จะขยับอัตรา และจะได้เพิ่มเท่าไหร่ (คำนวณจาก "ส่วนเกิน" ที่จุดนั้น ไม่ใช่ยอดเต็ม)
       const nextBandIdx3 = bandIdx+1;
       const atMaxBand3 = nextBandIdx3 >= NEW_AGENT_PROFIT_BAND_MIN_PCT.length;
-      const notYetQualified3 = teamCFYCForItem3<=quota3; // ยังไม่เกินโควตา 100% เลย จึงยังไม่ได้รับโบนัสข้อนี้แม้แต่เดียว
+      const notYetQualified3 = bandIdx<0; // เกินโควตายังไม่ถึง 1% = ยังไม่เข้าเกณฑ์ // ยังไม่เกินโควตา 100% เลย จึงยังไม่ได้รับโบนัสข้อนี้แม้แต่เดียว
       let nextBand3Info = null;
       if (notYetQualified3){
         const requiredFYC = quota3 * 1.01; // ต้องเกินโควตาอย่างน้อย 1% ถึงจะเริ่มเข้าเกณฑ์ขั้นแรก
@@ -4155,15 +4168,23 @@ function __renderInner(){
 // เตือนแบ็กอัพทุก 3 วัน (เฉพาะหน้าของตัวเอง ไม่แสดงตอนดู UM คนอื่น)
 let backupReminderSnoozed = false;
 function renderBackupReminder(){
-  if (activeTeamUmName || backupReminderSnoozed) return "";
+  if (activeTeamUmName) return "";
   const root = state;
   const hasData = Object.values(root.agents||{}).some(ag=>(ag.entries||[]).length>0) || Object.keys(root.teamUMs||{}).length>0;
-  if (!hasData) return "";
+  const inLine = /\bLine\//i.test(navigator.userAgent||'');
+  const lineWarn = inLine ? `<div style="background:#FDECEC;border:2px solid #D93025;border-radius:10px;padding:10px 12px;margin-bottom:12px;color:#7A1A12;">
+    <div style="font-weight:800;font-size:18px;">⚠️ กำลังเปิดในแอป LINE</div>
+    <div style="font-size:16px;margin-top:2px;">ข้อมูลที่นี่แยกจากแอปในเครื่อง และอาจหายได้ — กด ⋮ หรือ ⋯ มุมขวาบน แล้วเลือก "เปิดในเบราว์เซอร์" (Safari/Chrome)</div></div>` : '';
+  if (!hasData) return lineWarn + `<div style="background:#E8F3FF;border:1px solid #7FB2F0;border-radius:10px;padding:10px 12px;margin-bottom:12px;">
+    <div style="font-weight:700;color:#0B3B7A;font-size:17px;">📱 เปลี่ยนเครื่องมาใหม่ หรือเพิ่งเปิดครั้งแรก?</div>
+    <div style="font-size:15px;color:#0B3B7A;margin-top:2px;">ถ้ามีไฟล์แบ็กอัพเดิม โหลดกลับมาได้เลย ข้อมูลทุกตัวแทนและทุก UM จะกลับมาครบ</div>
+    <div style="margin-top:8px;"><button class="btn-primary" type="button" onclick="document.getElementById('btn-import-header').click()">📥 โหลดไฟล์แบ็กอัพ</button></div></div>`;
+  if (backupReminderSnoozed) return lineWarn;
   const last = metaCache.lastBackupAt ? new Date(metaCache.lastBackupAt) : null;
   const days = last ? Math.floor((Date.now()-last.getTime())/86400000) : null;
-  if (days!==null && days<3) return ""; // เตือนทุก 3 วัน (เดิม 7 วัน)
+  if (days!==null && days<3) return lineWarn; // เตือนทุก 3 วัน (เดิม 7 วัน)
   const msg = days===null ? "ยังไม่เคยแบ็กอัพข้อมูลเลย" : `ไม่ได้แบ็กอัพมา ${days} วันแล้ว (ล่าสุด ${fmtTH(last,{day:"numeric",month:"short",year:"numeric"})})`;
-  return `<div style="background:#FFF4E5;border:1px solid #F5B25B;border-radius:10px;padding:10px 12px;margin-bottom:12px;">
+  return lineWarn + `<div style="background:#FFF4E5;border:1px solid #F5B25B;border-radius:10px;padding:10px 12px;margin-bottom:12px;">
     <div style="font-weight:700;color:#8A4B00;">💾 ${msg}</div>
     <div style="font-size:14px;color:#8A4B00;margin-top:2px;">ถ้าล้างเบราว์เซอร์ เปลี่ยนมือถือ หรือเครื่องหาย ข้อมูลทุกตัวแทนและทุก UM จะหายหมด — ควรเก็บไฟล์ไว้ใน Google Drive/LINE Keep ทุก 3 วัน</div>
     <div style="display:flex;gap:8px;margin-top:8px;">
@@ -5865,14 +5886,20 @@ function bindEvents(){
     // ถ้ากำลังดู UM คนอื่นอยู่ ต้องแบ็กอัพก้อนข้อมูลหลักทั้งหมด (ของพี่เอง + ทุก UM) ไม่ใช่แค่ของ UM คนนั้น
     if (activeTeamUmName && mainAppState) mainAppState.teamUMs[activeTeamUmName] = state;
     const full = (activeTeamUmName && mainAppState) ? mainAppState : state;
+    const name = `${IS_AGENT_APP?'agent':'ped-dashboard'}-backup-${todayIso()}.json`;
     const blob = new Blob([JSON.stringify(full)],{type:"application/json"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href=url; a.download=`${IS_AGENT_APP?'agent':'ped-dashboard'}-backup-${todayIso()}.json`;
-    a.click(); setTimeout(()=>URL.revokeObjectURL(url), 1000);
-    setMeta("lastBackupAt", new Date().toISOString());
-    showToast("ดาวน์โหลดไฟล์แบ็กอัพแล้ว — อย่าลืมเก็บไว้ใน Drive/LINE Keep");
-    render();
+    const done = (msg)=>{ setMeta("lastBackupAt", new Date().toISOString()); showToast(msg); render(); };
+    const download = ()=>{
+      const url = URL.createObjectURL(blob), a = document.createElement("a");
+      a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 60000);
+      done("ดาวน์โหลดไฟล์แบ็กอัพแล้ว — ตรวจว่ามีไฟล์ในเครื่อง แล้วเก็บไว้ใน Drive/LINE Keep");
+    };
+    // มือถือ: ส่งไฟล์ผ่านหน้าแชร์ (เก็บลง LINE Keep / Drive / Files ได้เลย) — นับว่าแบ็กอัพแล้วเมื่อแชร์สำเร็จจริงเท่านั้น
+    let file = null; try{ file = new File([blob], name, { type:"application/json" }); }catch(e){}
+    if (file && navigator.canShare && navigator.canShare({ files:[file] })){
+      navigator.share({ files:[file], title:name }).then(()=>done("แบ็กอัพแล้ว ✅"))
+        .catch(e=>{ if (e && e.name==='AbortError') showToast("ยังไม่ได้แบ็กอัพ — กดใหม่แล้วเลือกที่เก็บไฟล์"); else download(); });
+    } else download();
   };
   const importBtn = document.getElementById("btn-import-header");
   const fileInput = document.getElementById("file-import-header");
@@ -5900,6 +5927,9 @@ function bindEvents(){
           if (!okNew && !okOld){ showToast("ไฟล์นี้ไม่ใช่ไฟล์แบ็กอัพของแอป — ข้อมูลเดิมยังอยู่ครบ ไม่ได้เปลี่ยนแปลง"); return; }
           const next = normalizeState(JSON.parse(JSON.stringify(imported)));
           if (!isObj(next) || !isObj(next.agents)){ showToast("ไฟล์ไม่ถูกต้อง — ข้อมูลเดิมยังอยู่ครบ"); return; }
+          const nAg = Object.keys(next.agents).length, nUm = Object.keys(next.teamUMs||{}).length, nEn = Object.values(next.agents).reduce((t,a)=>t+(a.entries||[]).length,0);
+          if (!confirm(`ไฟล์นี้มี ตัวแทน ${nAg} คน · UM ในทีม ${nUm} คน · ผลงาน ${nEn} รายการ\n\nโหลดแทนข้อมูลปัจจุบันไหม?\n(ข้อมูลปัจจุบันจะถูกเก็บเป็นจุดสำรองอัตโนมัติ กู้คืนได้ที่ ตั้งค่า)`)) return;
+          bSnapshotTake(true);
           state = next;
           refreshInputsAfterLoad();
           saveState(); render();
@@ -6687,7 +6717,7 @@ function bSettingsHtml(){
     <div class="b-row"><div>จัดเรียงหมวดในหน้าหลัก<small>ลากหรือกด ▲ ▼ · ลำดับติดไปกับไฟล์แบ็กอัพ</small></div><button type="button" class="b-btn" data-b-act="arr">↕ จัดเรียง</button></div>
     <div class="b-row"><div>แบ็กอัพข้อมูล<small>ล่าสุด: ${last}</small></div><button type="button" class="b-btn" data-b-act="export">📤 บันทึก</button></div>
     <div class="b-row"><div>โหลดข้อมูลจากไฟล์<small>ไฟล์แบ็กอัพจากหน้าเดิมหรือหน้าใหม่ใช้ได้ทั้งคู่</small></div><button type="button" class="b-btn" data-b-act="import">📥 โหลด</button></div>
-    <div class="b-row"><div>กู้คืนข้อมูลก่อนใช้หน้าใหม่<small>${betaSnapAt?'สำรองไว้อัตโนมัติเมื่อ '+fmtTH(new Date(betaSnapAt),{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):'ยังไม่มีข้อมูลสำรอง'}</small></div><button type="button" class="b-btn" data-b-act="restore" ${betaSnapAt?'':'disabled'}>↩︎ กู้คืน</button></div>
+    <div class="b-row"><div>กู้คืนจากจุดสำรองอัตโนมัติ<small>${betaSnapAt?'สำรองไว้อัตโนมัติเมื่อ '+fmtTH(new Date(betaSnapAt),{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):'ยังไม่มีข้อมูลสำรอง'}</small></div><button type="button" class="b-btn" data-b-act="restore" ${betaSnapAt?'':'disabled'}>↩︎ กู้คืน</button></div>
     <div class="b-row"><div>กลับไปใช้หน้าเดิม<small>ข้อมูลชุดเดียวกัน สลับไปมาได้ตลอด</small></div><a class="b-btn" href="./" style="text-decoration:none;">เปิดหน้าเดิม</a></div>
   </div>`;
 }
@@ -6702,14 +6732,19 @@ function bBindSettings(box){
     else if (a==='restore') bRestoreSnapshot();
   });
 }
-function bSnapshotOnce(){
-  const snap = ()=>({ at:new Date().toISOString(), data: JSON.parse(JSON.stringify(rootStateForSave())) });
+// จุดกู้คืนอัตโนมัติ: เก็บข้อมูลไว้ 1 ชุดทุกวัน (ตอนเปิดแอปครั้งแรกของวัน) และทุกครั้งก่อนโหลดไฟล์แบ็กอัพทับ
+function bSnapshotTake(force){
+  const v = { at:new Date().toISOString(), data: JSON.parse(JSON.stringify(rootStateForSave())) };
+  const hasData = d=>d && (Object.values(d.agents||{}).some(a=>(a.entries||[]).length) || Object.keys(d.teamUMs||{}).length);
+  if (!hasData(v.data)) return Promise.resolve();
+  const fresh = s=>s && s.at && String(s.at).slice(0,10)===todayIso();
   if (__useIdb){
-    idbGet('beta-snapshot').then(s=>{ if (s && s.at){ betaSnapAt=s.at; return; } const v=snap(); return idbPut('beta-snapshot', v).then(()=>{ betaSnapAt=v.at; }); }).catch(()=>{});
-  } else {
-    try{ const s=JSON.parse(localStorage.getItem('ped-beta-snapshot')||'null'); if (s && s.at){ betaSnapAt=s.at; return; } const v=snap(); localStorage.setItem('ped-beta-snapshot', JSON.stringify(v)); betaSnapAt=v.at; }catch(e){}
+    return idbGet('beta-snapshot').then(s=>{ if (!force && fresh(s)){ betaSnapAt=s.at; return; } return idbPut('beta-snapshot', v).then(()=>{ betaSnapAt=v.at; }); }).catch(()=>{});
   }
+  try{ const s=JSON.parse(localStorage.getItem('ped-beta-snapshot')||'null'); if (!force && fresh(s)){ betaSnapAt=s.at; return Promise.resolve(); } localStorage.setItem('ped-beta-snapshot', JSON.stringify(v)); betaSnapAt=v.at; }catch(e){}
+  return Promise.resolve();
 }
+function bSnapshotOnce(){ return bSnapshotTake(false); }
 function bRestoreSnapshot(){
   const apply = s=>{
     if (!s || !s.data){ showToast('ไม่พบข้อมูลสำรอง'); return; }
@@ -7743,6 +7778,18 @@ document.addEventListener('change', e=>{
   .mg-tab tbody>tr.mg-alt{background:#E3EEFF!important}
   .mg-tab tbody>tr.mg-urgent{border:3px solid #D93025!important;background:#FFF0EE!important;box-shadow:0 0 0 4px #D9302520}
   .mg-tab tbody>tr:has(>td[colspan]){border:0!important;background:transparent!important;margin-top:-6px}
+  /* จัดใหม่ไม่ให้ทับกัน: แถว1 ชื่อ+ปุ่มแก้ · แถว2 วันหมดอายุบัตร · แถว3 รหัส | เลขบัตร · แถว4 ส่งเอกสาร */
+  .mg-tab tbody>tr{grid-template-columns:1fr 1fr 44px!important;gap:6px 10px!important}
+  .mg-tab tbody>tr>td:nth-child(1){grid-column:1/3!important;grid-row:1!important}
+  .mg-tab tbody>tr>td:nth-child(5){grid-column:3!important;grid-row:1!important}
+  .mg-tab tbody>tr>td:nth-child(4){grid-column:1/4!important;grid-row:2!important;text-align:left!important;white-space:normal!important}
+  .mg-tab tbody>tr>td:nth-child(4) br{display:none!important}
+  .mg-tab tbody>tr>td:nth-child(2){grid-column:1!important;grid-row:3!important}
+  .mg-tab tbody>tr>td:nth-child(3){grid-column:2/4!important;grid-row:3!important}
+  .mg-tab tbody>tr>td.mg-num{white-space:normal!important;overflow-wrap:anywhere!important}
+  .mg-tab tbody>tr>td.mg-dtd{grid-column:1/4!important;grid-row:4!important}
+  .mg-tab tbody>tr>td[colspan]{grid-column:1/4!important}
+  .mg-tab tbody>tr>td:nth-child(1), .mg-tab .mg-name{min-width:0;white-space:normal!important;overflow-wrap:anywhere}
   .mg-tab .mg-name{white-space:nowrap}
   .mg-urg{white-space:nowrap;display:inline-block;margin-top:4px;background:#D93025;color:#fff;font-size:14px;font-weight:800;padding:2px 9px;border-radius:999px}
 `; document.head.appendChild(s); })();
