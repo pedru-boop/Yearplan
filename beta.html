@@ -722,7 +722,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
       <button id="btn-import-header" title="นำเข้าข้อมูล" style="background:#ffffff22;border:1px solid #ffffff44;border-radius:8px;padding:6px 9px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;">📥 โหลด</button>
       <input type="file" id="file-import-header" accept="application/json" style="display:none">
     </div>
-    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">v2026.10.13-beta29</div>
+    <div style="position:absolute;bottom:8px;right:14px;z-index:5;color:#ffffff77;font-size:12px;font-family:monospace;">beta42</div>
     <div class="inner">
       <div class="brand">
         <div class="logo"><img src="icon-192.png" alt="Year Plan" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
@@ -740,7 +740,7 @@ html[data-mode="light"]{--n-accent-ink:#fff;}
     <div id="year-picker" class="year-picker"></div>
     <div id="tab-content"></div>
   </main>
-  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta41.9 · อัปเดต 27 ต.ค. 69</div></footer>
+  <footer class="bottom">อ้างอิงอัตราค่าตอบแทนจากประกาศตัวแทน ณ 03-02-2026 · ป้าเป็ด CFP® · Bangkok Life Assurance · ข้อมูลเก็บไว้ในเบราว์เซอร์นี้เท่านั้น<div class="app-ver" style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:.2px;">เวอร์ชัน beta42 · อัปเดต 28 ต.ค. 69</div></footer>
 </div>
 <div id="toast"></div>
 
@@ -1065,6 +1065,20 @@ function eventValue(entries, ev){
   return (entries||[]).filter(x=>ids.has(x.policyId) && D(x.date)>=s && D(x.date)<=e && String(x.date)<=today).reduce((sum,x)=>sum+(Number(x.premium)||0),0);
 }
 // แปลงข้อมูลเก่า: เบี้ยต่อปี (เก็บไว้ที่งวดแรก) → เบี้ยต่องวด ใส่ทุกงวดของกรมธรรม์นั้น (ทำครั้งเดียว)
+// เบี้ยรายเดือน: งวดแรกเก็บล่วงหน้า 2 เดือน (งวด 1/1+1/2 = เบี้ยที่กรอกเต็ม) · งวด 1/3 เป็นต้นไป = ครึ่งหนึ่ง
+function instPrem(billing, idx, pr){ return (billing==='monthly' && (idx||0)>0) ? Math.round(pr/2) : pr; }
+function premMonthlyHalfMigrate(){
+  const r = mainAppState || state; if (!r || r.premMonthlyHalfV1) return;
+  r.premMonthlyHalfV1 = true;
+  const fix = ags=>Object.values(ags||{}).forEach(ag=>{
+    const en = ag.entries||[];
+    en.filter(x=>isOrigin(x) && x.billingMode==='monthly' && Number(x.premium)>0).forEach(o=>{
+      en.forEach(x=>{ if (x.policyId===o.policyId && !isOrigin(x)) x.premium = instPrem('monthly', x.installmentIndex, Number(o.premium)); });
+    });
+  });
+  fix(r.agents); Object.values(r.teamUMs||{}).forEach(u=>fix(u && u.agents));
+  try{ saveState(); }catch(e){}
+}
 function premMigrate(){
   const r = mainAppState || state; if (!r || r.premPerInstV1) return;
   r.premPerInstV1 = true;
@@ -1253,7 +1267,7 @@ function subUmMonthlyCFYC(st, y){
     const k = `${y}-${m}`;
     if (mo[k]!==undefined && mo[k]!==null) return mo[k];
     if (dov[k]!==undefined && dov[k]!==null) return dov[k];
-    return ns.reduce((sum,n)=>sum+mEff(st.agents[n].entries||[], y, m),0);
+    return ns.reduce((sum,n)=>sum+agMonthFyc(st.agents[n], y, m),0);
   });
 }
 // สังกัดของ UM ในทีม: parentUM = "" คือใต้ฉัน (UM หลัก) หรือชื่อ UM คนอื่นในทีม
@@ -1484,7 +1498,7 @@ function umNewAgents20k(st, y){
     let first = ag.competitions && ag.competitions.firstSaleDate;
     if (!first){ const eff = effectiveEntries(ag.entries||[]); if (eff.length) first = eff.map(e=>e.date).sort()[0]; }
     if (!first || Number(String(first).slice(0,4))!==y) return;
-    let fyc = 0; for (let m=0;m<12;m++) fyc += mEff(ag.entries||[], y, m);
+    let fyc = 0; for (let m=0;m<12;m++) fyc += agMonthFyc(ag, y, m);
     res.push({ name:n, fyc, ok: fyc>=20000 });
   });
   return res.sort((a,b)=>b.fyc-a.fyc);
@@ -1793,9 +1807,9 @@ function __answerQuestionRaw(raw){
     const rows = scope.map(n=>{
       const en = state.agents[n].entries||[];
       let v, p;
-      if (m>=0){ v = mEff(en, selYear, m); p = mPend(en, selYear, m); }
-      else if (qm){ const qq = Number(qm[1]); v=0; p=0; for (let x=(qq-1)*3; x<qq*3; x++){ v+=mEff(en,selYear,x); p+=mPend(en,selYear,x); } }
-      else { v=0; p=0; for (let x=0;x<12;x++){ v+=mEff(en,selYear,x); p+=mPend(en,selYear,x); } }
+      if (m>=0){ v = agMonthFyc(state.agents[n], selYear, m); p = mPend(en, selYear, m); }
+      else if (qm){ const qq = Number(qm[1]); v=0; p=0; for (let x=(qq-1)*3; x<qq*3; x++){ v+=agMonthFyc(state.agents[n],selYear,x); p+=mPend(en,selYear,x); } }
+      else { v=0; p=0; for (let x=0;x<12;x++){ v+=agMonthFyc(state.agents[n],selYear,x); p+=mPend(en,selYear,x); } }
       return { n, v, p };
     }).sort((a,b)=>b.v-a.v);
     const total = rows.reduce((s,r)=>s+r.v,0);
@@ -1853,7 +1867,7 @@ function __answerQuestionRaw(raw){
   if (!out.length && mentioned.length){
     mentioned.forEach(n=>{
       const ag = state.agents[n]; const en = ag.entries||[];
-      let yv=0, yp=0; for (let x=0;x<12;x++){ yv+=mEff(en,selYear,x); yp+=mPend(en,selYear,x); }
+      let yv=0, yp=0; for (let x=0;x<12;x++){ yv+=agMonthFyc(ag,selYear,x); yp+=mPend(en,selYear,x); }
       const items = agentCompStatus(ag);
       const ri = renewalInfo(ag.license);
       const notes = (ag.coaching||[]).slice().sort((a,b)=>a.date<b.date?1:-1);
@@ -1923,7 +1937,7 @@ function agentCompStatus(ag){
   }
   // 3) โบนัสปี — ขั้นต่ำ 12 ราย + FYC 50,000 แล้วอัตราตามช่วง FYC ทั้งปี
   const yearEntries = entries.filter(e=>D(e.date).getFullYear()===selYear);
-  const aCases = yearEntries.filter(isOrigin).length, aFyc = yearEntries.reduce((s,e)=>s+e.fyc,0);
+  const aCases = yearEntries.filter(isOrigin).length, aFyc = agYearFyc(ag, selYear);
   const aHas = newIn(new Date(selYear,0,1), new Date(selYear,11,31,23,59,59))>0;
   {
     const persist = (ag.persistQuarterly||{})[`annual-${selYear}`] ?? 80;
@@ -2319,7 +2333,7 @@ function renderTeamTab(){
   const monthlyDirectAgentFYC = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>{
     const auto = names.reduce((sum,name)=>{
       const ag = state.agents[name];
-      return sum + mEff(ag.entries, selYear, m);
+      return sum + agMonthFyc(ag, selYear, m);
     },0);
     const dov = umDirectOverrides[`${selYear}-${m}`];
     return (dov!==undefined && dov!==null) ? dov : auto;
@@ -2336,7 +2350,7 @@ function renderTeamTab(){
   const rows = names.map(name=>{
     const ag = state.agents[name];
     const yEntries = effectiveEntries(ag.entries).filter(e=>D(e.date).getFullYear()===selYear);
-    const achieved = yEntries.reduce((s,e)=>s+e.fyc,0);
+    const achieved = agYearFyc(ag, selYear);
     const goalFYC = getAgentTargetFYC(selYear, ag);
     const pct = goalFYC>0 ? (achieved/goalFYC*100) : 0;
     // เช็คว่า "งานหาย" ไหม: ดูแค่เดือนที่กำลังดูอยู่ (umViewAsOfMonth) — มีงานเดือนนี้ = ไม่ต้องจับตา ไม่สนเดือนก่อนหน้าหรือแนวโน้ม
@@ -2367,17 +2381,19 @@ function renderTeamTab(){
   const currentMonthHasOverride = currentMonthOverride!==undefined && currentMonthOverride!==null;
   const currentMonthApproved = currentMonthHasOverride ? currentMonthOverride : monthlyTeamCFYC[umEffectiveEndMonth]; // = ค่าในตารางผลงานรายไตรมาส
   // รอพิจารณา = คงค้างสะสมทุกเดือนที่ยังไม่อนุมัติ จนถึงเดือนที่ดูอยู่ (ไม่ใช่เฉพาะเดือนนี้)
-  const pendAnnual = cumPending(names, selYear, 0, umEffectiveEndMonth);
+  const pendAnnual = cumPending(names, selYear, 0, umViewAsOfMonth); // ทั้งปี: นับถึงเดือนที่ดูอยู่เสมอ ไม่ตัดตามช่วงเป้าหมายเฉพาะ
   const pendPeriod = cumPending(names, selYear, umStartMonth, umEffectiveEndMonth);
-  const teamAchievedApproved = pastMonthsTotal + currentMonthApproved;
-  const teamAchievedPending = pendPeriod.fyc;
+  const umPeriodStarted = umEffectiveEndMonth >= umStartMonth; // ช่วงเป้าหมายเฉพาะยังไม่เริ่ม = ยังไม่มีผลงานในช่วงนั้น
+  const teamAchievedApproved = umPeriodStarted ? pastMonthsTotal + currentMonthApproved : 0;
+  const teamAchievedPending = umPeriodStarted ? pendPeriod.fyc : 0;
   const teamAchievedInUmPeriod = teamAchievedApproved + teamAchievedPending;
   const teamAchievedAllYear = rows.reduce((s,r)=>s+r.achieved,0);
   const teamGoalSum = rows.reduce((s,r)=>s+r.goalFYC,0);
 
   // เป้าหมายทั้งปี (ม.ค.-ธ.ค. เสมอ) แยกจากเป้าหมายเฉพาะช่วงด้านบน ใช้ตรรกะเดียวกัน (เดือนที่ผ่านมา=ค่า CFYC จริง, เดือนนี้=แยกอนุมัติ/รอพิจารณา) แค่เริ่มนับจากเดือนมกราเสมอไม่ผูกกับ umStartMonth
-  const annualPastMonthsTotal = pastMonthsEnd>=0 ? monthlyTeamCFYC.slice(0, pastMonthsEnd+1).reduce((a,b)=>a+b,0) : 0;
-  const umAnnualAchievedApproved = annualPastMonthsTotal + currentMonthApproved;
+  // ทั้งปี ม.ค. ถึงเดือนที่ดูอยู่ ตามตารางผลงานรายไตรมาส (ไม่ขึ้นกับช่วงเป้าหมายเฉพาะ)
+  const annualPastMonthsTotal = umViewAsOfMonth>0 ? monthlyTeamCFYC.slice(0, umViewAsOfMonth).reduce((a,b)=>a+(Number(b)||0),0) : 0;
+  const umAnnualAchievedApproved = annualPastMonthsTotal + (Number(monthlyTeamCFYC[umViewAsOfMonth])||0);
   const umAnnualAchievedPending = pendAnnual.fyc;
   const umAnnualAchievedTotal = umAnnualAchievedApproved + umAnnualAchievedPending;
   const umAnnualGoalFYC = getUmAnnualTargetFYC();
@@ -2484,7 +2500,7 @@ function renderTeamTab(){
             <div style="flex:1;min-width:220px;">
               <div class="tech-row"><span class="lab">เป้าหมายทั้งปี</span><span class="val">${THB(umAnnualGoalFYC)}</span></div>
               <div class="tech-row"><span class="lab">อนุมัติแล้ว (ทั้งปี)</span><span class="val good">${THB(umAnnualAchievedApproved)}</span></div>
-              <div class="tech-row"><span class="lab" style="color:var(--gold);">รอพิจารณา (คงค้างสะสมถึง${THAI_MONTH_NAMES[umEffectiveEndMonth]})</span><span class="val" style="color:var(--gold);">${pendLabel(pendAnnual)}</span></div>
+              <div class="tech-row"><span class="lab" style="color:var(--gold);">รอพิจารณา (คงค้างสะสมถึง${THAI_MONTH_NAMES[umViewAsOfMonth]})</span><span class="val" style="color:var(--gold);">${pendLabel(pendAnnual)}</span></div>
               <div class="tech-row"><span class="lab">ยังขาดอีก (ทั้งปี · นับเฉพาะอนุมัติแล้ว)</span><span class="val ${umAnnualRemaining>0?'warn':''}">${THB(umAnnualRemaining)}</span></div>
               ${projRow(umAnnualAchievedApproved, umAnnualAchievedPending, umAnnualGoalFYC)}
             </div>
@@ -2615,8 +2631,12 @@ function renderTeamTab(){
         if (!startDate) return;
         const windowEnd = addMonths(startDate, 12);
         const eligEntries = effectiveEntries(ag.entries).filter(e=>{ const d=D(e.date); return d>=new Date(startDate+"T00:00:00") && d<=windowEnd && d.getFullYear()===selYear; });
-        eligEntries.forEach(e=>{ serviceFeeByMonth[D(e.date).getMonth()] += e.fyc*0.3; });
-        const eligibleFYC = eligEntries.reduce((s,e)=>s+e.fyc,0);
+        const __byM = Array(12).fill(0), __ov = agOv(ag), __sd = new Date(startDate+"T00:00:00");
+        eligEntries.forEach(e=>{ __byM[D(e.date).getMonth()] += e.fyc; });
+        // เดือนที่แก้ไขเองในตารางผลงานรายไตรมาส ใช้ตัวเลขที่แก้ (เฉพาะเดือนที่อยู่ในช่วง 12 เดือนแรก)
+        for (let m=0;m<12;m++){ const o = __ov[`${selYear}-${m}`]; if (o===undefined || o===null) continue; const f = new Date(selYear,m,1), l = new Date(selYear,m+1,0,23,59,59); if (l<__sd || f>windowEnd) continue; __byM[m] = Number(o)||0; }
+        __byM.forEach((v,m)=>{ serviceFeeByMonth[m] += v*0.3; });
+        const eligibleFYC = __byM.reduce((a,b)=>a+b,0);
         if (eligibleFYC>0){ serviceFee += eligibleFYC*0.3; serviceFeeDetail.push({name, eligibleFYC}); }
       });
 
@@ -2632,7 +2652,7 @@ function renderTeamTab(){
           const qMonths = [ (q-1)*3, (q-1)*3+1, (q-1)*3+2 ];
           const qEntries = effectiveEntries(ag.entries).filter(e=>{ const d=D(e.date); return d.getFullYear()===selYear && qMonths.includes(d.getMonth()); });
           const newCases = qEntries.filter(isOrigin).length;
-          const qFyc = qEntries.reduce((s,e)=>s+e.fyc,0);
+          const qFyc = qMonths.reduce((s,m)=>s+agMonthFyc(ag, selYear, m),0);
           if (newCases>=2){
             const tier = TEAM_BUILDING_TIERS.find(t=>qFyc>=t.minFyc);
             if (tier){ teamBuildingReward += tier.reward; teamBuildingDetail.push({name, q, level:tier.level, reward:tier.reward}); }
@@ -2739,7 +2759,7 @@ function renderTeamTab(){
           const monthlyFycThisQ = qMonths.map(m=>{
             const auto = Math.round(names.reduce((sum,name)=>{
               const ag = state.agents[name];
-              return sum + mEff(ag.entries, selYear, m);
+              return sum + agMonthFyc(ag, selYear, m);
             },0));
             const pending = Math.round(names.reduce((sum,name)=>{
               const ag = state.agents[name];
@@ -2774,12 +2794,12 @@ function renderTeamTab(){
             <td class="r" style="color:${inPeriod?'var(--gold)':'var(--navy-deep)'};vertical-align:top;padding-top:8px;">${THB(monthTarget)}</td>
             <td class="r" style="vertical-align:top;padding-top:0;">
               <input type="text" inputmode="decimal" data-qty-override="${x.cfycKey}" value="${esc(formatThousands(String(x.cfycValue)))}" style="width:98px;padding:4px 5px;font-size:21px;font-weight:700;font-family:'Space Grotesk',sans-serif;text-align:center;">
-              <div style="font-size:12px;color:${x.cfycIsOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${x.cfycIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
+              <div style="font-size:12px;color:${x.cfycIsOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${x.cfycIsOv?`✏️ แก้ไขเอง<button type="button" data-ov-reset="qty|${x.cfycKey}" style="display:block;margin:4px auto 0;padding:5px 9px;min-height:34px;font-size:13.5px;font-weight:700;border-radius:9px;border:1.5px solid var(--gold);background:#fff;color:var(--navy-deep);cursor:pointer;">↺ กลับใช้ค่าอัตโนมัติ</button>`:'(อัตโนมัติ)'}</div>
               ${x.pending>0?`<div style="font-size:12px;color:var(--gold);margin-top:1px;">+${THB(x.pending)} รอพิจารณา</div>`:''}
             </td>
             <td class="r" style="vertical-align:top;padding-top:0;">
               <input type="text" inputmode="decimal" data-direct-override="${x.directKey}" value="${esc(formatThousands(String(x.directValue)))}" style="width:98px;padding:4px 5px;font-size:21px;font-weight:700;font-family:'Space Grotesk',sans-serif;text-align:center;">
-              <div style="font-size:12px;color:${x.directIsOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${x.directIsOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
+              <div style="font-size:12px;color:${x.directIsOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${x.directIsOv?`✏️ แก้ไขเอง<button type="button" data-ov-reset="direct|${x.directKey}" style="display:block;margin:4px auto 0;padding:5px 9px;min-height:34px;font-size:13.5px;font-weight:700;border-radius:9px;border:1.5px solid var(--gold);background:#fff;color:var(--navy-deep);cursor:pointer;">↺ กลับใช้ค่าอัตโนมัติ</button>`:'(อัตโนมัติ)'}</div>
               ${x.pending>0?`<div style="font-size:12px;color:var(--gold);margin-top:1px;">+${THB(x.pending)} รอพิจารณา</div>`:''}
             </td>
           </tr>`;}).join("");
@@ -2929,7 +2949,7 @@ function renderTeamTab(){
           const A = computeUmItemsForPosition(selectedPosition, monthlyTeamCFYC, monthsElapsed, monthlyDirectAgentFYC);
           const P = computeUmItemsForPosition(selectedPosition, monthlyTeamCFYC.map((v,m)=>v+pendM[m]), monthsElapsed, monthlyDirectAgentFYC.map((v,m)=>v+pendM[m]));
           let tbP = 0;
-          names.forEach(name=>{ const pe = effectiveEntries(projEntries(state.agents[name].entries)); for (let q=1;q<=4;q++){ const qm=[(q-1)*3,(q-1)*3+1,(q-1)*3+2]; const qe = pe.filter(e=>{ const d=D(e.date); return d.getFullYear()===selYear && qm.includes(d.getMonth()); }); const nc = qe.filter(isOrigin).length, qf = qe.reduce((sum,e)=>sum+e.fyc,0); if (nc>=2){ const t = TEAM_BUILDING_TIERS.find(t=>qf>=t.minFyc); if (t) tbP += t.reward; } } });
+          names.forEach(name=>{ const pe = effectiveEntries(projEntries(state.agents[name].entries)); for (let q=1;q<=4;q++){ const qm=[(q-1)*3,(q-1)*3+1,(q-1)*3+2]; const qe = pe.filter(e=>{ const d=D(e.date); return d.getFullYear()===selYear && qm.includes(d.getMonth()); }); const nc = qe.filter(isOrigin).length, qf = qm.reduce((sum,m)=>{ const o = agOv(state.agents[name])[selYear+'-'+m]; return sum + ((o!==undefined && o!==null) ? (Number(o)||0) + mPend(state.agents[name].entries, selYear, m) : qe.filter(e=>D(e.date).getMonth()===m).reduce((s2,e)=>s2+e.fyc,0)); },0); if (nc>=2){ const t = TEAM_BUILDING_TIERS.find(t=>qf>=t.minFyc); if (t) tbP += t.reward; } } });
           const rows = [["เงินเดือน",A.item1,P.item1],["ค่าขยายงาน",A.item2,P.item2],["โบนัสส่วนเกินโควตา",A.item3+A.interimItem3,P.item3+P.interimItem3],["DPO",A.item6,P.item6],["ค่าสร้างและรักษาตัวแทน",teamBuildingReward,tbP]];
           const diff = rows.reduce((sum,r)=>sum+(r[2]-r[1]),0);
           const changed = rows.filter(r=>Math.abs(r[2]-r[1])>=1);
@@ -3374,7 +3394,7 @@ function renderTeamTab(){
             const qMonths=[(q-1)*3,(q-1)*3+1,(q-1)*3+2];
             const qEntries = effectiveEntries(ag.entries).filter(e=>{ const d=D(e.date); return d.getFullYear()===selYear && qMonths.includes(d.getMonth()); });
             const newCases = qEntries.filter(isOrigin).length;
-            const qFyc = qEntries.reduce((s,e)=>s+e.fyc,0);
+            const qFyc = qMonths.reduce((s,m)=>s+agMonthFyc(ag, selYear, m),0);
             if (newCases>=2){
               const tier = TEAM_BUILDING_TIERS.find(t=>qFyc>=t.minFyc);
               if (tier) item7cmp += tier.reward;
@@ -3486,7 +3506,7 @@ function __generatePrintReportRaw(){
   }
   const totalIncome = annualFYC + reward + totalQuarterlyBonus + annualBonusNet + joiningGrandTotal;
   const monthlyFyc = [0,1,2,3,4,5,6,7,8,9,10,11].map(m=>
-    yearEntries.filter(e=>D(e.date).getMonth()===m).reduce((s,e)=>s+e.fyc,0)
+    agMonthFyc(ag, selYear, m)
   );
   const today = new Date();
   const printDate = fmtTH(today,{day:"numeric",month:"long",year:"numeric"});
@@ -3764,7 +3784,7 @@ function setAgentAnnualTargetFYC(value, year){
 function getAgentYearFyc(name, year){
   const ag = state.agents[name];
   if (!ag) return 0;
-  return effectiveEntries(ag.entries).filter(e=>D(e.date).getFullYear()===year).reduce((s,e)=>s+e.fyc,0);
+  return agYearFyc(ag, year);
 }
 
 function addMonthsToDate(dateStr, n){
@@ -3806,6 +3826,9 @@ function annualPct(fyc, band){
 
 // ยอด FYC รายไตรมาสยึด "ตารางผลงานรายเดือน" เป็นหลัก: เดือนที่แก้ไขเอง (✏️) ใช้ตัวเลขที่พิมพ์ · เดือนอื่นรวมจากงานที่คีย์/อนุมัติแล้ว
 function agOv(ag){ return (ag && ag.competitions && ag.competitions.monthlyFycOverride) || {}; }
+// FYC รายเดือนของตัวแทน ยึดตารางผลงานรายไตรมาส: เดือนที่แก้ไขเอง (✏️) ใช้ตัวเลขที่พิมพ์ · เดือนอื่นรวมจากรายการที่อนุมัติแล้ว
+function agMonthFyc(ag,y,m){ const o = agOv(ag)[`${y}-${m}`]; return (o!==undefined && o!==null) ? (Number(o)||0) : mEff((ag&&ag.entries)||[], y, m); }
+function agYearFyc(ag,y){ let t=0; for (let m=0;m<12;m++) t+=agMonthFyc(ag,y,m); return t; }
 function quarterlyQualifyResults(entries, year, ov){
   ov = ov || {};
   return [1,2,3,4].map(q=>{
@@ -3946,7 +3969,7 @@ function loadState(){
 }
 /* ===== IndexedDB — พื้นที่เก็บใหญ่กว่า localStorage มาก (หลายร้อย MB ขึ้นไป) ===== */
 const IDB_NAME = IS_AGENT_APP ? "ped-agent" : "ped-dashboard", IDB_STORE = "kv";
-let __idbP = null, __useIdb = false, __booted = false, __bootFailed = false;
+let __idbP = null, __useIdb = false, __booted = false, __bootFailed = false, __lsFallback = false;
 const metaCache = {};
 // ===== ที่เก็บข้อมูลในเครื่อง (IndexedDB) — มีกำหนดเวลาเลิกรอ + ต่อใหม่อัตโนมัติ กันแอปค้าง (เจอบ่อยใน iPhone ตอนสลับแอป) =====
 function withTimeout(p, ms){ return new Promise((res,rej)=>{ const t=setTimeout(()=>rej(Object.assign(new Error("timeout"),{timeout:true})), ms); p.then(v=>{clearTimeout(t);res(v);}, e=>{clearTimeout(t);rej(e);}); }); }
@@ -3992,8 +4015,11 @@ function flushSave(){
   if (__bootFailed) return; // โหลดข้อมูลเดิมไม่สำเร็จ ห้ามบันทึกทับเด็ดขาด
   if (!__booted){ __saveTimer = setTimeout(flushSave, 200); return; } // ยังโหลดข้อมูลไม่เสร็จ ห้ามเขียนทับ
   const root = rootStateForSave();
+  root.savedAt = Date.now(); // เวลาบันทึกล่าสุด ใช้เทียบตอนเปิดแอปว่าที่เก็บไหนใหม่กว่า
   if (__useIdb){
-    idbPut(STORAGE_KEY, root).catch(()=>{ __useIdb = false; saveToLocalStorage(root); });
+    // เขียน IndexedDB ไม่สำเร็จ: สำรองลงเครื่องไว้ก่อน แต่ครั้งหน้ายังลอง IndexedDB ต่อ (ไม่เลิกใช้ถาวร) ตอนเปิดแอปจะเลือกชุดที่ใหม่กว่าเสมอ
+    idbPut(STORAGE_KEY, root).then(()=>{ if (__lsFallback){ __lsFallback = false; try{ localStorage.removeItem(STORAGE_KEY); }catch(e){} } })
+      .catch(()=>{ __lsFallback = true; saveToLocalStorage(root); });
   } else saveToLocalStorage(root);
 }
 function saveToLocalStorage(root){
@@ -4081,6 +4107,7 @@ function withDueView(fn){
 }
 function render(){
   try { premMigrate(); } catch(e){}
+  try { premMonthlyHalfMigrate(); } catch(e){}
   __rc = new WeakMap();
   try { withDueView(__renderInner); } finally { __rc = null; }
   try { qzAfterRender(); } catch(e){}
@@ -4350,12 +4377,12 @@ function renderGoalsTab(){
   const currentMonthIdx = now.getMonth();
   const pacing = (goalFYC>0 || annualGoalFYC>0) ? computeMonthlyPacing(effectiveEntries(agent().entries), selYear, goalFYC, startMonth, endMonth, annualGoalFYC) : null;
   const yearEntries = effectiveEntries(getYearEntries()).filter(e => { const m = D(e.date).getMonth(); return m >= startMonth && m <= endMonth; });
-  const achieved = yearEntries.reduce((s,e)=>s+e.fyc,0);
+  let achieved = 0; for (let m=startMonth; m<=endMonth; m++) achieved += agMonthFyc(agent(), selYear, m);
   const remaining = Math.max(0, goalFYC-achieved);
   const progressPct = goalFYC>0 ? Math.max(0,(achieved/goalFYC)*100) : 0; // ไม่ตัดเพดาน 100% เกินเป้าต้องโชว์เกินได้
   const progressPctForRing = Math.min(100, progressPct);
   // ผลงานทั้งปี (ม.ค.-ธ.ค. เสมอ) แยกจากผลงานช่วงเป้าหมายพิเศษด้านบน เพื่อไม่ให้สับสนว่าเลขไหนคือขอบเขตไหน
-  const achievedFullYear = effectiveEntries(getYearEntries()).reduce((s,e)=>s+e.fyc,0);
+  const achievedFullYear = agYearFyc(agent(), selYear);
   const projFullYear = effectiveEntries(projEntries(agent().entries)).filter(e=>D(e.date).getFullYear()===selYear).reduce((s,e)=>s+e.fyc,0);
   const projPeriod = effectiveEntries(projEntries(agent().entries)).filter(e=>{ const d=D(e.date); return d.getFullYear()===selYear && d.getMonth()>=startMonth && d.getMonth()<=endMonth; }).reduce((s,e)=>s+e.fyc,0);
   const annualRemaining = Math.max(0, annualGoalFYC-achievedFullYear);
@@ -4664,10 +4691,10 @@ function renderEntryTab(){
         </div>
         <div class="full" style="font-size:14.5px;color:var(--muted);margin-top:-4px;">เบี้ย = เบี้ยประกันต่องวด (ตามลักษณะการเก็บเบี้ย) · คอม = ${billingLabel} · นับผลงานตามงวดที่ถึงกำหนดจริงเท่านั้น</div>
         ${fypEventAt(entryForm.date)?'<div class="full" style="font-size:15px;color:var(--bad);font-weight:700;margin-top:-4px;">⚠ ช่วงนี้มีการแข่งขันที่นับจาก FYP — กรอกเบี้ยด้วยนะคะ</div>':''}
-        <label class="field full"><span>ลักษณะการเก็บเบี้ย</span>
+        <div class="field full"><span>ลักษณะการเก็บเบี้ย</span>
           <div style="display:flex;gap:6px;margin-top:2px;">${radiosHtml}</div>
           <div id="billing-preview">${previewHtml}</div>
-        </label>
+        </div>
         <label class="field"><span>แบบประกัน (ไม่บังคับ)</span>
           <input type="text" id="f-plan" list="plan-list" value="${esc(entryForm.plan||'')}" placeholder="เช่น สะสมทรัพย์">
           <datalist id="plan-list">${[...new Set(Object.values(state.agents||{}).flatMap(a=>(a.entries||[]).map(e=>e.plan).filter(Boolean)))].map(p=>`<option value="${esc(p)}">`).join('')}</datalist>
@@ -4813,7 +4840,7 @@ function renderCompetitionsTab(){
         ${pacing?`<td class="r" style="color:var(--muted);vertical-align:top;padding-top:8px;">${pmActive?THB(pm.target):'—'}</td>`:''}
         <td class="r" style="vertical-align:top;padding-top:0;">
           <input type="text" inputmode="decimal" data-fyc-override="${ovKey}" value="${esc(formatThousands(String(displayFyc)))}" style="width:98px;padding:4px 5px;font-size:21px;font-weight:700;font-family:'Space Grotesk',sans-serif;text-align:center;color:var(--navy-deep);">
-          <div style="font-size:11px;color:${isOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${isOv?'✏️ แก้ไขเอง':'(อัตโนมัติ)'}</div>
+          <div style="font-size:11px;color:${isOv?'var(--gold)':'var(--muted)'};margin-top:2px;">${isOv?`✏️ แก้ไขเอง<button type="button" data-ov-reset="fyc|${ovKey}" style="display:block;margin:4px auto 0;padding:5px 9px;min-height:34px;font-size:13.5px;font-weight:700;border-radius:9px;border:1.5px solid var(--gold);background:#fff;color:var(--navy-deep);cursor:pointer;">↺ กลับใช้ค่าอัตโนมัติ</button>`:'(อัตโนมัติ)'}</div>
         </td>
       </tr>`;
     });
@@ -4931,7 +4958,7 @@ function renderCompetitionsTab(){
     <div class="card">
       <h3 style="display:flex;align-items:center;gap:10px;">${posterThumbs(posterMatches("คุณวุฒิไตรมาส","trophy"))}<span>📅 ผลงานรายเดือน${ownerTag(state.currentAgent)} ประจำปี ${toBE(selYear)}</span></h3>
       <p class="sub">เกณฑ์ต่อไตรมาส: ผลงาน ≥ 6 ราย · FYC ≥ 40,000 · มีผลงานรายใหม่อย่างน้อย 2 ใน 3 เดือน (ประกาศที่ 3/2569)</p>
-      ${(()=>{ const __en = agent().entries||[]; const __cap = (selYear===new Date().getFullYear()) ? new Date().getMonth() : 11; let __b=-1, __bv=0; for (let __m=0; __m<=__cap; __m++){ const __v = mEff(__en, selYear, __m); if (__v>__bv){ __bv=__v; __b=__m; } } return __b>=0 ? `<div style="display:flex;align-items:center;gap:10px;background:#F1F8F3;border:1.5px solid var(--good);border-radius:10px;padding:10px 12px;margin:0 0 12px;"><span style="font-size:26px;">🏅</span><div style="font-size:17px;line-height:1.4;">เดือนที่ทำได้ดีที่สุด: <b style="color:var(--good);font-size:20px;">${THAI_MONTH_NAMES[__b]}</b> · FYC <b style="color:var(--good);font-size:20px;">${THB(__bv)}</b></div></div>` : ''; })()}
+      ${(()=>{ const __en = agent().entries||[]; const __cap = (selYear===new Date().getFullYear()) ? new Date().getMonth() : 11; let __b=-1, __bv=0; for (let __m=0; __m<=__cap; __m++){ const __v = agMonthFyc(agent(), selYear, __m); if (__v>__bv){ __bv=__v; __b=__m; } } return __b>=0 ? `<div style="display:flex;align-items:center;gap:10px;background:#F1F8F3;border:1.5px solid var(--good);border-radius:10px;padding:10px 12px;margin:0 0 12px;"><span style="font-size:26px;">🏅</span><div style="font-size:17px;line-height:1.4;">เดือนที่ทำได้ดีที่สุด: <b style="color:var(--good);font-size:20px;">${THAI_MONTH_NAMES[__b]}</b> · FYC <b style="color:var(--good);font-size:20px;">${THB(__bv)}</b></div></div>` : ''; })()}
       <div class="qgrid">${qCardsHtml}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div>
@@ -5484,6 +5511,16 @@ function bindEvents(){
       saveState(); render();
     };
   });
+  document.querySelectorAll("[data-ov-reset]").forEach(btn=>{
+    btn.onclick = (ev)=>{
+      ev.stopPropagation();
+      const i = btn.dataset.ovReset.indexOf('|'), k = btn.dataset.ovReset.slice(0,i), key = btn.dataset.ovReset.slice(i+1);
+      if (k==='qty' && state.umGoal && state.umGoal.monthOverrides) delete state.umGoal.monthOverrides[key];
+      if (k==='direct' && state.umGoal && state.umGoal.directOverrides) delete state.umGoal.directOverrides[key];
+      if (k==='fyc' && agent().competitions && agent().competitions.monthlyFycOverride) delete agent().competitions.monthlyFycOverride[key];
+      saveState(); render(); showToast('กลับไปใช้ค่าอัตโนมัติแล้ว');
+    };
+  });
   document.querySelectorAll("[data-qty-reset]").forEach(btn=>{
     btn.onclick = ()=>{
       delete state.umGoal.monthOverrides[btn.dataset.qtyReset];
@@ -5700,7 +5737,7 @@ function bindEvents(){
         const fycChanged = newFyc !== original.fyc;
         const dateChanged = editDraft.date !== original.date;
         agent().entries[idx] = { ...original, date: editDraft.date, fyc: newFyc, note: editDraft.note.trim() };
-        if ((original.installmentIndex ?? 0) === 0){ const pr = Number(stripCommas(editDraft.premium||"")); agent().entries.forEach(x=>{ if (x.policyId===original.policyId){ if (pr>0) x.premium = pr; else delete x.premium; } }); }
+        if ((original.installmentIndex ?? 0) === 0){ const pr = Number(stripCommas(editDraft.premium||"")); agent().entries.forEach(x=>{ if (x.policyId===original.policyId){ if (pr>0) x.premium = instPrem(x.billingMode, x.installmentIndex, pr); else delete x.premium; } }); }
         // ถ้าแก้ไขรายการต้นฉบับ (งวดแรก) ของแผนผ่อนชำระหลายงวด ต้องคำนวณงวดถัดๆ ไปใหม่ให้สอดคล้องกัน ไม่งั้นงวดหลังจะค้างเลขเดิม/วันเดิมที่ผิดไป
         const isOriginInstallment = (original.installmentIndex ?? 0) === 0;
         const hasSiblings = (original.installmentTotal ?? 1) > 1;
@@ -5817,8 +5854,15 @@ function bindEvents(){
       reader.onload = ()=>{
         try{
           const imported = JSON.parse(reader.result);
-          state = normalizeState(imported);
-          syncAgentFormState();
+          // ตรวจว่าเป็นไฟล์แบ็กอัพของแอปนี้จริงก่อน — ไม่ใช่ห้ามแตะข้อมูลเดิมเลย
+          const isObj = v=>v && typeof v==='object' && !Array.isArray(v);
+          const okNew = isObj(imported) && isObj(imported.agents) && Object.keys(imported.agents).length>0 && Object.values(imported.agents).every(a=>isObj(a) && Array.isArray(a.entries));
+          const okOld = isObj(imported) && !imported.agents && Array.isArray(imported.entries);
+          if (!okNew && !okOld){ showToast("ไฟล์นี้ไม่ใช่ไฟล์แบ็กอัพของแอป — ข้อมูลเดิมยังอยู่ครบ ไม่ได้เปลี่ยนแปลง"); return; }
+          const next = normalizeState(JSON.parse(JSON.stringify(imported)));
+          if (!isObj(next) || !isObj(next.agents)){ showToast("ไฟล์ไม่ถูกต้อง — ข้อมูลเดิมยังอยู่ครบ"); return; }
+          state = next;
+          refreshInputsAfterLoad();
           saveState(); render();
           // เช็คว่ามีรายการ FYC ผิดปกติ (0 หรือติดลบ) หลุดมาจากไฟล์ไหม — ปกติแล้วกรอกผ่านฟอร์มจะกันไว้แล้ว แต่ไฟล์ภายนอกอาจมีข้อมูลแบบนี้ปนมาได้
           const badEntries = [];
@@ -6145,7 +6189,7 @@ function submitEntry(){
     note: n>1 ? `${baseNote}${baseNote?" ":""}(${installmentLabel(entryForm.billing, i, n)})` : baseNote,
     policyId, installmentIndex:i, installmentTotal:n, billingMode: entryForm.billing,
     ...(i===0 && !isApproved ? { pending: true } : {}),
-    ...(Number(stripCommas(entryForm.premium||""))>0 ? { premium: Number(stripCommas(entryForm.premium)) } : {}),
+    ...(Number(stripCommas(entryForm.premium||""))>0 ? { premium: instPrem(entryForm.billing, i, Number(stripCommas(entryForm.premium))) } : {}),
     ...(i===0 && (entryForm.plan||"").trim() ? { plan: entryForm.plan.trim() } : {}), // เฉพาะงวดต้นฉบับที่มีสถานะรอพิจารณาของตัวเอง งวดต่อเนื่องอื่นๆ อิงตามงวดต้นฉบับเสมอ ไม่มีสถานะแยกของตัวเอง
   }));
   agent().entries.push(...list);
@@ -6186,6 +6230,12 @@ async function boot(){
     __useIdb = true;
     let meta = null; try{ meta = await idbGet("meta"); }catch(e){}
     if (meta) Object.assign(metaCache, meta);
+    // ถ้าเคยบันทึกสำรองลงเครื่อง (ตอน IndexedDB ไม่ตอบ) และชุดนั้นใหม่กว่า ให้ใช้ชุดที่ใหม่กว่า
+    let lsCopy = null; try{ const r = localStorage.getItem(STORAGE_KEY); if (r) lsCopy = JSON.parse(r); }catch(e){}
+    if (saved && lsCopy && lsCopy.agents && (Number(lsCopy.savedAt)||0) > (Number(saved.savedAt)||0)){
+      saved = lsCopy;
+      try{ await idbPut(STORAGE_KEY, saved); localStorage.removeItem(STORAGE_KEY); }catch(e){ __lsFallback = true; }
+    }
     if (saved){
       state = normalizeState(saved);
     } else {
@@ -7485,8 +7535,14 @@ boot();
 (function(){
   const SKIP = ['checkbox','radio','button','submit','reset','file','range','color','hidden','date','time','datetime-local','month','week'];
   const ok = el => el && el.tagName==='INPUT' && !SKIP.includes((el.type||'text').toLowerCase()) && !el.readOnly && !el.disabled && el.id!=='entry-search' && el.id!=='n-search';
-  document.addEventListener('focus', e=>{ const el = e.target; if (!ok(el)) return; el.dataset.prevVal = el.value; if (el.value!=='') el.value = ''; }, true);
-  document.addEventListener('blur', e=>{ const el = e.target; if (!ok(el)) return; const prev = el.dataset.prevVal; delete el.dataset.prevVal; if (prev!==undefined && prev!=='' && el.value.trim()==='') el.value = prev; }, true);
+  document.addEventListener('focus', e=>{ const el = e.target; if (!ok(el)) return; el.dataset.prevVal = el.value; el.__typed = false; if (el.value!=='') el.value = ''; }, true);
+  document.addEventListener('input', e=>{ const el = e.target; if (ok(el) && el.dataset.prevVal!==undefined) el.__typed = true; }, true);
+  // ออกจากช่อง: ถ้าไม่ได้พิมพ์ หรือพิมพ์แล้วลบจนว่าง = ไม่ใช่การแก้ไข → คืนค่าเดิม และไม่ส่งต่อให้ช่องนั้นบันทึกอะไรเลย (กันล็อก ✏️ แก้ไขเอง / กันเป้ากลายเป็น 0)
+  document.addEventListener('blur', e=>{ const el = e.target; if (!ok(el)) return; const prev = el.dataset.prevVal; delete el.dataset.prevVal; if (prev===undefined) return;
+    const typed = !!el.__typed; el.__typed = false;
+    if (!typed){ if (el.value!==prev) el.value = prev; e.stopImmediatePropagation(); return; }
+    if (el.value.trim()==='' && prev!==''){ el.value = prev; el.dispatchEvent(new Event('input',{bubbles:true})); el.__typed = false; e.stopImmediatePropagation(); }
+  }, true);
 })();
 
 // ===== Road to Beijing: ขั้นที่ได้จริง (Kick Off / Regional / ปักกิ่ง) — ห้ามนับรวมเป็น "ติดแล้ว" ก้อนเดียว =====
@@ -7683,13 +7739,13 @@ function tlSum(card, title){
   try{
     if (activeSection==='agent'){
       const ag = agent(), en = ag.entries||[], eff = effectiveEntries(en);
-      const yr = eff.filter(e=>D(e.date).getFullYear()===selYear).reduce((s,e)=>s+e.fyc,0);
+      const yr = agYearFyc(ag, selYear);
       if (/เพิ่มรายการผลงาน/.test(title)) return 'แตะเพื่อบันทึกผลงานใหม่';
       if (/รายการผลงาน/.test(title)) return `${en.filter(e=>D(e.date).getFullYear()===selYear && isOrigin(e)).length} ราย · FYC ปีนี้ <b>${T(yr)}</b>`;
-      if (/ผลงานรายเดือน/.test(title)) return `${THAI_MONTH_NAMES[m]} FYC <b>${T(mEff(en, selYear, m))}</b><br>ทั้งปี <b>${T(yr)}</b>`;
+      if (/ผลงานรายเดือน/.test(title)) return `${THAI_MONTH_NAMES[m]} FYC <b>${T(agMonthFyc(ag, selYear, m))}</b><br>ทั้งปี <b>${T(yr)}</b>`;
       if (/ถ้างานรอพิจารณา/.test(title)){ const p = en.filter(e=>e.pending && isOrigin(e)); return `รออนุมัติ <b class="warn">${p.length}</b> ราย · FYC ${T(p.reduce((s,e)=>s+e.fyc,0))}`; }
       if (/รายได้รวม/.test(title)){ const v = txt('.mono'); return v ? `รวม <b>${v}</b>` : ''; }
-      if (/ตั้งเป้าหมาย|เป้าหมายรายปี/.test(title)){ try{ const g = getAgentTargetFYC(state.currentAgent, selYear); return g>0 ? `เป้า FYC <b>${T(g)}</b>` : 'ยังไม่ตั้งเป้า'; }catch(e){ return ''; } }
+      if (/ตั้งเป้าหมาย|เป้าหมายรายปี/.test(title)){ try{ const g = getAgentTargetFYC(selYear); return g>0 ? `เป้า FYC <b>${T(g)}</b>` : 'ยังไม่ตั้งเป้า'; }catch(e){ return ''; } }
       if (/Road to Beijing/.test(title)){ const v = eventValue(eff, rbEvent()); const nm = rbStageName(v, rbEvent(), false); return `FYC <b>${T(v)}</b>${nm?`<br><span class="ok">${nm}</span>`:''}`; }
       const ev = tlEvFor(title);
       if (ev){ const v = eventValue(eff, ev), p = evProg(v, ev); return `${evUnit(ev)} <b>${T(v)}</b><br>${p.ok?`<span class="ok">${tlStrip(p.label)}</span>`:tlStrip(evNextTxt(p, ev)).slice(0,40)}`; }
@@ -8070,6 +8126,20 @@ function rbSumAgents(agents, ev){
   Object.values(agents||{}).forEach(ag=>{ if (!ag) return; const r = rbValOf(ag.entries, ev); v+=r.v; vp+=Math.max(r.v, r.vp); });
   return { v, vp };
 }
+// UM ในทีม: ใช้ CFYC รายเดือนที่กรอกไว้ (ตารางผลงานรายไตรมาส) ของเดือนที่อยู่ในช่วงการแข่งขัน นับถึงเดือนปัจจุบันเท่านั้น (ไม่นับล่วงหน้า)
+function rbSubUmVal(u, ev){
+  const s = new Date(ev.start+"T00:00:00"), e = new Date(ev.end+"T00:00:00"), now = new Date();
+  let v = 0;
+  for (let y=s.getFullYear(); y<=e.getFullYear(); y++){
+    const arr = subUmMonthlyCFYC(u||{}, y);
+    for (let m=0;m<12;m++){
+      const first = new Date(y,m,1), last = new Date(y,m+1,0);
+      if (last < s || first > e || first > now) continue;
+      v += Number(arr[m])||0;
+    }
+  }
+  return { v, vp: v };
+}
 function rbActive(ev){ const t = todayIso(); return t>=ev.start && t<=ev.end; }
 function rbDaysLeft(ev){ const t0=new Date(); t0.setHours(0,0,0,0); return Math.round((new Date(ev.end+"T00:00:00")-t0)/86400000); }
 // แถบเดียว (ไม่มีรายการขั้น) — ใช้ซ้ำในรายชื่อตัวแทน / UM ในทีม
@@ -8113,8 +8183,8 @@ function rbTeamUmCardHtml(){
   const ums = root.teamUMs || {};
   const par = n=>{ const p = (ums[n]||{}).parentUM; return p && ums[p] && p!==n ? p : ''; };
   const me = rbSumAgents(root.agents, ev);
-  const list = Object.keys(ums).filter(n=>ums[n]).map(n=>({ n, p:par(n), ...rbSumAgents(ums[n].agents, ev) })).sort((a,b)=>b.v-a.v);
-  const bars = [`<div class="rb-row">${rbBar('ฉัน (ป้าเป็ด)', me.v, me.vp, ev, true)}</div>`]
+  const list = Object.keys(ums).filter(n=>ums[n]).map(n=>({ n, p:par(n), ...rbSubUmVal(ums[n], ev) })).sort((a,b)=>b.v-a.v);
+  const bars = [`<div class="rb-row">${rbBar('ผลงานของฉัน', me.v, me.vp, ev, true)}</div>`]
     .concat(list.map(u=>`<div class="rb-row" data-open-team-um="${esc(u.n)}">${rbBar(u.n + (u.p?` (ใต้${u.p})`:''), u.v, u.vp, ev, true)}</div>`)).join('');
   return `<div class="card rb-card">
     <h3 style="margin:0 0 4px;">🐼 Road to Beijing · ทีม UM</h3>
