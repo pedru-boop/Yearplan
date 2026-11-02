@@ -34,7 +34,7 @@
     ]
   },
   {
-    "file": "2026-10_beijing-iphone.jpg",
+    "file": "archive/2026-10_beijing-iphone.jpg",
     "title": "iPhone 18 Pro · ถ่ายรูปสวยๆ ที่ปักกิ่ง",
     "start": "2026-10-01",
     "end": "2026-10-31",
@@ -42,20 +42,22 @@
     "match": [
       "iPhone 18 Pro",
       "iPhone"
-    ]
+    ],
+    "archived": true
   },
   {
-    "file": "2026-10_pocket-money-beijing.jpg",
+    "file": "archive/2026-10_pocket-money-beijing.jpg",
     "title": "Pocket Money เที่ยวปักกิ่ง",
     "start": "2026-10-01",
     "end": "2026-10-31",
     "approve": "2026-11-30",
     "match": [
       "Pocket Money"
-    ]
+    ],
+    "archived": true
   },
   {
-    "file": "2026-10_top-month-ul.jpg",
+    "file": "archive/2026-10_top-month-ul.jpg",
     "title": "Top of the Month · Unit Linked & Mutual Fund",
     "start": "2026-10-01",
     "end": "2026-10-31",
@@ -64,10 +66,11 @@
       "Top of the Month",
       "Unit Linked",
       "Mutual Fund"
-    ]
+    ],
+    "archived": true
   },
   {
-    "file": "2026-10_top-month-rider.jpg",
+    "file": "archive/2026-10_top-month-rider.jpg",
     "title": "Top of the Month · สัญญาเพิ่มเติม",
     "start": "2026-10-01",
     "end": "2026-10-31",
@@ -75,7 +78,8 @@
     "match": [
       "Top of the Month",
       "สัญญาเพิ่มเติม"
-    ]
+    ],
+    "archived": true
   },
   {
     "file": "2026-q4_top-quarter.jpg",
@@ -89,43 +93,47 @@
     ]
   },
   {
-    "file": "2026-10_recapture.jpg",
+    "file": "archive/2026-10_recapture.jpg",
     "title": "Recapture ตุลาคม 2569",
     "start": "2026-10-01",
     "end": "2026-10-31",
     "match": [
       "Recapture"
-    ]
+    ],
+    "archived": true
   },
   {
-    "file": "2026-10_cao-challenge.jpg",
+    "file": "archive/2026-10_cao-challenge.jpg",
     "title": "CAO Challenge ภาคเหนือ",
     "start": "2026-10-01",
     "end": "2026-10-31",
     "match": [
       "CAO Challenge",
       "CAO"
-    ]
+    ],
+    "archived": true
   },
   {
-    "file": "2026-10_bla-promo.jpg",
+    "file": "archive/2026-10_bla-promo.jpg",
     "title": "บีแอลเอ โปรดีทุกเดือน",
     "kind": "promo",
     "start": "2026-10-01",
     "end": "2026-10-31",
     "match": [
       "โปรดีทุกเดือน"
-    ]
+    ],
+    "archived": true
   },
   {
-    "file": "2026-10_start-tax.jpg",
+    "file": "archive/2026-10_start-tax.jpg",
     "title": "Start Tax Get Reward",
     "kind": "promo",
     "start": "2026-10-01",
     "end": "2026-10-31",
     "match": [
       "Start Tax"
-    ]
+    ],
+    "archived": true
   },
   {
     "file": "2026-11_train-license-new_u1014.jpg",
